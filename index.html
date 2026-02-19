@@ -43,7 +43,7 @@
         }
         #landingCover.hidden { transform: scale(1.1); opacity: 0; pointer-events: none; }
 
-        /* 抽屜樣式 */
+        /* 抽屜基礎樣式 */
         .drawer {
             position: fixed;
             top: 0;
@@ -51,16 +51,15 @@
             height: 100%;
             background-color: #0d0d0d;
             border-left: 1px solid var(--mag-gray);
-            box-shadow: -20px 0 60px rgba(0,0,0,0.8);
+            box-shadow: -30px 0 80px rgba(0,0,0,0.9);
             transform: translateX(100%);
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 60;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 100;
             overflow-y: auto;
         }
         .drawer.open { transform: translateX(0); }
 
-        /* 不同抽屜的寬度 */
-        #filterDrawer { width: 280px; }
+        #filterDrawer { width: 320px; }
         #drawer { width: 100%; max-width: 600px; }
 
         /* 卡片設計 */
@@ -77,7 +76,7 @@
         .entry-card:hover {
             transform: translateY(-8px);
             border-color: var(--mag-accent);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 15px 35px rgba(197, 160, 89, 0.15);
         }
 
         .media-wrapper {
@@ -91,30 +90,18 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-        }
-
-        .play-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.3);
-            opacity: 0.8;
-            transition: opacity 0.3s;
-            cursor: pointer;
-            z-index: 10;
+            transition: transform 0.8s ease;
         }
 
         .action-btn {
-            height: 32px;
-            padding: 0 12px;
+            height: 36px;
+            padding: 0 16px;
             background: rgba(30, 30, 30, 0.8);
             border: 1px solid var(--mag-gray);
             border-radius: 6px;
             color: var(--mag-accent);
-            font-size: 10px;
-            font-weight: 900;
+            font-size: 11px;
+            font-weight: 700;
             letter-spacing: 1px;
             display: flex;
             align-items: center;
@@ -125,29 +112,39 @@
         .action-btn:hover { 
             background: var(--mag-accent); 
             color: #000; 
+            border-color: var(--mag-accent);
         }
 
-        /* 標籤樣式 */
+        /* 標籤過濾樣式 */
         .filter-tag {
             width: 100%;
-            padding: 10px 14px;
-            border-radius: 8px;
+            padding: 12px 16px;
+            border-radius: 10px;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            border: 1px solid transparent;
+            border: 1px solid rgba(255,255,255,0.05);
             background: rgba(255, 255, 255, 0.02);
-            color: #777;
-            transition: all 0.3s ease;
+            color: #888;
+            transition: all 0.25s ease;
             text-align: left;
             display: flex;
             justify-content: space-between;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .filter-tag.active {
-            background: rgba(197, 160, 89, 0.1);
+            background: rgba(197, 160, 89, 0.15);
             color: var(--mag-accent);
-            border-color: rgba(197, 160, 89, 0.2);
+            border-color: rgba(197, 160, 89, 0.4);
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #444;
+            cursor: pointer;
         }
 
         ::-webkit-scrollbar { width: 4px; }
@@ -166,63 +163,83 @@
     </div>
 
     <!-- 導航欄 -->
-    <nav class="container mx-auto px-6 py-8 flex justify-between items-center border-b border-zinc-900">
+    <nav class="container mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center border-b border-zinc-900 gap-6">
         <div class="flex items-center gap-6">
-            <button onclick="toggleFilterDrawer(true)" class="text-[#c5a059] hover:text-white transition-colors">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            <button onclick="toggleFilterDrawer(true)" class="text-[#c5a059] hover:text-white transition-all">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            <h2 class="serif-bold text-3xl text-white tracking-tighter">THE ARCHIVE<span class="text-[#c5a059]">.</span></h2>
+            <div class="flex flex-col">
+                <h2 class="serif-bold text-3xl text-white tracking-tighter">THE ARCHIVE<span class="text-[#c5a059]">.</span></h2>
+                <span id="navStat" class="text-[9px] font-bold text-zinc-600 tracking-widest uppercase">Vault Ready</span>
+            </div>
         </div>
-        <div class="flex items-center gap-4">
+        
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-4">
+                <button onclick="exportData()" class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors tracking-widest uppercase">匯出</button>
+                <label class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors tracking-widest uppercase cursor-pointer">
+                    匯入 <input type="file" id="importInput" class="hidden" accept=".json" onchange="importData(event)">
+                </label>
+            </div>
+            <div class="h-4 w-[1px] bg-zinc-800 mx-2"></div>
             <button onclick="openDrawer()" class="bg-[#c5a059] text-black px-6 py-3 font-black text-[10px] tracking-[0.2em] uppercase hover:bg-white transition-all shadow-lg">
                 + 新增檔案
             </button>
         </div>
     </nav>
 
-    <!-- 畫廊 -->
+    <!-- 主畫廊 -->
     <div class="container mx-auto px-6 mt-12">
         <main id="gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></main>
     </div>
 
-    <!-- 遮罩 -->
+    <!-- 黑色遮罩 -->
     <div id="overlay" onclick="closeAllDrawers()" class="fixed inset-0 bg-black/90 opacity-0 pointer-events-none transition-opacity duration-500 z-50 backdrop-blur-md"></div>
 
     <!-- 篩選抽屜 -->
     <div id="filterDrawer" class="drawer p-8">
         <div class="flex justify-between items-center mb-10">
-            <h3 class="serif-bold text-xl text-white uppercase tracking-widest">篩選器</h3>
-            <button onclick="toggleFilterDrawer(false)" class="text-zinc-500">
+            <h3 class="serif-bold text-xl text-white uppercase tracking-widest">篩選中心</h3>
+            <button onclick="toggleFilterDrawer(false)" class="text-zinc-500 hover:text-white">
                 <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
         </div>
-        <div class="space-y-6">
-            <input type="text" id="searchInput" oninput="renderGallery(false)" placeholder="搜尋..." class="w-full bg-black/40 border border-zinc-800 rounded-lg p-3 text-xs text-white outline-none focus:border-[#c5a059]">
+        <div class="space-y-8">
+            <div class="relative">
+                <input type="text" id="searchInput" oninput="renderGallery(false)" placeholder="搜尋名稱、番號..." 
+                    class="w-full bg-black/40 border border-zinc-800 rounded-lg p-3 pr-10 text-xs text-white outline-none focus:border-[#c5a059]">
+                <span id="searchClearBtn" onclick="clearSearch()" class="search-clear hidden">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </span>
+            </div>
             <div id="filterTagsContainer"></div>
+            <div id="statInfo" class="text-[10px] font-bold text-zinc-600 tracking-widest uppercase text-center py-4 bg-black/40 rounded-xl border border-zinc-900">
+                00 RECORDS FOUND
+            </div>
         </div>
     </div>
 
     <!-- 編輯抽屜 -->
     <div id="drawer" class="drawer p-10">
-        <div class="flex justify-between items-center mb-10">
-            <h3 class="serif-bold text-3xl text-white">檔案詳情</h3>
-            <button onclick="closeDrawer()" class="text-zinc-500">
-                <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        <div class="flex justify-between items-center mb-12">
+            <h3 class="serif-bold text-4xl text-white">檔案編譯</h3>
+            <button onclick="closeDrawer()" class="text-zinc-500 hover:text-white">
+                <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
         <div class="space-y-8">
-            <input type="text" id="nameInput" placeholder="名稱" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl outline-none focus:border-[#c5a059]">
-            <input type="text" id="codeInput" placeholder="番號" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]">
-            <input type="text" id="tagsInput" placeholder="標籤 (以空格分隔)" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]">
-            <input type="text" id="imgInput" placeholder="圖片連結" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xs outline-none focus:border-[#c5a059]">
-            <input type="text" id="videoInput" placeholder="影片連結" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xs outline-none focus:border-[#c5a059]">
-            <input type="text" id="urlInput" placeholder="外部連結" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xs outline-none focus:border-[#c5a059]">
-            <button onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-4 font-black uppercase tracking-widest hover:bg-white transition-all">保存</button>
-            <button id="drawerDeleteBtn" onclick="deleteItem()" class="w-full text-zinc-600 text-xs uppercase hidden">刪除此檔案</button>
+            <input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-2xl text-white outline-none" placeholder="名稱">
+            <input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="番號">
+            <input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="標籤 (以空格分隔)">
+            <input type="text" id="imgInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-zinc-500 text-xs outline-none" placeholder="圖片 URL">
+            <input type="text" id="urlInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-[#c5a059] text-xs outline-none" placeholder="外部連結">
+            <button onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-5 font-black uppercase tracking-widest hover:bg-white transition-all">保存變更</button>
+            <button id="drawerDeleteBtn" onclick="deleteItem()" class="w-full text-zinc-700 text-[10px] uppercase font-bold hover:text-red-500 transition-colors hidden">永久刪除</button>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[10px] font-black rounded-full opacity-0 transition-opacity z-[100]"></div>
+    <!-- 提示框 -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-10 py-4 text-[10px] font-black rounded-full opacity-0 transition-all z-[100] uppercase tracking-widest shadow-2xl">Notification</div>
 
     <script>
         const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
@@ -232,6 +249,7 @@
 
         function enterVault() {
             document.getElementById('landingCover').classList.add('hidden');
+            document.body.style.overflow = 'auto';
         }
 
         function toggleFilterDrawer(open) {
@@ -241,10 +259,13 @@
                 drawer.classList.add('open');
                 overlay.classList.replace('opacity-0', 'opacity-100');
                 overlay.classList.remove('pointer-events-none');
+                renderTags();
             } else {
                 drawer.classList.remove('open');
-                overlay.classList.replace('opacity-100', 'opacity-0');
-                overlay.classList.add('pointer-events-none');
+                if(!document.getElementById('drawer').classList.contains('open')) {
+                    overlay.classList.replace('opacity-100', 'opacity-0');
+                    overlay.classList.add('pointer-events-none');
+                }
             }
         }
 
@@ -258,23 +279,24 @@
 
             if(id) {
                 const item = collections.find(i => i.id == id);
-                document.getElementById('nameInput').value = item.name;
+                document.getElementById('nameInput').value = item.name || "";
                 document.getElementById('codeInput').value = item.code || "";
                 document.getElementById('tagsInput').value = (item.tags || []).join(' ');
                 document.getElementById('imgInput').value = item.img || "";
-                document.getElementById('videoInput').value = item.video || "";
                 document.getElementById('urlInput').value = item.url || "";
                 document.getElementById('drawerDeleteBtn').classList.remove('hidden');
             } else {
-                ['nameInput','codeInput','tagsInput','imgInput','videoInput','urlInput'].forEach(k => document.getElementById(k).value = "");
+                ['nameInput','codeInput','tagsInput','imgInput','urlInput'].forEach(k => document.getElementById(k).value = "");
                 document.getElementById('drawerDeleteBtn').classList.add('hidden');
             }
         }
 
         function closeDrawer() {
             document.getElementById('drawer').classList.remove('open');
-            document.getElementById('overlay').classList.replace('opacity-100', 'opacity-0');
-            document.getElementById('overlay').classList.add('pointer-events-none');
+            if(!document.getElementById('filterDrawer').classList.contains('open')) {
+                document.getElementById('overlay').classList.replace('opacity-100', 'opacity-0');
+                document.getElementById('overlay').classList.add('pointer-events-none');
+            }
         }
 
         function closeAllDrawers() {
@@ -283,16 +305,16 @@
         }
 
         function saveItem() {
-            const name = document.getElementById('nameInput').value;
-            if(!name) return;
+            const name = document.getElementById('nameInput').value.trim();
+            if(!name) return showToast("請輸入名稱");
             const data = {
                 id: currentId || Date.now(),
                 name,
-                code: document.getElementById('codeInput').value,
-                tags: document.getElementById('tagsInput').value.split(' ').filter(t => t),
-                img: document.getElementById('imgInput').value,
-                video: document.getElementById('videoInput').value,
-                url: document.getElementById('urlInput').value
+                code: document.getElementById('codeInput').value.trim().toUpperCase(),
+                tags: document.getElementById('tagsInput').value.split(/\s+/).filter(t => t),
+                img: document.getElementById('imgInput').value.trim(),
+                url: document.getElementById('urlInput').value.trim(),
+                updatedAt: Date.now()
             };
             if(currentId) {
                 const idx = collections.findIndex(i => i.id == currentId);
@@ -303,42 +325,49 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
             renderGallery();
             closeDrawer();
-            showToast("已保存");
+            showToast("Vault Updated");
         }
 
         function deleteItem() {
-            if(!confirm("確定刪除？")) return;
+            if(!confirm("確定要永久抹除此檔案？")) return;
             collections = collections.filter(i => i.id != currentId);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
             renderGallery();
             closeDrawer();
-            showToast("已刪除");
+            showToast("Record Erased");
         }
 
         function toggleTag(tag) {
             if(selectedFilterTags.has(tag)) selectedFilterTags.delete(tag);
             else selectedFilterTags.add(tag);
+            renderTags();
             renderGallery(false);
         }
 
-        function renderGallery(refreshTags = true) {
-            const gallery = document.getElementById('gallery');
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            gallery.innerHTML = "";
+        function clearSearch() {
+            document.getElementById('searchInput').value = "";
+            renderGallery(false);
+        }
 
-            if(refreshTags) {
-                const tagCounts = {};
-                collections.forEach(i => (i.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1));
-                const container = document.getElementById('filterTagsContainer');
-                container.innerHTML = "";
-                Object.keys(tagCounts).sort().forEach(tag => {
-                    const btn = document.createElement('button');
-                    btn.className = `filter-tag ${selectedFilterTags.has(tag) ? 'active' : ''}`;
-                    btn.innerHTML = `<span># ${tag}</span><span>${tagCounts[tag]}</span>`;
-                    btn.onclick = () => toggleTag(tag);
-                    container.appendChild(btn);
-                });
-            }
+        function renderTags() {
+            const tagCounts = {};
+            collections.forEach(i => (i.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1));
+            const container = document.getElementById('filterTagsContainer');
+            container.innerHTML = "";
+            Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).forEach(tag => {
+                const isActive = selectedFilterTags.has(tag);
+                const btn = document.createElement('button');
+                btn.className = `filter-tag ${isActive ? 'active' : ''}`;
+                btn.innerHTML = `<span># ${tag}</span><span>${tagCounts[tag]}</span>`;
+                btn.onclick = () => toggleTag(tag);
+                container.appendChild(btn);
+            });
+        }
+
+        function renderGallery(updateTags = true) {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            document.getElementById('searchClearBtn').classList.toggle('hidden', query === "");
+            if(updateTags) renderTags();
 
             const filtered = collections.filter(i => {
                 const matchSearch = i.name.toLowerCase().includes(query) || (i.code || "").toLowerCase().includes(query);
@@ -346,19 +375,24 @@
                 return matchSearch && matchTags;
             });
 
+            document.getElementById('statInfo').innerText = `${filtered.length} RECORDS FOUND`;
+            document.getElementById('navStat').innerText = `${collections.length} Total / ${filtered.length} Filtered`;
+
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = "";
             filtered.forEach(item => {
                 const card = document.createElement('div');
-                card.className = "entry-card";
+                card.className = "entry-card group";
                 card.innerHTML = `
                     <div class="media-wrapper">
-                        <img src="${item.img || 'https://via.placeholder.com/400x225/111/c5a059?text=NO+IMAGE'}" onerror="this.src='https://via.placeholder.com/400x225/111/c5a059?text=ERROR'">
+                        <img src="${item.img || 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'}" onerror="this.src='https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'">
                     </div>
                     <div class="p-5 flex flex-col flex-grow">
                         <h3 class="serif-bold text-lg text-white mb-1 uppercase truncate">${item.name}</h3>
-                        <p class="text-[10px] text-[#c5a059] font-mono mb-4">${item.code || "N/A"}</p>
-                        <div class="mt-auto flex justify-between gap-2">
+                        <p class="text-[10px] text-[#c5a059] font-mono mb-4">${item.code || "PRIVATE"}</p>
+                        <div class="mt-auto flex gap-2 border-t border-zinc-900 pt-4">
                             <button onclick="openDrawer(${item.id})" class="action-btn flex-grow">編輯</button>
-                            ${item.url ? `<button onclick="window.open('${item.url}')" class="action-btn flex-grow">查看</button>` : ''}
+                            ${item.url ? `<button onclick="window.open('${item.url}', '_blank')" class="action-btn flex-grow">查看</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -366,11 +400,63 @@
             });
         }
 
+        function exportData() {
+            const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `THE_ARCHIVE_DATA.json`;
+            a.click();
+            showToast("Database Exported");
+        }
+
+        // 重要：修復匯入邏輯
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    
+                    if (!Array.isArray(importedData)) {
+                        throw new Error("格式不正確");
+                    }
+
+                    if (confirm(`確認匯入 ${importedData.length} 筆資料？此動作會覆蓋現有數據。`)) {
+                        collections = importedData;
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
+                        
+                        // 清空目前篩選狀態以確保顯示正確
+                        selectedFilterTags.clear();
+                        document.getElementById('searchInput').value = "";
+                        
+                        // 全域重新渲染
+                        renderGallery(true);
+                        showToast("資料匯入成功");
+                    }
+                } catch (err) {
+                    console.error("Import error:", err);
+                    showToast("匯入失敗：檔案格式錯誤");
+                } finally {
+                    // 重置 input 以便下次選擇同一檔案時仍能觸發 change
+                    e.target.value = "";
+                }
+            };
+
+            reader.onerror = function() {
+                showToast("讀取檔案時發生錯誤");
+            };
+
+            reader.readAsText(file);
+        }
+
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg;
-            t.classList.replace('opacity-0', 'opacity-100');
-            setTimeout(() => t.classList.replace('opacity-100', 'opacity-0'), 2000);
+            t.style.opacity = "1";
+            setTimeout(() => t.style.opacity = "0", 3000);
         }
 
         renderGallery();
