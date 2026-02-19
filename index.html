@@ -22,12 +22,50 @@
             color: var(--mag-white);
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
+            overflow: hidden; 
             -webkit-font-smoothing: antialiased;
         }
 
         .serif-bold { font-family: 'Noto Serif TC', serif; }
         .bodoni { font-family: 'Bodoni Moda', serif; }
+
+        /* 登入介面特效 */
+        #authOverlay {
+            position: fixed;
+            inset: 0;
+            background-color: var(--mag-black);
+            z-index: 500;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.8s cubic-bezier(0.8, 0, 0.2, 1);
+        }
+        
+        .auth-card {
+            background: linear-gradient(145deg, #111, #050505);
+            border: 1px solid var(--mag-gray);
+            padding: 3rem;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+        }
+
+        .auth-input {
+            background: #000;
+            border: 1px solid var(--mag-gray);
+            color: var(--mag-accent);
+            text-align: center;
+            letter-spacing: 1em;
+            font-weight: 900;
+            transition: all 0.3s;
+        }
+        .auth-input:focus {
+            border-color: var(--mag-accent);
+            box-shadow: 0 0 20px rgba(197, 160, 89, 0.2);
+            outline: none;
+        }
 
         /* 骨架屏動畫 */
         @keyframes shimmer {
@@ -41,7 +79,16 @@
             border-radius: 12px;
         }
 
-        /* 抽屜基礎樣式 */
+        /* 錯誤震動 */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* 抽屜樣式 */
         .drawer {
             position: fixed;
             top: 0;
@@ -57,16 +104,12 @@
         }
         .drawer.open { transform: translateX(0); }
 
-        #filterDrawer { width: 320px; }
-        #drawer { width: 100%; max-width: 600px; }
-
-        /* 卡片與圖片 */
         .entry-card {
             background: var(--mag-dark);
             border: 1px solid var(--mag-gray);
             border-radius: 12px;
             overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: all 0.4s;
             display: flex;
             flex-direction: column;
             height: 100%;
@@ -77,15 +120,6 @@
             box-shadow: 0 15px 35px rgba(197, 160, 89, 0.15);
         }
 
-        .media-wrapper {
-            position: relative;
-            aspect-ratio: 16/9;
-            overflow: hidden;
-            background: #000;
-            border-bottom: 1px solid var(--mag-gray);
-        }
-
-        /* 自定義確認視窗 */
         #confirmModal {
             position: fixed;
             inset: 0;
@@ -93,27 +127,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 200;
+            z-index: 600;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
-            backdrop-blur: 4px;
+            backdrop-filter: blur(4px);
         }
         #confirmModal.open { opacity: 1; pointer-events: auto; }
-
-        .action-btn {
-            height: 36px;
-            padding: 0 16px;
-            background: rgba(30, 30, 30, 0.8);
-            border: 1px solid var(--mag-gray);
-            border-radius: 6px;
-            color: var(--mag-accent);
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            transition: all 0.3s ease;
-        }
-        .action-btn:hover { background: var(--mag-accent); color: #000; }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--mag-accent); border-radius: 10px; }
@@ -121,48 +141,58 @@
 </head>
 <body class="pb-20">
 
-    <!-- 啟動封面 -->
-    <div id="landingCover">
-        <div class="text-center px-6">
-            <h1 class="text-6xl md:text-9xl serif-bold text-[#c5a059] leading-none mb-4">ARCHIVE</h1>
-            <p class="bodoni text-lg italic text-zinc-500 tracking-[0.4em]">OBSIDIAN GOLD EDITION</p>
-            <button onclick="enterVault()" class="mt-12 border border-[#c5a059] text-[#c5a059] px-12 py-4 text-[10px] font-black tracking-[0.5em] uppercase transition-all hover:bg-[#c5a059] hover:text-black">解密進入</button>
+    <!-- 登入介面 (Auth Overlay) -->
+    <div id="authOverlay">
+        <div class="auth-card" id="authCard">
+            <div class="mb-8">
+                <div class="text-[#c5a059] mb-4 flex justify-center">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+                <h2 class="serif-bold text-3xl text-white tracking-widest uppercase">Vault Security</h2>
+                <p class="text-[9px] text-zinc-500 uppercase tracking-[0.3em] mt-2">請輸入授權金鑰以解鎖存取</p>
+            </div>
+            <div class="space-y-6">
+                <input type="password" id="vaultKey" maxlength="4" class="auth-input w-full py-4 text-2xl rounded-xl" placeholder="••••" autofocus onkeyup="if(this.value.length==4) validateAuth()">
+                <button onclick="validateAuth()" class="w-full bg-[#c5a059] text-black py-4 font-black text-[10px] uppercase tracking-[0.4em] rounded-xl hover:bg-white transition-all shadow-xl">解鎖系統</button>
+            </div>
+            <p class="mt-10 text-[8px] text-zinc-700 uppercase tracking-widest">Encrypted by Obsidian Gold Protocol</p>
         </div>
     </div>
 
-    <!-- 導航欄 -->
-    <nav class="container mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center border-b border-zinc-900 gap-6">
-        <div class="flex items-center gap-6">
-            <button onclick="toggleFilterDrawer(true)" class="text-[#c5a059] hover:text-white transition-all">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <div class="flex flex-col">
-                <h2 class="serif-bold text-3xl text-white tracking-tighter">THE ARCHIVE<span class="text-[#c5a059]">.</span></h2>
-                <span id="navStat" class="text-[9px] font-bold text-zinc-600 tracking-widest uppercase">Initializing Vault</span>
+    <!-- 主應用介面 -->
+    <div id="appContent" style="visibility: hidden;">
+        <nav class="container mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center border-b border-zinc-900 gap-6">
+            <div class="flex items-center gap-6">
+                <button onclick="toggleFilterDrawer(true)" class="text-[#c5a059] hover:text-white transition-all">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="flex flex-col">
+                    <h2 class="serif-bold text-3xl text-white tracking-tighter">THE ARCHIVE<span class="text-[#c5a059]">.</span></h2>
+                    <span id="navStat" class="text-[9px] font-bold text-zinc-600 tracking-widest uppercase">Encrypted Mode</span>
+                </div>
             </div>
-        </div>
-        
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-4">
-                <button onclick="exportData()" class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase">匯出</button>
-                <label class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase cursor-pointer">
-                    匯入 <input type="file" id="importInput" class="hidden" accept=".json" onchange="importData(event)">
-                </label>
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <button onclick="logout()" class="text-[10px] font-bold text-red-800 hover:text-red-500 transition-colors uppercase">登出</button>
+                    <button onclick="exportData()" class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase">匯出</button>
+                    <label class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase cursor-pointer">
+                        匯入 <input type="file" class="hidden" accept=".json" onchange="importData(event)">
+                    </label>
+                </div>
+                <button onclick="openDrawer()" class="bg-[#c5a059] text-black px-6 py-3 font-black text-[10px] uppercase hover:bg-white transition-all shadow-lg">+ 新增檔案</button>
             </div>
-            <button onclick="openDrawer()" class="bg-[#c5a059] text-black px-6 py-3 font-black text-[10px] uppercase hover:bg-white transition-all shadow-lg">+ 新增檔案</button>
-        </div>
-    </nav>
+        </nav>
 
-    <!-- 主畫廊區域 -->
-    <div class="container mx-auto px-6 mt-12 min-h-[60vh]">
-        <main id="gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></main>
+        <div class="container mx-auto px-6 mt-12 min-h-[60vh]">
+            <main id="gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></main>
+        </div>
     </div>
 
     <!-- 黑色遮罩 -->
     <div id="overlay" onclick="closeAllDrawers()" class="fixed inset-0 bg-black/90 opacity-0 pointer-events-none transition-opacity duration-500 z-50 backdrop-blur-md"></div>
 
     <!-- 篩選抽屜 -->
-    <div id="filterDrawer" class="drawer p-8">
+    <div id="filterDrawer" class="drawer p-8 w-[320px]">
         <div class="flex justify-between items-center mb-10">
             <h3 class="serif-bold text-xl text-white uppercase tracking-widest">篩選中心</h3>
             <button onclick="toggleFilterDrawer(false)" class="text-zinc-500 hover:text-white">
@@ -170,87 +200,124 @@
             </button>
         </div>
         <div class="space-y-8">
-            <div class="relative">
-                <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="搜尋名稱、番號..." 
-                    class="w-full bg-black/40 border border-zinc-800 rounded-lg p-3 text-xs text-white outline-none focus:border-[#c5a059]">
-            </div>
+            <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="搜尋名稱、番號..." 
+                class="w-full bg-black/40 border border-zinc-800 rounded-lg p-3 text-xs text-white outline-none focus:border-[#c5a059]">
             <div id="filterTagsContainer"></div>
         </div>
     </div>
 
     <!-- 編輯抽屜 -->
-    <div id="drawer" class="drawer p-10">
+    <div id="drawer" class="drawer p-10 w-full max-w-[600px]">
         <div class="flex justify-between items-center mb-12">
-            <h3 class="serif-bold text-4xl text-white uppercase tracking-tighter">檔案編譯</h3>
+            <h3 class="serif-bold text-4xl text-white uppercase">檔案編譯</h3>
             <button onclick="closeDrawer()" class="text-zinc-500 hover:text-white">
                 <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        <div class="space-y-8">
-            <input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-2xl text-white outline-none" placeholder="女優名稱 / 名稱">
-            <input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="Serial Number / 番號">
-            <input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="Tags (空格分隔)">
+        <div class="space-y-6">
+            <input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-2xl text-white outline-none" placeholder="名稱">
+            <input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="番號">
+            <input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="標籤 (空格分隔)">
             <div class="space-y-4">
-                <label class="text-[10px] text-zinc-600 uppercase tracking-widest block">圖片預覽</label>
                 <input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-transparent border-b border-zinc-800 py-2 text-zinc-500 text-xs outline-none" placeholder="Image URL">
                 <div id="editPreview" class="w-full aspect-video bg-zinc-900/50 rounded-lg border border-zinc-800 flex items-center justify-center overflow-hidden">
-                    <span class="text-zinc-700 text-[10px] uppercase font-bold">No Image Detected</span>
+                    <span class="text-zinc-700 text-[10px] uppercase font-bold">預覽區域</span>
                 </div>
             </div>
-            <input type="text" id="urlInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-[#c5a059] text-xs outline-none" placeholder="External URL / 連結">
-            <div class="pt-10 flex flex-col gap-4">
-                <button onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-5 font-black uppercase tracking-widest hover:bg-white transition-all">保存變更</button>
-                <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full text-zinc-700 text-[10px] uppercase font-bold hover:text-red-500 transition-colors hidden">永久刪除此筆記錄</button>
+            <input type="text" id="urlInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-[#c5a059] text-xs outline-none" placeholder="外部連結連結">
+            <div class="pt-6 flex flex-col gap-4">
+                <button onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-4 font-black uppercase tracking-widest hover:bg-white transition-all">保存</button>
+                <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full text-zinc-700 text-[10px] uppercase font-bold hover:text-red-500 hidden">永久刪除</button>
             </div>
         </div>
     </div>
 
-    <!-- 自定義確認視窗 -->
+    <!-- 刪除確認視窗 -->
     <div id="confirmModal">
-        <div class="bg-zinc-950 border border-zinc-800 p-8 rounded-2xl max-w-sm w-full mx-6 text-center shadow-2xl">
-            <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-            </div>
-            <h4 class="serif-bold text-2xl text-white mb-2">確定要抹除嗎？</h4>
-            <p class="text-zinc-500 text-xs mb-8">此動作無法復原，檔案將從您的 Vault 中永久消失。</p>
+        <div class="bg-zinc-950 border border-zinc-800 p-8 rounded-2xl max-w-sm w-full mx-6 text-center">
+            <h4 class="serif-bold text-2xl text-white mb-2">確定刪除？</h4>
+            <p class="text-zinc-500 text-xs mb-8">此動作無法復原。</p>
             <div class="grid grid-cols-2 gap-4">
-                <button onclick="closeConfirm()" class="bg-zinc-900 text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest">取消</button>
-                <button onclick="executeDelete()" class="bg-red-600 text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest">確定刪除</button>
+                <button onclick="closeConfirm()" class="bg-zinc-900 text-white py-3 rounded-lg text-[10px] uppercase">取消</button>
+                <button onclick="executeDelete()" class="bg-red-600 text-white py-3 rounded-lg text-[10px] uppercase">確定</button>
             </div>
         </div>
     </div>
 
     <!-- 提示框 -->
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-10 py-4 text-[10px] font-black rounded-full opacity-0 transition-all z-[100] uppercase tracking-widest shadow-2xl">Notification</div>
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-10 py-4 text-[10px] font-black rounded-full opacity-0 transition-all z-[600] uppercase tracking-widest shadow-2xl">Notification</div>
 
     <script>
+        // 安全配置
         const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
+        const VAULT_AUTH_KEY = '8888'; 
+        const SESSION_AUTH_FLAG = 'VAULT_UNLOCKED';
+
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentId = null;
         let selectedFilterTags = new Set();
         let searchTimeout = null;
 
-        function enterVault() {
-            document.getElementById('landingCover').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('landingCover').style.display = 'none';
-                renderGallery();
-            }, 1000);
+        // --- 身分驗證邏輯 ---
+        window.onload = function() {
+            if (sessionStorage.getItem(SESSION_AUTH_FLAG) === 'true') {
+                showAppDirectly();
+            }
+        };
+
+        function validateAuth() {
+            const input = document.getElementById('vaultKey');
+            const card = document.getElementById('authCard');
+            
+            if (input.value === VAULT_AUTH_KEY) {
+                sessionStorage.setItem(SESSION_AUTH_FLAG, 'true');
+                unlockVault();
+            } else {
+                input.value = "";
+                card.classList.add('shake');
+                showToast("密鑰錯誤");
+                setTimeout(() => card.classList.remove('shake'), 400);
+            }
         }
 
-        // 搜尋防震 (Debounce)
+        function unlockVault() {
+            const auth = document.getElementById('authOverlay');
+            auth.style.opacity = '0';
+            auth.style.pointerEvents = 'none';
+            
+            // 延遲顯示主應用內容，讓過渡更平滑
+            setTimeout(() => {
+                auth.style.display = 'none';
+                document.getElementById('appContent').style.visibility = 'visible';
+                document.body.style.overflow = 'auto';
+                renderGallery();
+            }, 800);
+        }
+
+        function showAppDirectly() {
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('appContent').style.visibility = 'visible';
+            document.body.style.overflow = 'auto';
+            renderGallery();
+        }
+
+        function logout() {
+            sessionStorage.removeItem(SESSION_AUTH_FLAG);
+            location.reload();
+        }
+
+        // --- 核心應用邏輯 ---
         function debouncedRender() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => renderGallery(false), 300);
         }
 
-        // 圖片預覽功能
         function previewImage(url) {
             const container = document.getElementById('editPreview');
             if(url.trim()) {
-                container.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\'text-red-900 text-[10px] uppercase font-bold\'>Invalid URL</span>'">`;
+                container.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\'text-red-900 text-[10px] font-bold\'>URL ERROR</span>'">`;
             } else {
-                container.innerHTML = `<span class="text-zinc-700 text-[10px] uppercase font-bold">No Image Detected</span>`;
+                container.innerHTML = `<span class="text-zinc-700 text-[10px] font-bold uppercase">預覽區域</span>`;
             }
         }
 
@@ -308,7 +375,6 @@
             closeConfirm();
         }
 
-        // 自定義刪除確認流程
         function requestDelete() { document.getElementById('confirmModal').classList.add('open'); }
         function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); }
         function executeDelete() {
@@ -348,20 +414,10 @@
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.toLowerCase();
             
-            // 骨架屏顯示
             if(showSkeleton) {
                 gallery.innerHTML = Array(8).fill(0).map(() => `
-                    <div class="entry-card opacity-50">
-                        <div class="media-wrapper skeleton"></div>
-                        <div class="p-5 space-y-3">
-                            <div class="h-6 w-3/4 skeleton"></div>
-                            <div class="h-4 w-1/2 skeleton"></div>
-                            <div class="h-10 w-full skeleton mt-4"></div>
-                        </div>
-                    </div>
+                    <div class="entry-card opacity-50"><div class="aspect-video skeleton"></div><div class="p-5 space-y-3"><div class="h-6 w-3/4 skeleton"></div><div class="h-4 w-1/2 skeleton"></div></div></div>
                 `).join('');
-                
-                // 模擬加載延遲以展示骨架屏
                 setTimeout(() => performRender(query), 400);
             } else {
                 performRender(query);
@@ -376,20 +432,12 @@
                 return matchSearch && matchTags;
             });
 
-            document.getElementById('navStat').innerText = `${collections.length} Total / ${filtered.length} Filtered`;
+            document.getElementById('navStat').innerText = `${filtered.length} RECORDS ACCESSIBLE`;
             gallery.innerHTML = "";
 
-            // 空狀態導引
             if(filtered.length === 0) {
                 gallery.className = "flex flex-col items-center justify-center col-span-full py-20 opacity-40";
-                gallery.innerHTML = `
-                    <div class="text-[#c5a059] mb-6">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    </div>
-                    <h3 class="serif-bold text-2xl uppercase tracking-widest text-white mb-2">未找到相關記錄</h3>
-                    <p class="text-[10px] uppercase tracking-[0.2em] mb-8">No records matching your search matrix.</p>
-                    <button onclick="clearSearch()" class="border border-zinc-800 px-8 py-3 text-[9px] font-black uppercase tracking-widest hover:border-[#c5a059] transition-all">重置搜尋</button>
-                `;
+                gallery.innerHTML = `<h3 class="serif-bold text-2xl uppercase text-white">No Results</h3><button onclick="clearSearch()" class="mt-4 border border-zinc-800 px-6 py-2 text-[9px] uppercase">Reset</button>`;
                 return;
             } else {
                 gallery.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8";
@@ -399,15 +447,15 @@
                 const card = document.createElement('div');
                 card.className = "entry-card group";
                 card.innerHTML = `
-                    <div class="media-wrapper">
+                    <div class="media-wrapper aspect-video overflow-hidden border-b border-zinc-900">
                         <img src="${item.img || 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.src='https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'">
                     </div>
                     <div class="p-5 flex flex-col flex-grow">
-                        <h3 class="serif-bold text-lg text-white mb-1 uppercase truncate">${item.name}</h3>
-                        <p class="text-[10px] text-[#c5a059] font-mono mb-4 font-bold tracking-widest">${item.code || "PRIVATE"}</p>
-                        <div class="mt-auto flex gap-2 border-t border-zinc-900 pt-4">
-                            <button onclick="openDrawer(${item.id})" class="action-btn flex-grow">編輯</button>
-                            ${item.url ? `<button onclick="window.open('${item.url}', '_blank')" class="action-btn flex-grow">跳轉</button>` : ''}
+                        <h3 class="serif-bold text-lg text-white truncate">${item.name}</h3>
+                        <p class="text-[10px] text-[#c5a059] font-mono font-bold tracking-widest">${item.code || "PRIVATE"}</p>
+                        <div class="mt-4 flex gap-2 pt-4 border-t border-zinc-900/50">
+                            <button onclick="openDrawer(${item.id})" class="flex-grow py-2 bg-zinc-900 text-zinc-400 text-[10px] font-bold uppercase hover:bg-[#c5a059] hover:text-black transition-colors rounded">編輯</button>
+                            ${item.url ? `<button onclick="window.open('${item.url}', '_blank')" class="px-4 py-2 border border-zinc-800 text-[#c5a059] text-[10px] font-bold uppercase hover:border-[#c5a059] transition-colors rounded">連結</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -445,7 +493,7 @@
             const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `THE_ARCHIVE_DATA.json`;
+            a.download = `THE_ARCHIVE_BACKUP.json`;
             a.click();
             showToast("Backup Created");
         }
@@ -459,9 +507,9 @@
                         collections = data;
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
                         renderGallery();
-                        showToast("Data Imported");
+                        showToast("Import Successful");
                     }
-                } catch(e) { showToast("Invalid Data File"); }
+                } catch(e) { showToast("Invalid Data"); }
             };
             reader.readAsText(e.target.files[0]);
         }
@@ -472,9 +520,6 @@
             t.style.opacity = "1";
             setTimeout(() => t.style.opacity = "0", 3000);
         }
-
-        // 初始加載延遲一點點以展示骨架屏質感
-        setTimeout(() => { if(document.getElementById('landingCover').style.display === 'none') renderGallery(); }, 100);
     </script>
 </body>
 </html>
