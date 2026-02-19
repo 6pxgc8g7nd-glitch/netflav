@@ -29,19 +29,17 @@
         .serif-bold { font-family: 'Noto Serif TC', serif; }
         .bodoni { font-family: 'Bodoni Moda', serif; }
 
-        /* 啟動封面 */
-        #landingCover {
-            position: fixed;
-            inset: 0;
-            background-color: var(--mag-black);
-            z-index: 200;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: all 1.2s cubic-bezier(0.8, 0, 0.2, 1);
+        /* 骨架屏動畫 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
         }
-        #landingCover.hidden { transform: scale(1.1); opacity: 0; pointer-events: none; }
+        .skeleton {
+            background: linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+            border-radius: 12px;
+        }
 
         /* 抽屜基礎樣式 */
         .drawer {
@@ -62,7 +60,7 @@
         #filterDrawer { width: 320px; }
         #drawer { width: 100%; max-width: 600px; }
 
-        /* 卡片設計 */
+        /* 卡片與圖片 */
         .entry-card {
             background: var(--mag-dark);
             border: 1px solid var(--mag-gray);
@@ -86,12 +84,22 @@
             background: #000;
             border-bottom: 1px solid var(--mag-gray);
         }
-        .media-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.8s ease;
+
+        /* 自定義確認視窗 */
+        #confirmModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-blur: 4px;
         }
+        #confirmModal.open { opacity: 1; pointer-events: auto; }
 
         .action-btn {
             height: 36px;
@@ -102,50 +110,10 @@
             color: var(--mag-accent);
             font-size: 11px;
             font-weight: 700;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            text-transform: uppercase;
             transition: all 0.3s ease;
-            text-transform: uppercase;
         }
-        .action-btn:hover { 
-            background: var(--mag-accent); 
-            color: #000; 
-            border-color: var(--mag-accent);
-        }
-
-        /* 標籤過濾樣式 */
-        .filter-tag {
-            width: 100%;
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            border: 1px solid rgba(255,255,255,0.05);
-            background: rgba(255, 255, 255, 0.02);
-            color: #888;
-            transition: all 0.25s ease;
-            text-align: left;
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        .filter-tag.active {
-            background: rgba(197, 160, 89, 0.15);
-            color: var(--mag-accent);
-            border-color: rgba(197, 160, 89, 0.4);
-        }
-
-        .search-clear {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #444;
-            cursor: pointer;
-        }
+        .action-btn:hover { background: var(--mag-accent); color: #000; }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--mag-accent); border-radius: 10px; }
@@ -158,7 +126,7 @@
         <div class="text-center px-6">
             <h1 class="text-6xl md:text-9xl serif-bold text-[#c5a059] leading-none mb-4">ARCHIVE</h1>
             <p class="bodoni text-lg italic text-zinc-500 tracking-[0.4em]">OBSIDIAN GOLD EDITION</p>
-            <button id="enterBtn" onclick="enterVault()" class="mt-12 border border-[#c5a059] text-[#c5a059] px-12 py-4 text-[10px] font-black tracking-[0.5em] uppercase transition-all hover:bg-[#c5a059] hover:text-black">解密進入</button>
+            <button onclick="enterVault()" class="mt-12 border border-[#c5a059] text-[#c5a059] px-12 py-4 text-[10px] font-black tracking-[0.5em] uppercase transition-all hover:bg-[#c5a059] hover:text-black">解密進入</button>
         </div>
     </div>
 
@@ -170,26 +138,23 @@
             </button>
             <div class="flex flex-col">
                 <h2 class="serif-bold text-3xl text-white tracking-tighter">THE ARCHIVE<span class="text-[#c5a059]">.</span></h2>
-                <span id="navStat" class="text-[9px] font-bold text-zinc-600 tracking-widest uppercase">Vault Ready</span>
+                <span id="navStat" class="text-[9px] font-bold text-zinc-600 tracking-widest uppercase">Initializing Vault</span>
             </div>
         </div>
         
         <div class="flex items-center gap-6">
             <div class="flex items-center gap-4">
-                <button onclick="exportData()" class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors tracking-widest uppercase">匯出</button>
-                <label class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors tracking-widest uppercase cursor-pointer">
+                <button onclick="exportData()" class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase">匯出</button>
+                <label class="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase cursor-pointer">
                     匯入 <input type="file" id="importInput" class="hidden" accept=".json" onchange="importData(event)">
                 </label>
             </div>
-            <div class="h-4 w-[1px] bg-zinc-800 mx-2"></div>
-            <button onclick="openDrawer()" class="bg-[#c5a059] text-black px-6 py-3 font-black text-[10px] tracking-[0.2em] uppercase hover:bg-white transition-all shadow-lg">
-                + 新增檔案
-            </button>
+            <button onclick="openDrawer()" class="bg-[#c5a059] text-black px-6 py-3 font-black text-[10px] uppercase hover:bg-white transition-all shadow-lg">+ 新增檔案</button>
         </div>
     </nav>
 
-    <!-- 主畫廊 -->
-    <div class="container mx-auto px-6 mt-12">
+    <!-- 主畫廊區域 -->
+    <div class="container mx-auto px-6 mt-12 min-h-[60vh]">
         <main id="gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></main>
     </div>
 
@@ -206,35 +171,52 @@
         </div>
         <div class="space-y-8">
             <div class="relative">
-                <input type="text" id="searchInput" oninput="renderGallery(false)" placeholder="搜尋名稱、番號..." 
-                    class="w-full bg-black/40 border border-zinc-800 rounded-lg p-3 pr-10 text-xs text-white outline-none focus:border-[#c5a059]">
-                <span id="searchClearBtn" onclick="clearSearch()" class="search-clear hidden">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </span>
+                <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="搜尋名稱、番號..." 
+                    class="w-full bg-black/40 border border-zinc-800 rounded-lg p-3 text-xs text-white outline-none focus:border-[#c5a059]">
             </div>
             <div id="filterTagsContainer"></div>
-            <div id="statInfo" class="text-[10px] font-bold text-zinc-600 tracking-widest uppercase text-center py-4 bg-black/40 rounded-xl border border-zinc-900">
-                00 RECORDS FOUND
-            </div>
         </div>
     </div>
 
     <!-- 編輯抽屜 -->
     <div id="drawer" class="drawer p-10">
         <div class="flex justify-between items-center mb-12">
-            <h3 class="serif-bold text-4xl text-white">檔案編譯</h3>
+            <h3 class="serif-bold text-4xl text-white uppercase tracking-tighter">檔案編譯</h3>
             <button onclick="closeDrawer()" class="text-zinc-500 hover:text-white">
                 <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
         <div class="space-y-8">
-            <input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-2xl text-white outline-none" placeholder="名稱">
-            <input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="番號">
-            <input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="標籤 (以空格分隔)">
-            <input type="text" id="imgInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-zinc-500 text-xs outline-none" placeholder="圖片 URL">
-            <input type="text" id="urlInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-[#c5a059] text-xs outline-none" placeholder="外部連結">
-            <button onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-5 font-black uppercase tracking-widest hover:bg-white transition-all">保存變更</button>
-            <button id="drawerDeleteBtn" onclick="deleteItem()" class="w-full text-zinc-700 text-[10px] uppercase font-bold hover:text-red-500 transition-colors hidden">永久刪除</button>
+            <input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-2xl text-white outline-none" placeholder="女優名稱 / 名稱">
+            <input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="Serial Number / 番號">
+            <input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-white outline-none" placeholder="Tags (空格分隔)">
+            <div class="space-y-4">
+                <label class="text-[10px] text-zinc-600 uppercase tracking-widest block">圖片預覽</label>
+                <input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-transparent border-b border-zinc-800 py-2 text-zinc-500 text-xs outline-none" placeholder="Image URL">
+                <div id="editPreview" class="w-full aspect-video bg-zinc-900/50 rounded-lg border border-zinc-800 flex items-center justify-center overflow-hidden">
+                    <span class="text-zinc-700 text-[10px] uppercase font-bold">No Image Detected</span>
+                </div>
+            </div>
+            <input type="text" id="urlInput" class="w-full bg-transparent border-b border-zinc-800 py-2 text-[#c5a059] text-xs outline-none" placeholder="External URL / 連結">
+            <div class="pt-10 flex flex-col gap-4">
+                <button onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-5 font-black uppercase tracking-widest hover:bg-white transition-all">保存變更</button>
+                <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full text-zinc-700 text-[10px] uppercase font-bold hover:text-red-500 transition-colors hidden">永久刪除此筆記錄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定義確認視窗 -->
+    <div id="confirmModal">
+        <div class="bg-zinc-950 border border-zinc-800 p-8 rounded-2xl max-w-sm w-full mx-6 text-center shadow-2xl">
+            <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </div>
+            <h4 class="serif-bold text-2xl text-white mb-2">確定要抹除嗎？</h4>
+            <p class="text-zinc-500 text-xs mb-8">此動作無法復原，檔案將從您的 Vault 中永久消失。</p>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="closeConfirm()" class="bg-zinc-900 text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest">取消</button>
+                <button onclick="executeDelete()" class="bg-red-600 text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest">確定刪除</button>
+            </div>
         </div>
     </div>
 
@@ -246,10 +228,30 @@
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentId = null;
         let selectedFilterTags = new Set();
+        let searchTimeout = null;
 
         function enterVault() {
-            document.getElementById('landingCover').classList.add('hidden');
-            document.body.style.overflow = 'auto';
+            document.getElementById('landingCover').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('landingCover').style.display = 'none';
+                renderGallery();
+            }, 1000);
+        }
+
+        // 搜尋防震 (Debounce)
+        function debouncedRender() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => renderGallery(false), 300);
+        }
+
+        // 圖片預覽功能
+        function previewImage(url) {
+            const container = document.getElementById('editPreview');
+            if(url.trim()) {
+                container.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\'text-red-900 text-[10px] uppercase font-bold\'>Invalid URL</span>'">`;
+            } else {
+                container.innerHTML = `<span class="text-zinc-700 text-[10px] uppercase font-bold">No Image Detected</span>`;
+            }
         }
 
         function toggleFilterDrawer(open) {
@@ -259,7 +261,6 @@
                 drawer.classList.add('open');
                 overlay.classList.replace('opacity-0', 'opacity-100');
                 overlay.classList.remove('pointer-events-none');
-                renderTags();
             } else {
                 drawer.classList.remove('open');
                 if(!document.getElementById('drawer').classList.contains('open')) {
@@ -284,9 +285,11 @@
                 document.getElementById('tagsInput').value = (item.tags || []).join(' ');
                 document.getElementById('imgInput').value = item.img || "";
                 document.getElementById('urlInput').value = item.url || "";
+                previewImage(item.img || "");
                 document.getElementById('drawerDeleteBtn').classList.remove('hidden');
             } else {
                 ['nameInput','codeInput','tagsInput','imgInput','urlInput'].forEach(k => document.getElementById(k).value = "");
+                previewImage("");
                 document.getElementById('drawerDeleteBtn').classList.add('hidden');
             }
         }
@@ -302,11 +305,24 @@
         function closeAllDrawers() {
             toggleFilterDrawer(false);
             closeDrawer();
+            closeConfirm();
+        }
+
+        // 自定義刪除確認流程
+        function requestDelete() { document.getElementById('confirmModal').classList.add('open'); }
+        function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); }
+        function executeDelete() {
+            collections = collections.filter(i => i.id != currentId);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
+            closeConfirm();
+            closeDrawer();
+            renderGallery();
+            showToast("Record Erased");
         }
 
         function saveItem() {
             const name = document.getElementById('nameInput').value.trim();
-            if(!name) return showToast("請輸入名稱");
+            if(!name) return showToast("名稱為必填");
             const data = {
                 id: currentId || Date.now(),
                 name,
@@ -328,128 +344,126 @@
             showToast("Vault Updated");
         }
 
-        function deleteItem() {
-            if(!confirm("確定要永久抹除此檔案？")) return;
-            collections = collections.filter(i => i.id != currentId);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
-            renderGallery();
-            closeDrawer();
-            showToast("Record Erased");
-        }
-
-        function toggleTag(tag) {
-            if(selectedFilterTags.has(tag)) selectedFilterTags.delete(tag);
-            else selectedFilterTags.add(tag);
-            renderTags();
-            renderGallery(false);
-        }
-
-        function clearSearch() {
-            document.getElementById('searchInput').value = "";
-            renderGallery(false);
-        }
-
-        function renderTags() {
-            const tagCounts = {};
-            collections.forEach(i => (i.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1));
-            const container = document.getElementById('filterTagsContainer');
-            container.innerHTML = "";
-            Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).forEach(tag => {
-                const isActive = selectedFilterTags.has(tag);
-                const btn = document.createElement('button');
-                btn.className = `filter-tag ${isActive ? 'active' : ''}`;
-                btn.innerHTML = `<span># ${tag}</span><span>${tagCounts[tag]}</span>`;
-                btn.onclick = () => toggleTag(tag);
-                container.appendChild(btn);
-            });
-        }
-
-        function renderGallery(updateTags = true) {
+        function renderGallery(showSkeleton = true) {
+            const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.toLowerCase();
-            document.getElementById('searchClearBtn').classList.toggle('hidden', query === "");
-            if(updateTags) renderTags();
+            
+            // 骨架屏顯示
+            if(showSkeleton) {
+                gallery.innerHTML = Array(8).fill(0).map(() => `
+                    <div class="entry-card opacity-50">
+                        <div class="media-wrapper skeleton"></div>
+                        <div class="p-5 space-y-3">
+                            <div class="h-6 w-3/4 skeleton"></div>
+                            <div class="h-4 w-1/2 skeleton"></div>
+                            <div class="h-10 w-full skeleton mt-4"></div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // 模擬加載延遲以展示骨架屏
+                setTimeout(() => performRender(query), 400);
+            } else {
+                performRender(query);
+            }
+        }
 
+        function performRender(query) {
+            const gallery = document.getElementById('gallery');
             const filtered = collections.filter(i => {
                 const matchSearch = i.name.toLowerCase().includes(query) || (i.code || "").toLowerCase().includes(query);
                 const matchTags = selectedFilterTags.size === 0 || (i.tags || []).some(t => selectedFilterTags.has(t));
                 return matchSearch && matchTags;
             });
 
-            document.getElementById('statInfo').innerText = `${filtered.length} RECORDS FOUND`;
             document.getElementById('navStat').innerText = `${collections.length} Total / ${filtered.length} Filtered`;
-
-            const gallery = document.getElementById('gallery');
             gallery.innerHTML = "";
+
+            // 空狀態導引
+            if(filtered.length === 0) {
+                gallery.className = "flex flex-col items-center justify-center col-span-full py-20 opacity-40";
+                gallery.innerHTML = `
+                    <div class="text-[#c5a059] mb-6">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </div>
+                    <h3 class="serif-bold text-2xl uppercase tracking-widest text-white mb-2">未找到相關記錄</h3>
+                    <p class="text-[10px] uppercase tracking-[0.2em] mb-8">No records matching your search matrix.</p>
+                    <button onclick="clearSearch()" class="border border-zinc-800 px-8 py-3 text-[9px] font-black uppercase tracking-widest hover:border-[#c5a059] transition-all">重置搜尋</button>
+                `;
+                return;
+            } else {
+                gallery.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8";
+            }
+
             filtered.forEach(item => {
                 const card = document.createElement('div');
                 card.className = "entry-card group";
                 card.innerHTML = `
                     <div class="media-wrapper">
-                        <img src="${item.img || 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'}" onerror="this.src='https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'">
+                        <img src="${item.img || 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.src='https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'">
                     </div>
                     <div class="p-5 flex flex-col flex-grow">
                         <h3 class="serif-bold text-lg text-white mb-1 uppercase truncate">${item.name}</h3>
-                        <p class="text-[10px] text-[#c5a059] font-mono mb-4">${item.code || "PRIVATE"}</p>
+                        <p class="text-[10px] text-[#c5a059] font-mono mb-4 font-bold tracking-widest">${item.code || "PRIVATE"}</p>
                         <div class="mt-auto flex gap-2 border-t border-zinc-900 pt-4">
                             <button onclick="openDrawer(${item.id})" class="action-btn flex-grow">編輯</button>
-                            ${item.url ? `<button onclick="window.open('${item.url}', '_blank')" class="action-btn flex-grow">查看</button>` : ''}
+                            ${item.url ? `<button onclick="window.open('${item.url}', '_blank')" class="action-btn flex-grow">跳轉</button>` : ''}
                         </div>
                     </div>
                 `;
                 gallery.appendChild(card);
             });
+            renderTags();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = "";
+            selectedFilterTags.clear();
+            renderGallery();
+        }
+
+        function renderTags() {
+            const tagCounts = {};
+            collections.forEach(i => (i.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1));
+            const container = document.getElementById('filterTagsContainer');
+            if(!container) return;
+            container.innerHTML = "";
+            Object.keys(tagCounts).sort((a,b) => tagCounts[b] - tagCounts[a]).forEach(tag => {
+                const btn = document.createElement('button');
+                btn.className = `w-full p-3 rounded-lg text-[10px] uppercase font-bold mb-2 flex justify-between border ${selectedFilterTags.has(tag) ? 'bg-[#c5a059]/10 border-[#c5a059] text-[#c5a059]' : 'bg-black/40 border-zinc-800 text-zinc-500'}`;
+                btn.innerHTML = `<span># ${tag}</span><span>${tagCounts[tag]}</span>`;
+                btn.onclick = () => {
+                    if(selectedFilterTags.has(tag)) selectedFilterTags.delete(tag);
+                    else selectedFilterTags.add(tag);
+                    renderGallery(false);
+                };
+                container.appendChild(btn);
+            });
         }
 
         function exportData() {
             const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
+            a.href = URL.createObjectURL(blob);
             a.download = `THE_ARCHIVE_DATA.json`;
             a.click();
-            showToast("Database Exported");
+            showToast("Backup Created");
         }
 
-        // 重要：修復匯入邏輯
         function importData(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = (ev) => {
                 try {
-                    const importedData = JSON.parse(event.target.result);
-                    
-                    if (!Array.isArray(importedData)) {
-                        throw new Error("格式不正確");
-                    }
-
-                    if (confirm(`確認匯入 ${importedData.length} 筆資料？此動作會覆蓋現有數據。`)) {
-                        collections = importedData;
+                    const data = JSON.parse(ev.target.result);
+                    if(Array.isArray(data)) {
+                        collections = data;
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
-                        
-                        // 清空目前篩選狀態以確保顯示正確
-                        selectedFilterTags.clear();
-                        document.getElementById('searchInput').value = "";
-                        
-                        // 全域重新渲染
-                        renderGallery(true);
-                        showToast("資料匯入成功");
+                        renderGallery();
+                        showToast("Data Imported");
                     }
-                } catch (err) {
-                    console.error("Import error:", err);
-                    showToast("匯入失敗：檔案格式錯誤");
-                } finally {
-                    // 重置 input 以便下次選擇同一檔案時仍能觸發 change
-                    e.target.value = "";
-                }
+                } catch(e) { showToast("Invalid Data File"); }
             };
-
-            reader.onerror = function() {
-                showToast("讀取檔案時發生錯誤");
-            };
-
-            reader.readAsText(file);
+            reader.readAsText(e.target.files[0]);
         }
 
         function showToast(msg) {
@@ -459,7 +473,8 @@
             setTimeout(() => t.style.opacity = "0", 3000);
         }
 
-        renderGallery();
+        // 初始加載延遲一點點以展示骨架屏質感
+        setTimeout(() => { if(document.getElementById('landingCover').style.display === 'none') renderGallery(); }, 100);
     </script>
 </body>
 </html>
