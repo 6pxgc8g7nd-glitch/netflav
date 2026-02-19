@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- 讓網頁在手機上也能完美縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cloud Vault V2 - GitHub Database</title>
+    
+    <!-- 引入 Tailwind CSS 用於樣式渲染 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+      /* 防止手機上出現長按選單影響操作 */
+      body {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        background-color: #0d1117;
+      }
+      /* 讓輸入框可以被選取 */
+      input, textarea {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      /* 隱藏捲軸但保有捲動功能 (美觀) */
+      ::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- React 會將所有內容注入到這個 div 中 -->
+    <div id="root"></div>
+
+    <!-- 關鍵：指向你的 React 啟動檔案 -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
