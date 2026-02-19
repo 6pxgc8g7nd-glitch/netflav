@@ -38,7 +38,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: all 0.8s cubic-bezier(0.8, 0, 0.2, 1);
+            transition: all 0.6s cubic-bezier(0.8, 0, 0.2, 1);
         }
         
         .auth-card {
@@ -285,7 +285,6 @@
             auth.style.opacity = '0';
             auth.style.pointerEvents = 'none';
             
-            // 延遲顯示主應用內容，讓過渡更平滑
             setTimeout(() => {
                 auth.style.display = 'none';
                 document.getElementById('appContent').style.visibility = 'visible';
@@ -302,6 +301,7 @@
         }
 
         function logout() {
+            // 清除 Session 並重刷頁面
             sessionStorage.removeItem(SESSION_AUTH_FLAG);
             location.reload();
         }
@@ -454,8 +454,8 @@
                         <h3 class="serif-bold text-lg text-white truncate">${item.name}</h3>
                         <p class="text-[10px] text-[#c5a059] font-mono font-bold tracking-widest">${item.code || "PRIVATE"}</p>
                         <div class="mt-4 flex gap-2 pt-4 border-t border-zinc-900/50">
-                            <button onclick="openDrawer(${item.id})" class="flex-grow py-2 bg-zinc-900 text-zinc-400 text-[10px] font-bold uppercase hover:bg-[#c5a059] hover:text-black transition-colors rounded">編輯</button>
-                            ${item.url ? `<button onclick="window.open('${item.url}', '_blank')" class="px-4 py-2 border border-zinc-800 text-[#c5a059] text-[10px] font-bold uppercase hover:border-[#c5a059] transition-colors rounded">連結</button>` : ''}
+                            <button onclick="openDrawer(${item.id})" class="flex-1 py-3 bg-zinc-900 text-zinc-400 text-[10px] font-bold uppercase hover:bg-[#c5a059] hover:text-black transition-colors rounded">編輯</button>
+                            ${item.url ? `<button onclick="window.open('${item.url}', '_blank')" class="flex-1 py-3 border border-zinc-800 text-[#c5a059] text-[10px] font-bold uppercase hover:border-[#c5a059] transition-colors rounded">連結</button>` : ''}
                         </div>
                     </div>
                 `;
