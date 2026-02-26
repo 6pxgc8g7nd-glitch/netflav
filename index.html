@@ -230,7 +230,10 @@
         </div>
         <div class="space-y-6">
             <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">女優名稱 (多個請用空格區分)</label><input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl text-white outline-none focus:border-[#c5a059]" placeholder="請輸入名稱"></div>
-            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">番號</label><input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="如：SNIS-001"></div>
+            <div class="space-y-1">
+                <label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">番號</label>
+                <input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="如：SNIS-001">
+            </div>
             <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">標籤 (以空格分隔)</label><input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="例如：標籤1 標籤2"></div>
             <div class="space-y-4 pt-4">
                 <label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">預覽圖</label>
@@ -388,7 +391,6 @@
             
             collections.forEach(item => {
                 const rawName = item.name || "";
-                // 核心修改：利用空格拆分名字並去重
                 const individualActors = [...new Set(rawName.split(/\s+/).filter(name => name.trim() !== ""))];
                 individualActors.forEach(name => {
                     actorMap[name] = (actorMap[name] || 0) + 1;
@@ -527,9 +529,16 @@
             });
         }
         function openDrawer(id = null) {
-            currentId = id; document.getElementById('drawer').classList.add('open');
+            currentId = id; 
+            const drawer = document.getElementById('drawer');
+            const codeInput = document.getElementById('codeInput');
+            drawer.classList.add('open');
             document.getElementById('overlay').classList.replace('opacity-0', 'opacity-100');
             document.getElementById('overlay').classList.remove('pointer-events-none');
+            
+            // 重置樣式
+            codeInput.style.color = "";
+
             if(id) {
                 const item = collections.find(i => String(i.id) === String(id));
                 if (item) {
@@ -556,10 +565,31 @@
             const d = document.getElementById('filterDrawer');
             if(open) d.classList.add('open'); else d.classList.remove('open');
         }
+
+        // --- 核心：重複檢查邏輯 ---
+        function checkCodeDuplicate(code) {
+            if (!code) return false;
+            return collections.some(item => 
+                item.code && 
+                item.code.toUpperCase() === code.toUpperCase() && 
+                String(item.id) !== String(currentId)
+            );
+        }
+
         function saveItem() {
             const name = document.getElementById('nameInput').value.trim();
             const code = document.getElementById('codeInput').value.trim().toUpperCase();
+            
             if(!name) return showToast("名稱為必填項目");
+
+            // 重複攔截
+            if (checkCodeDuplicate(code)) {
+                const codeInput = document.getElementById('codeInput');
+                codeInput.parentElement.classList.add('shake');
+                setTimeout(() => codeInput.parentElement.classList.remove('shake'), 500);
+                return showToast(`番號 ${code} 已存在`);
+            }
+
             const data = { 
                 id: currentId || Date.now().toString(), name, code, 
                 tags: document.getElementById('tagsInput').value.split(/\s+/).filter(t => t), 
@@ -574,9 +604,20 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
             renderGallery(); closeDrawer(); showToast("紀錄已保存");
         }
+
+        // --- 番號輸入即時提示 ---
+        document.getElementById('codeInput').addEventListener('input', function(e) {
+            const val = e.target.value.trim();
+            if (checkCodeDuplicate(val)) {
+                this.style.color = "#ef4444"; // 重複顯示紅色
+            } else {
+                this.style.color = ""; // 正常顯示白色/金邊
+            }
+        });
+
         function exportData() {
             const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `THE_ARCHIVE_DATA.json`; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `檔案庫數據.json`; a.click();
         }
         function importData(e) {
             const reader = new FileReader();
