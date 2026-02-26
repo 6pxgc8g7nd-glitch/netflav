@@ -149,13 +149,6 @@
         .input-error { color: #ef4444 !important; }
         .input-ring-error { ring: 1px solid #ef4444 !important; }
 
-        .stealth-toggle {
-            margin-top: 2rem; display: flex; align-items: center; gap: 8px;
-            font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer;
-        }
-        .stealth-toggle input { display: none; }
-        .stealth-toggle .box { width: 12px; height: 12px; border: 1px solid #333; border-radius: 2px; position: relative; }
-        .stealth-toggle input:checked + .box::after { content: ''; position: absolute; inset: 2px; background: var(--nf-red); }
     </style>
 </head>
 <body>
@@ -166,16 +159,8 @@
             <div id="patternBox"><canvas id="patternCanvas" width="300" height="300"></canvas></div>
         </div>
         <p id="authHint" class="text-[10px] text-zinc-600 mt-12 uppercase tracking-[0.3em]">請繪製圖形解鎖</p>
-        
-        <label class="stealth-toggle">
-            <!-- 修改點：加入 checked 屬性 -->
-            <input type="checkbox" id="stealthMode" checked>
-            <div class="box"></div>
-            <span>隱形繪製模式</span>
-        </label>
     </div>
 
-    <!-- ... (Header, AppContent, BottomNav 保持不變) ... -->
     <header class="mobile-header" id="mainHeader" style="visibility: hidden;">
         <div class="header-center-box">
             <div class="brand-logo" id="logoTitle" onclick="refreshAndHome()">Netflav</div>
@@ -271,7 +256,6 @@
                     <button id="layoutBtn2" onclick="updateLayout(2)" class="flex-1 py-3 rounded font-bold text-xs transition-colors">雙欄模式</button>
                 </div>
             </div>
-
             <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
             <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
             <button onclick="lockApp()" class="w-full py-4 text-red-600 font-bold">立即登出鎖定</button>
@@ -281,6 +265,7 @@
     <div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden flex items-center justify-center p-8">
         <div class="text-center"><h4 class="text-xl font-bold mb-8">確定要刪除嗎？</h4><div class="flex flex-col gap-4"><button onclick="executeDelete()" class="w-64 bg-red-600 py-4 font-bold rounded-lg">刪除</button><button onclick="closeConfirm()" class="py-2 text-zinc-500">取消</button></div></div>
     </div>
+    
     <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-2 rounded-full text-xs font-bold z-[7000] opacity-0 transition-all pointer-events-none"></div>
 
     <script>
@@ -294,7 +279,7 @@
 
         let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 1;
 
-        // --- 其餘邏輯封裝保持不變 ---
+        // --- Core Functions ---
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.trim();
@@ -314,12 +299,9 @@
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            <line x1="8" y1="11" x2="14" y2="11" opacity="0.5"></line>
                         </svg>
                     </div>
-                    <p class="text-zinc-500 font-bold text-lg mb-1">找不到相關內容</p>
-                    <p class="text-zinc-700 text-[10px] mb-8 uppercase tracking-[0.2em]">請嘗試其他關鍵字或清除搜尋</p>
-                    ${query ? `<button onclick="clearSearch()" class="px-8 py-3 bg-zinc-900 text-zinc-400 text-[10px] font-black rounded-full border border-zinc-800 active:scale-95 transition-transform tracking-widest">清除搜尋條件</button>` : ''}
+                    <p class="text-zinc-500 font-bold text-lg">找不到相關內容</p>
                 `;
                 document.getElementById('paginationContainer').innerHTML = "";
                 return;
@@ -327,12 +309,11 @@
 
             gallery.className = `grid gap-4 ${currentLayout === 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
             const total = Math.ceil(filtered.length / pageSize);
-            if (currentPage > total && total > 0) currentPage = total;
             const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
             
             gallery.innerHTML = paginated.map(item => `
                 <div class="poster-card">
-                    <img src="${item.img || 'https://images.unsplash.com/photo-1616469829581-73993eb86b02?q=80&w=640'}" loading="lazy" onerror="this.src='https://via.placeholder.com/640x360/111/333?text=NO+IMAGE'">
+                    <img src="${item.img || 'https://via.placeholder.com/640x360/111/333?text=NO+IMAGE'}" loading="lazy">
                     <div class="action-circle-btn card-edit-btn" onclick="openDrawer('${item.id}')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                     </div>
@@ -346,56 +327,26 @@
             renderPagination(total);
         }
 
-        function clearSearch() {
-            const input = document.getElementById('searchInput');
-            input.value = "";
-            currentPage = 1;
-            renderGallery();
-            input.focus();
-        }
-
-        function updateLayout(cols) {
-            currentLayout = cols;
-            localStorage.setItem('NF_LAYOUT_SETTING', cols);
-            const btn1 = document.getElementById('layoutBtn1');
-            const btn2 = document.getElementById('layoutBtn2');
-            if(cols === 1) {
-                btn1.className = "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white";
-                btn2.className = "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500";
-            } else {
-                btn1.className = "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500";
-                btn2.className = "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white";
-            }
-            renderGallery();
-        }
-
         function unlockVault() {
             sessionStorage.setItem('VAULT_UNLOCKED', 'true');
             document.getElementById('authOverlay').style.display = 'none';
             document.getElementById('mainHeader').style.visibility = 'visible';
             document.getElementById('appContent').style.visibility = 'visible';
             document.getElementById('bottomNav').style.visibility = 'visible';
-            isAutoLogoutPaused = false;
-            document.getElementById('statusLed').className = "status-led led-active";
             updateLayout(currentLayout);
             resetLogoutTimer();
         }
 
-        function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 5; 
-        function resetLogoutTimer() { const isLocked = document.getElementById('authOverlay').style.display !== 'none'; if (isAutoLogoutPaused || isLocked) { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
-        function toggleAutoLogout() { isAutoLogoutPaused = !isAutoLogoutPaused; const led = document.getElementById('statusLed'); if (isAutoLogoutPaused) { clearTimeout(logoutTimer); led.className = "status-led led-paused"; showToast("自動登出已暫停"); } else { led.className = "status-led led-active"; showToast("自動登出已恢復"); resetLogoutTimer(); } }
-        ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, () => { if (document.getElementById('authOverlay').style.display === 'none') resetLogoutTimer(); }, { passive: true }));
-        
-        const canvas = document.getElementById('patternCanvas'); const ctx = canvas.getContext('2d');
+        // --- Pattern Canvas Logic (Removed Stealth) ---
+        const canvas = document.getElementById('patternCanvas');
+        const ctx = canvas.getContext('2d');
         for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
         
         function drawPattern() { 
             ctx.clearRect(0, 0, canvas.width, canvas.height); 
-            // 每次繪製都讀取最新 stealthMode 狀態
-            const isStealth = document.getElementById('stealthMode').checked; 
             
-            if (selectedNodes.length > 0 && (!isStealth || isErrorState)) { 
+            // Draw Lines
+            if (selectedNodes.length > 0) { 
                 ctx.beginPath(); 
                 ctx.lineWidth = 6; 
                 ctx.lineCap = 'round'; 
@@ -404,69 +355,149 @@
                 const start = nodes.find(n => n.id === selectedNodes[0]); 
                 ctx.moveTo(start.x, start.y); 
                 for (let i = 1; i < selectedNodes.length; i++) { 
-                    const nodeA = nodes.find(n => n.id === selectedNodes[i-1]); 
                     const nodeB = nodes.find(n => n.id === selectedNodes[i]); 
-                    const xc = (nodeA.x + nodeB.x) / 2; 
-                    const yc = (nodeA.y + nodeB.y) / 2; 
-                    ctx.quadraticCurveTo(nodeA.x, nodeA.y, xc, yc); 
                     ctx.lineTo(nodeB.x, nodeB.y); 
                 } 
                 if (isDrawing && !isErrorState) ctx.lineTo(mousePos.x, mousePos.y); 
                 ctx.stroke(); 
             } 
             
+            // Draw Nodes
             nodes.forEach(node => { 
                 const active = selectedNodes.includes(node.id); 
                 ctx.beginPath(); 
                 ctx.arc(node.x, node.y, 10, 0, Math.PI * 2); 
                 ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222'; 
+                ctx.fill(); 
                 
-                // 隱形模式下只有在錯誤時或未開始選取時顯示點（或是依據原本邏輯完全不顯示點）
-                if (active || !isStealth) { 
-                    ctx.fill(); 
-                    if (active) { 
-                        ctx.beginPath(); 
-                        ctx.arc(node.x, node.y, 18, 0, Math.PI * 2); 
-                        ctx.strokeStyle = isErrorState ? 'rgba(255,0,0,0.3)' : 'rgba(229,9,20,0.2)'; 
-                        ctx.stroke(); 
-                    } 
+                if (active) { 
+                    ctx.beginPath(); 
+                    ctx.arc(node.x, node.y, 18, 0, Math.PI * 2); 
+                    ctx.strokeStyle = isErrorState ? 'rgba(255,0,0,0.3)' : 'rgba(229,9,20,0.2)'; 
+                    ctx.stroke(); 
                 } 
             }); 
             requestAnimationFrame(drawPattern); 
         }
 
         const handleStart = (e) => { if (isErrorState) return; e.preventDefault(); isDrawing = true; selectedNodes = []; };
-        const handleMove = (e) => { if (!isDrawing || isErrorState) return; const rect = canvas.getBoundingClientRect(); const touch = e.touches ? e.touches[0] : e; mousePos = { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) }; nodes.forEach(node => { if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) { selectedNodes.push(node.id); if (window.navigator.vibrate) window.navigator.vibrate(10); } }); };
+        const handleMove = (e) => { 
+            if (!isDrawing || isErrorState) return; 
+            const rect = canvas.getBoundingClientRect(); 
+            const touch = e.touches ? e.touches[0] : e; 
+            mousePos = { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) }; 
+            nodes.forEach(node => { 
+                if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) { 
+                    selectedNodes.push(node.id); 
+                    if (window.navigator.vibrate) window.navigator.vibrate(10); 
+                } 
+            }); 
+        };
         const handleEnd = () => { if (!isDrawing || isErrorState) return; isDrawing = false; if (selectedNodes.join('') === CORRECT_PATTERN) unlockVault(); else if (selectedNodes.length > 0) handleWrongPattern(); };
-        canvas.addEventListener('touchstart', handleStart); canvas.addEventListener('touchmove', handleMove); canvas.addEventListener('touchend', handleEnd); canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
         
-        function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); document.getElementById('authHint').innerText = "圖形錯誤，請重試"; document.getElementById('authHint').classList.add('text-red-600'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; document.getElementById('authHint').innerText = "請繪製圖形解鎖"; document.getElementById('authHint').classList.remove('text-red-600'); }, 600); }
+        canvas.addEventListener('touchstart', handleStart); canvas.addEventListener('touchmove', handleMove); canvas.addEventListener('touchend', handleEnd); 
+        canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
+        
+        function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); document.getElementById('authHint').innerText = "圖形錯誤"; setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; document.getElementById('authHint').innerText = "請繪製圖形解鎖"; }, 600); }
         
         drawPattern();
+
+        // --- Other UI Logic ---
+        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 300; 
+        function resetLogoutTimer() { if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display !== 'none') return; clearTimeout(logoutTimer); logoutTimer = setTimeout(() => lockApp(), AUTO_LOGOUT_SECONDS * 1000); }
+        function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('mainHeader').style.visibility = 'hidden'; document.getElementById('appContent').style.visibility = 'hidden'; document.getElementById('bottomNav').style.visibility = 'hidden'; }
         
-        function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); selectedNodes = []; isErrorState = false; isDrawing = false; document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('mainHeader').style.visibility = 'hidden'; document.getElementById('appContent').style.visibility = 'hidden'; document.getElementById('bottomNav').style.visibility = 'hidden'; if (logoutTimer) clearTimeout(logoutTimer); toggleFilterDrawer(false); closeDrawer(); }
-        function renderPagination(total) { const container = document.getElementById('paginationContainer'); if (total <= 1) { container.innerHTML = ""; return; } let pages = [1]; for (let i = Math.max(2, currentPage - 1); i <= Math.min(total - 1, currentPage + 1); i++) pages.push(i); if (total > 1) pages.push(total); const finalPages = [...new Set(pages)]; container.innerHTML = finalPages.map(p => `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`).join(''); }
-        function switchTab(index) { const container = document.getElementById('pageContainer'); const pages = document.querySelectorAll('.page-content'); container.style.transform = `translateX(-${index * (100/3)}%)`; document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index)); pages.forEach((page, i) => { if (i === index) page.classList.add('active-page'); else page.classList.remove('active-page'); }); window.scrollTo(0, 0); if(index === 1) renderTagCloud(); if(index === 2) renderActorList(); }
-        function changePage(p) { currentPage = p; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); }
-        function openExternalUrl(url, e) { if(e) e.stopPropagation(); window.open(url.startsWith('http') ? url : 'https://' + url, '_blank'); }
-        function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
-        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; t.style.transform = "translate(-50%, -10px)"; setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translate(-50%, 0)"; }, 2000); }
-        function openDrawer(id = null) { currentId = id; document.getElementById('drawer').classList.add('open'); validateCode(""); if(id) { const item = collections.find(i => String(i.id) === String(id)); document.getElementById('nameInput').value = item.name; document.getElementById('codeInput').value = item.code || ""; document.getElementById('urlInput').value = item.url || ""; document.getElementById('tagsInput').value = (item.tags || []).join(' '); document.getElementById('imgInput').value = item.img || ""; document.getElementById('drawerDeleteBtn').classList.remove('hidden'); previewImage(item.img); } else { ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = ""); document.getElementById('drawerDeleteBtn').classList.add('hidden'); previewImage(""); } }
-        function validateCode(val) { const code = val.trim().toUpperCase(); const errorText = document.getElementById('codeError'); const inputField = document.getElementById('codeInput'); if (!code) { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); return; } const isDuplicate = collections.some(item => item.code === code && String(item.id) !== String(currentId)); if (isDuplicate) { errorText.classList.remove('hidden'); inputField.classList.add('input-error', 'input-ring-error'); } else { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); } }
-        function saveItem() { const name = document.getElementById('nameInput').value.trim(); const code = document.getElementById('codeInput').value.trim().toUpperCase(); if(!name) { showToast("請輸入名稱"); return; } if (collections.some(item => item.code === code && code !== "" && String(item.id) !== String(currentId))) { showToast(`番號 ${code} 已存在`); return; } const data = { id: currentId || Date.now().toString(), name, code, url: document.getElementById('urlInput').value.trim(), tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), img: document.getElementById('imgInput').value.trim() }; if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data; else collections.unshift(data); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); closeDrawer(); showToast("已儲存"); }
-        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); showToast("已刪除"); }
-        function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
-        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function switchTab(index) { 
+            const container = document.getElementById('pageContainer'); 
+            container.style.transform = `translateX(-${index * (100/3)}%)`; 
+            document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index)); 
+            if(index === 1) renderTagCloud(); if(index === 2) renderActorList();
+        }
+
+        function updateLayout(cols) {
+            currentLayout = cols;
+            localStorage.setItem('NF_LAYOUT_SETTING', cols);
+            document.getElementById('layoutBtn1').className = cols === 1 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500";
+            document.getElementById('layoutBtn2').className = cols === 2 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500";
+            renderGallery();
+        }
+
+        function openDrawer(id = null) { 
+            currentId = id; document.getElementById('drawer').classList.add('open'); 
+            if(id) {
+                const item = collections.find(i => String(i.id) === String(id));
+                document.getElementById('nameInput').value = item.name;
+                document.getElementById('codeInput').value = item.code || "";
+                document.getElementById('urlInput').value = item.url || "";
+                document.getElementById('tagsInput').value = (item.tags || []).join(' ');
+                document.getElementById('imgInput').value = item.img || "";
+                document.getElementById('drawerDeleteBtn').classList.remove('hidden');
+                previewImage(item.img);
+            } else {
+                ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = "");
+                document.getElementById('drawerDeleteBtn').classList.add('hidden');
+                previewImage("");
+            }
+        }
+
         function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
         function toggleFilterDrawer(open) { document.getElementById('filterDrawer').classList.toggle('open', open); }
-        function previewImage(url) { const container = document.getElementById('editPreview'); if (!url) { container.innerHTML = "PREVIEW"; return; } container.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded" onerror="this.src='https://via.placeholder.com/640x360/111/333?text=INVALID+IMAGE'">`; }
-        function exportData() { const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `netflav.json`; a.click(); }
-        function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); if (Array.isArray(data)) { collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入成功"); } } catch(err) { showToast("匯入失敗：格式錯誤"); } }; reader.readAsText(e.target.files[0]); }
-        function renderTagCloud() { const container = document.getElementById('tagCloud'); const map = {}; collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1)); const sortedTags = Object.entries(map).sort((a,b) => b[1] - a[1]); container.innerHTML = sortedTags.map(([tag, count]) => `<div onclick="filterBySearch('${tag}')" class="tag-pill active:scale-95 transition-transform">${tag} <span class="ml-1 text-[10px] opacity-40">${count}</span></div>`).join(''); }
-        function renderActorList() { const list = document.getElementById('actorList'); const map = {}; collections.forEach(i => { const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1); names.forEach(n => map[n] = (map[n] || 0) + 1); }); const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); list.innerHTML = sorted.map(([name, count]) => { let displayName = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : (name.length > 3 ? name.substring(0, 2) : name.substring(0, 1)); return `<div onclick="filterBySearch('${name}')" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500 tracking-tighter">${displayName}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${name}</span><span class="block text-[9px] text-zinc-600 mt-0.5">${count} 作品</span></div>`; }).join(''); }
-        function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); renderGallery(); }
-        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); };
+        function previewImage(url) { document.getElementById('editPreview').innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover rounded">` : "PREVIEW"; }
+        
+        function saveItem() {
+            const name = document.getElementById('nameInput').value.trim();
+            if(!name) return;
+            const data = {
+                id: currentId || Date.now().toString(),
+                name,
+                code: document.getElementById('codeInput').value.trim().toUpperCase(),
+                url: document.getElementById('urlInput').value.trim(),
+                tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t),
+                img: document.getElementById('imgInput').value.trim()
+            };
+            if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data;
+            else collections.unshift(data);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
+            renderGallery(); closeDrawer();
+        }
+
+        function renderTagCloud() {
+            const map = {}; collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1));
+            document.getElementById('tagCloud').innerHTML = Object.entries(map).map(([tag, count]) => `<div class="tag-pill">${tag} <span class="text-[10px] opacity-40">${count}</span></div>`).join('');
+        }
+
+        function renderActorList() {
+            const map = {}; collections.forEach(i => {
+                const names = i.name.split(/[\s,，、/]+/).filter(n => n.length > 1);
+                names.forEach(n => map[n] = (map[n] || 0) + 1);
+            });
+            document.getElementById('actorList').innerHTML = Object.entries(map).map(([name, count]) => `<div class="flex flex-col items-center"><div class="actor-badge flex items-center justify-center bg-zinc-800 text-zinc-500 font-black">${name.substring(0,2)}</div><span class="text-xs font-bold mt-2">${name}</span></div>`).join('');
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify(collections)], {type: 'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup.json`; a.click();
+        }
+
+        function importData(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                collections = JSON.parse(ev.target.result);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
+                renderGallery();
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+
+        function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
+        function renderPagination(total) {
+            const container = document.getElementById('paginationContainer');
+            if (total <= 1) { container.innerHTML = ""; return; }
+            let pages = []; for(let i=1; i<=total; i++) pages.push(i);
+            container.innerHTML = pages.map(p => `<div onclick="currentPage=${p};renderGallery()" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`).join('');
+        }
+
+        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); else renderGallery(); };
     </script>
 </body>
 </html>
-
