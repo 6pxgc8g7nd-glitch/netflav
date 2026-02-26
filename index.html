@@ -150,18 +150,36 @@
         .stealth-toggle .box { width: 12px; height: 12px; border: 1px solid #333; border-radius: 2px; position: relative; }
         .stealth-toggle input:checked + .box::after { content: ''; position: absolute; inset: 2px; background: var(--nf-red); }
 
-        /* 新增：背景模糊層樣式 */
+        /* --- 強化版隱私模糊層 --- */
         #blurOverlay {
-            position: fixed; inset: 0;
+            position: fixed; 
+            inset: 0;
             background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(25px) saturate(160%);
-            -webkit-backdrop-filter: blur(25px) saturate(160%);
-            z-index: 9000; opacity: 0; visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(35px) saturate(160%) !important;
+            -webkit-backdrop-filter: blur(35px) saturate(160%) !important;
+            z-index: 99999; /* 絕對最高層 */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
         }
-        #blurOverlay.active { opacity: 1; visibility: visible; }
-        #blurOverlay .blur-logo { color: var(--nf-red); font-size: 32px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; opacity: 0.5; }
+        #blurOverlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .blur-logo { 
+            color: var(--nf-red); 
+            font-size: 36px; 
+            font-weight: 900; 
+            letter-spacing: -1px; 
+            text-transform: uppercase; 
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -302,9 +320,38 @@
         const nodes = [];
 
         let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 1;
-        // 新增：模糊設定變數
+        // 隱私模糊設定
         let isBlurEnabled = localStorage.getItem('NF_BLUR_SETTING') !== 'false'; 
 
+        // --- 核心模糊邏輯 ---
+        const blurOverlay = document.getElementById('blurOverlay');
+
+        function showBlur() {
+            if (isBlurEnabled && sessionStorage.getItem('VAULT_UNLOCKED')) {
+                blurOverlay.classList.add('active');
+            }
+        }
+
+        function hideBlur() {
+            setTimeout(() => {
+                blurOverlay.classList.remove('active');
+            }, 150);
+        }
+
+        // 監聽三種事件確保手機端 100% 觸發
+        document.addEventListener('visibilitychange', () => {
+            document.hidden ? showBlur() : hideBlur();
+        });
+        window.addEventListener('blur', showBlur);
+        window.addEventListener('focus', hideBlur);
+
+        function toggleBlurSetting(enabled) {
+            isBlurEnabled = enabled;
+            localStorage.setItem('NF_BLUR_SETTING', enabled);
+            showToast(`隱私模糊已${enabled ? '開啟' : '關閉'}`);
+        }
+
+        // 佈局切換
         function updateLayout(cols) {
             currentLayout = cols;
             localStorage.setItem('NF_LAYOUT_SETTING', cols);
@@ -318,16 +365,9 @@
                 btn2.className = "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white";
             }
             renderGallery();
-            if (sessionStorage.getItem('VAULT_UNLOCKED')) showToast(`已切換至 ${cols} 欄佈局`);
         }
 
-        // 新增：切換模糊功能
-        function toggleBlurSetting(enabled) {
-            isBlurEnabled = enabled;
-            localStorage.setItem('NF_BLUR_SETTING', enabled);
-            showToast(`隱私模糊已${enabled ? '開啟' : '關閉'}`);
-        }
-
+        // 渲染畫廊
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             gallery.className = `grid gap-4 ${currentLayout === 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
@@ -363,28 +403,12 @@
             document.getElementById('bottomNav').style.visibility = 'visible';
             isAutoLogoutPaused = false;
             document.getElementById('statusLed').className = "status-led led-active";
-            
-            // 同步 UI 狀態
             document.getElementById('blurSettingToggle').checked = isBlurEnabled;
-            
             updateLayout(currentLayout);
             resetLogoutTimer();
         }
 
-        // 新增：監聽頁面切換背景的核心邏輯
-        document.addEventListener('visibilitychange', () => {
-            const blurOverlay = document.getElementById('blurOverlay');
-            if (isBlurEnabled && sessionStorage.getItem('VAULT_UNLOCKED')) {
-                if (document.hidden) {
-                    blurOverlay.classList.add('active');
-                } else {
-                    setTimeout(() => blurOverlay.classList.remove('active'), 150);
-                }
-            }
-        });
-
-        // ... [其餘 JS 代碼保持與你提供的內容一致，包含圖形鎖繪製、CRUD 邏輯等]
-        // [為了節省篇幅，此處省略與你代碼完全相同的剩餘 150 行 JS 邏輯]
+        // --- 以下為圖形鎖、自動登出、以及原本的 CRUD 邏輯 ---
         function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
         let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 300; 
         function resetLogoutTimer() { const isLocked = document.getElementById('authOverlay').style.display !== 'none'; if (isAutoLogoutPaused || isLocked) { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
@@ -397,7 +421,7 @@
         const handleMove = (e) => { if (!isDrawing || isErrorState) return; const rect = canvas.getBoundingClientRect(); const touch = e.touches ? e.touches[0] : e; mousePos = { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) }; nodes.forEach(node => { if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) { selectedNodes.push(node.id); if (window.navigator.vibrate) window.navigator.vibrate(10); } }); };
         const handleEnd = () => { if (!isDrawing || isErrorState) return; isDrawing = false; if (selectedNodes.join('') === CORRECT_PATTERN) unlockVault(); else if (selectedNodes.length > 0) handleWrongPattern(); };
         canvas.addEventListener('touchstart', handleStart); canvas.addEventListener('touchmove', handleMove); canvas.addEventListener('touchend', handleEnd); canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
-        function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); document.getElementById('authHint').innerText = "圖形錯誤，請重試"; document.getElementById('authHint').classList.add('text-red-600'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; document.getElementById('authHint').innerText = "請繪製圖形解鎖"; document.getElementById('authHint').classList.remove('text-red-600'); }, 600); }
+        function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); document.getElementById('authHint').innerText = "圖形錯誤"; document.getElementById('authHint').classList.add('text-red-600'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; document.getElementById('authHint').innerText = "請繪製圖形解鎖"; document.getElementById('authHint').classList.remove('text-red-600'); }, 600); }
         drawPattern();
         function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); selectedNodes = []; isErrorState = false; isDrawing = false; document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('mainHeader').style.visibility = 'hidden'; document.getElementById('appContent').style.visibility = 'hidden'; document.getElementById('bottomNav').style.visibility = 'hidden'; if (logoutTimer) clearTimeout(logoutTimer); toggleFilterDrawer(false); closeDrawer(); }
         function renderPagination(total) { const container = document.getElementById('paginationContainer'); if (total <= 1) { container.innerHTML = ""; return; } let pages = [1]; for (let i = Math.max(2, currentPage - 1); i <= Math.min(total - 1, currentPage + 1); i++) pages.push(i); if (total > 1) pages.push(total); const finalPages = [...new Set(pages)]; container.innerHTML = finalPages.map(p => `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`).join(''); }
