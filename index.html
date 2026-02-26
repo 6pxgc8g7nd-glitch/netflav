@@ -54,7 +54,10 @@
             font-weight: 700;
             letter-spacing: 0.1em;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; align-items: center; justify-content: center; height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 32px;
         }
         .nav-tool-btn:hover {
             background: rgba(197, 160, 89, 0.1);
@@ -89,8 +92,6 @@
             overflow-y: auto;
         }
         .drawer.open { transform: translateX(0); }
-
-        #overlay { z-index: 150; }
 
         .entry-card {
             background: var(--mag-dark);
@@ -164,7 +165,7 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
                 <div class="flex flex-col">
-                    <h2 onclick="logout()" title="點擊鎖定" class="serif-bold text-xl md:text-2xl text-white tracking-tighter cursor-pointer hover:text-[#c5a059] transition-colors duration-300 group">
+                    <h2 onclick="goHome()" title="回到首頁" class="serif-bold text-xl md:text-2xl text-white tracking-tighter cursor-pointer hover:text-[#c5a059] transition-colors duration-300 group">
                         ムービー<span class="text-[#c5a059] group-hover:text-white transition-colors duration-300">.</span>
                     </h2>
                     <div class="flex items-center gap-2">
@@ -201,17 +202,10 @@
         <div class="space-y-8">
             <div class="space-y-2">
                 <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">關鍵字</p>
-                <div class="flex gap-2">
-                    <input type="text" id="searchInput" placeholder="名稱或番號" 
-                           class="flex-1 bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#c5a059] transition-all">
-                    <button type="button" onclick="executeSearch()" 
-                            class="bg-[#c5a059] text-black px-5 rounded-xl font-bold text-[11px] uppercase tracking-tighter hover:bg-white transition-all">
-                        搜尋
-                    </button>
-                </div>
+                <input type="text" id="searchInput" oninput="debouncedRender(true)" placeholder="名稱或番號" class="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#c5a059] transition-all">
             </div>
             <div class="space-y-4">
-                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">快速標籤</p>
+                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">標籤</p>
                 <div id="filterTagsContainer" class="flex flex-wrap gap-2"></div>
             </div>
         </div>
@@ -256,36 +250,42 @@
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[11px] font-black rounded-full opacity-0 transition-all z-[600] uppercase tracking-widest shadow-2xl pointer-events-none"></div>
 
     <script>
-        // --- 變數與初始化 ---
+        // 解鎖邏輯與核心變數
         const CORRECT_PATTERN = "0124678";
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
         const patternBox = document.getElementById('patternBox');
-        let isDrawing = false, selectedNodes = [], mousePos = { x: 0, y: 0 };
-        const nodes = [], nodeRadius = 12, hitRadius = 35;
+        let isDrawing = false;
+        let selectedNodes = [];
+        let mousePos = { x: 0, y: 0 };
+        const nodes = [];
+        const nodeRadius = 12;
+        const hitRadius = 35;
         let idleTimer;
-        const IDLE_TIME_LIMIT = 5000; // 5秒自動鎖定
+        const IDLE_TIME_LIMIT = 300000; 
 
         for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) { nodes.push({ id: (i * 3 + j).toString(), x: 60 + j * 100, y: 60 + i * 100 }); }
+            for (let j = 0; j < 3; j++) {
+                nodes.push({ id: (i * 3 + j).toString(), x: 60 + j * 100, y: 60 + i * 100 });
+            }
         }
 
-        // --- 自動鎖定邏輯 ---
         function resetIdleTimer() {
             if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
                 clearTimeout(idleTimer);
                 idleTimer = setTimeout(() => { logout(); }, IDLE_TIME_LIMIT);
             }
         }
+
         ['mousedown', 'mousemove', 'keypress', 'touchstart', 'scroll'].forEach(evt => {
             window.addEventListener(evt, resetIdleTimer, true);
         });
 
-        // --- 圖形解鎖繪製 ---
         function drawPattern() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (selectedNodes.length > 0) {
-                ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#c5a059';
+                ctx.beginPath();
+                ctx.lineWidth = 3; ctx.strokeStyle = '#c5a059';
                 ctx.lineJoin = 'round'; ctx.lineCap = 'round';
                 ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(197, 160, 89, 0.5)';
                 const start = nodes.find(n => n.id === selectedNodes[0]);
@@ -303,7 +303,6 @@
                 ctx.strokeStyle = active ? '#c5a059' : '#2a2a2a'; ctx.lineWidth = 2; ctx.stroke();
                 if (active) {
                     ctx.beginPath(); ctx.arc(node.x, node.y, 5, 0, Math.PI * 2); ctx.fillStyle = '#c5a059'; ctx.fill();
-                    ctx.beginPath(); ctx.arc(node.x, node.y, nodeRadius + 5, 0, Math.PI * 2); ctx.fillStyle = 'rgba(197, 160, 89, 0.1)'; ctx.fill();
                 }
             });
             requestAnimationFrame(drawPattern);
@@ -323,7 +322,6 @@
                 const dist = Math.hypot(mousePos.x - node.x, mousePos.y - node.y);
                 if (dist < hitRadius && !selectedNodes.includes(node.id)) {
                     selectedNodes.push(node.id);
-                    if (navigator.vibrate) navigator.vibrate(10);
                 }
             });
         }
@@ -331,13 +329,7 @@
             if (selectedNodes.join('') === CORRECT_PATTERN) { unlockVault(); }
             else if (selectedNodes.length > 0) {
                 patternBox.classList.add('shake');
-                document.getElementById('authStatusText').innerText = "圖形錯誤，請重新嘗試";
-                document.getElementById('authStatusText').classList.replace('text-zinc-500', 'text-red-500');
-                setTimeout(() => {
-                    patternBox.classList.remove('shake'); selectedNodes = [];
-                    document.getElementById('authStatusText').innerText = "請繪製解鎖圖形以進入存取檔案庫";
-                    document.getElementById('authStatusText').classList.replace('text-red-500', 'text-zinc-500');
-                }, 600);
+                setTimeout(() => { patternBox.classList.remove('shake'); selectedNodes = []; }, 600);
             }
         }
         function resetPattern() { selectedNodes = []; }
@@ -350,17 +342,26 @@
         window.addEventListener('touchend', handleEnd);
         drawPattern();
 
-        // --- 資料核心邏輯 ---
         const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentId = null, selectedFilterTags = new Set(), currentPage = 1, pageSize = 12;
+        let currentId = null;
+        let selectedFilterTags = new Set();
+        let currentPage = 1;
+        const pageSize = 12;
 
-        window.onload = function() {
-            if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') { showAppDirectly(); resetIdleTimer(); }
-        };
+        // 回到主頁函式
+        function goHome() {
+            document.getElementById('searchInput').value = "";
+            selectedFilterTags.clear();
+            currentPage = 1;
+            renderGallery(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast("已重置並返回主頁");
+        }
 
         function unlockVault() {
-            sessionStorage.setItem('VAULT_UNLOCKED', 'true'); resetIdleTimer();
+            sessionStorage.setItem('VAULT_UNLOCKED', 'true');
+            resetIdleTimer();
             const auth = document.getElementById('authOverlay');
             auth.style.opacity = '0'; auth.style.transform = 'scale(1.1)'; auth.style.pointerEvents = 'none';
             setTimeout(() => {
@@ -378,33 +379,19 @@
             renderGallery();
         }
 
-        function logout() { sessionStorage.removeItem('VAULT_UNLOCKED'); location.reload(); }
-
-        // --- 搜尋邏輯優化 ---
-        function executeSearch() {
-            currentPage = 1; 
-            renderGallery(false);
-            showToast("搜尋完成");
+        function logout() {
+            sessionStorage.removeItem('VAULT_UNLOCKED');
+            location.reload();
         }
-
-        // 支援 Enter 鍵搜尋
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') executeSearch();
-        });
 
         function renderGallery(showSkeleton = true) {
             const gallery = document.getElementById('gallery');
-            const queryRaw = document.getElementById('searchInput').value.toLowerCase().trim();
-            const queryWords = queryRaw.split(/\s+/).filter(w => w !== ""); // 分割空格單字
-
+            const query = document.getElementById('searchInput').value.toLowerCase();
             const filtered = collections.filter(i => {
-                const itemText = `${i.name} ${i.code} ${(i.tags || []).join(' ')}`.toLowerCase();
-                // 必須包含所有搜尋單字 (AND 邏輯)
-                const matchSearch = queryWords.every(word => itemText.includes(word));
+                const matchSearch = i.name.toLowerCase().includes(query) || (i.code || "").toLowerCase().includes(query);
                 const matchTags = selectedFilterTags.size === 0 || (i.tags || []).some(t => selectedFilterTags.has(t));
                 return matchSearch && matchTags;
             });
-
             const totalItems = filtered.length;
             const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
             if(currentPage > totalPages) currentPage = totalPages;
@@ -414,10 +401,10 @@
             document.getElementById('navStat').innerText = `${totalItems} 筆`;
             document.getElementById('pageIndicator').innerText = `/  ${currentPage} / ${totalPages}頁 `;
             gallery.innerHTML = "";
-
+            
             if(totalItems === 0) {
                 gallery.className = "flex flex-col items-center justify-center col-span-full py-40 opacity-30";
-                gallery.innerHTML = `<h3 class="serif-bold text-2xl uppercase text-white">找不到匹配項目</h3>`;
+                gallery.innerHTML = `<h3 class="serif-bold text-2xl uppercase text-white">沒有紀錄</h3>`;
                 return;
             } else { gallery.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"; }
 
@@ -502,9 +489,7 @@
                 document.getElementById('overlay').classList.add('pointer-events-none');
             }
         }
-
         function closeAllDrawers() { closeDrawer(); toggleFilterDrawer(false); closeConfirm(); }
-        
         function toggleFilterDrawer(open) {
             const d = document.getElementById('filterDrawer');
             const o = document.getElementById('overlay');
@@ -516,16 +501,9 @@
             const name = document.getElementById('nameInput').value.trim();
             const code = document.getElementById('codeInput').value.trim().toUpperCase();
             if(!name) return showToast("名稱為必填項目");
-
-            if (!currentId && code) {
-                const isDuplicate = collections.some(item => item.code === code);
-                if (isDuplicate) {
-                    document.getElementById('codeInput').classList.add('shake');
-                    setTimeout(() => document.getElementById('codeInput').classList.remove('shake'), 500);
-                    return showToast(`番號 [${code}] 已存在！`);
-                }
+            if (!currentId && code && collections.some(item => item.code === code)) {
+                return showToast(`番號 [${code}] 已存在！`);
             }
-
             const data = { 
                 id: currentId || Date.now().toString(),
                 name, code, 
@@ -534,13 +512,10 @@
                 url: document.getElementById('urlInput').value.trim(), 
                 updatedAt: Date.now() 
             };
-
             if(currentId) {
                 const index = collections.findIndex(i => String(i.id) === String(currentId));
                 if(index !== -1) collections[index] = data;
-                else collections.unshift(data);
             } else { collections.unshift(data); }
-            
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
             renderGallery(); closeDrawer(); showToast("紀錄已保存");
         }
@@ -556,7 +531,7 @@
                 try {
                     const data = JSON.parse(ev.target.result);
                     if(Array.isArray(data)) { collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("數據同步完成"); }
-                } catch(e) { showToast("同步失敗：數據損毀"); }
+                } catch(e) { showToast("同步失敗"); }
             };
             reader.readAsText(e.target.files[0]);
         }
@@ -566,14 +541,19 @@
             const container = document.getElementById('editPreview');
             container.innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover">` : `<span class="text-zinc-800 text-[10px] font-bold tracking-widest">暫無預覽圖</span>`;
         }
+        function debouncedRender() { renderGallery(false); }
         function requestDelete() { document.getElementById('confirmModal').classList.add('open'); }
         function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); }
         function executeDelete() { 
             if(!currentId) return;
             collections = collections.filter(i => String(i.id) !== String(currentId)); 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); 
-            closeConfirm(); closeDrawer(); renderGallery(); showToast("紀錄已永久抹除"); currentId = null;
+            closeConfirm(); closeDrawer(); renderGallery(); showToast("紀錄已刪除");
         }
+
+        window.onload = function() {
+            if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') { showAppDirectly(); resetIdleTimer(); }
+        };
     </script>
 </body>
 </html>
