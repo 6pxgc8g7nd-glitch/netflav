@@ -118,6 +118,7 @@
             z-index: 10;
         }
 
+        /* --- 分頁容器 --- */
         .page-dot-container {
             display: flex; flex-direction: column; gap: 16px; justify-content: center; align-items: center;
             padding: 20px 0 60px 0; width: 100%;
@@ -137,6 +138,7 @@
         }
         .page-dot.active { background-color: var(--nf-red); color: white; transform: scale(1.1); box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3); }
 
+        /* --- 縮小後的跳轉輸入框樣式 --- */
         .jump-box {
             display: flex; align-items: center; background: #151518; 
             border-radius: 20px; padding: 0 10px; height: 30px; 
@@ -171,7 +173,7 @@
         }
         .tag-pill:active { transform: scale(0.92); background: #27272a; }
 
-        #toast { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 8px 24px; border-radius: 999px; text-xs; font-bold; z-index: 7000; opacity: 0; transition: all 0.3s; pointer-events: none; }
+        #toast { position: fixed; top: 12px; left: 1/2; -translate-x-1/2; background: white; color: black; px-6; py-2; border-radius: 999px; text-xs; font-bold; z-index: 7000; opacity: 0; transition: all 0.3s; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -254,7 +256,7 @@
         </div>
         <div class="space-y-6">
             <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">名稱 / 演員</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">番號 (ID)</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest flex justify-between">番號 (ID)</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
             <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結 (URL)</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
             <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
             <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片</label><input type="text" id="imgInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
@@ -268,7 +270,7 @@
     <div id="filterDrawer" class="drawer">
         <div class="flex items-center justify-between mb-8">
             <h3 class="text-xl font-bold">帳戶設定</h3>
-            <button onclick="toggleFilterDrawer(false)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line></svg></button>
+            <button onclick="toggleFilterDrawer(false)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
         <div class="space-y-4">
             <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
@@ -286,118 +288,101 @@
     <div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden flex items-center justify-center p-8">
         <div class="text-center"><h4 class="text-xl font-bold mb-8">確定要刪除嗎？</h4><div class="flex flex-col gap-4"><button onclick="executeDelete()" class="w-64 bg-red-600 py-4 font-bold rounded-lg">刪除</button><button onclick="closeConfirm()" class="py-2 text-zinc-500">取消</button></div></div>
     </div>
-    <div id="toast"></div>
+    <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-2 rounded-full text-xs font-bold z-[7000] opacity-0 transition-all pointer-events-none"></div>
 
     <script>
         const CORRECT_PATTERN = "0124678";
         const STORAGE_KEY = 'NF_MOBILE_VAULT_FINAL';
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentId = null, currentPage = 1, pageSize = 12, currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 1;
-        let isDrawing = false, selectedNodes = [], isErrorState = false;
+        let currentId = null, currentPage = 1, pageSize = 12;
+        let isDrawing = false, selectedNodes = [], mousePos = { x: 0, y: 0 }, isErrorState = false;
         const nodes = [];
+        let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 1;
 
-        // --- 核心重複檢查儲存邏輯 ---
-        function saveItem() {
-            const name = document.getElementById('nameInput').value.trim();
-            const code = document.getElementById('codeInput').value.trim().toUpperCase();
-            const url = document.getElementById('urlInput').value.trim();
-            const img = document.getElementById('imgInput').value.trim();
-            const tags = document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t);
-
-            if(!name) { showToast("請輸入名稱"); return; }
-
-            // 檢查重複 (排除目前編輯的 id)
-            const otherItems = collections.filter(i => String(i.id) !== String(currentId));
-            const isCodeDup = code && otherItems.some(i => i.code === code);
-            const isUrlDup = url && otherItems.some(i => i.url === url);
-            const isImgDup = img && otherItems.some(i => i.img === img);
-
-            if (isCodeDup || isUrlDup || isImgDup) {
-                showToast("偵測到重複資料");
-                // 標示紅色
-                if(isCodeDup) document.getElementById('codeInput').style.color = 'var(--nf-red)';
-                if(isUrlDup) document.getElementById('urlInput').style.color = 'var(--nf-red)';
-                if(isImgDup) document.getElementById('imgInput').style.color = 'var(--nf-red)';
-                return;
-            }
-
-            const data = { id: currentId || Date.now().toString(), name, code, url, tags, img };
-
-            if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data;
-            else collections.unshift(data);
-
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
-            renderGallery();
-            closeDrawer();
-            showToast("已儲存");
-        }
-
-        // --- 輸入時顏色恢復正常 ---
-        ['codeInput', 'urlInput', 'imgInput'].forEach(id => {
-            document.getElementById(id).addEventListener('input', function() {
-                this.style.color = 'white';
-            });
-        });
-
-        // --- 介面渲染功能 (保持原始 UI) ---
+        // --- 核心渲染 ---
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.trim();
             const filtered = collections.filter(i => 
                 i.name.toLowerCase().includes(query.toLowerCase()) || 
-                (i.code || "").toLowerCase().includes(query.toLowerCase())
+                (i.code || "").toLowerCase().includes(query.toLowerCase()) || 
+                (i.tags || []).some(t => t.toLowerCase().includes(query.toLowerCase()))
             );
             document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
             
             if (filtered.length === 0) {
                 gallery.className = "flex flex-col items-center justify-center py-20 text-center";
-                gallery.innerHTML = `<p class="text-zinc-500 font-bold">找不到相關內容</p>`;
+                gallery.innerHTML = `
+                    <div class="empty-state-icon mb-6"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+                    <p class="text-zinc-500 font-bold text-lg mb-4">找不到相關內容</p>
+                    <button onclick="clearSearch()" class="bg-zinc-900 text-white px-6 py-2 rounded-full text-xs font-black border border-zinc-800 active:scale-95 transition-transform">清除搜尋條件</button>
+                `;
                 document.getElementById('paginationContainer').innerHTML = "";
                 return;
             }
 
             gallery.className = `grid gap-4 ${currentLayout === 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
             const total = Math.ceil(filtered.length / pageSize);
+            if (currentPage > total && total > 0) currentPage = total;
             const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
             
             gallery.innerHTML = paginated.map(item => `
                 <div class="poster-card">
                     <img src="${item.img || 'https://via.placeholder.com/640x360/111/333?text=NO+IMAGE'}" loading="lazy">
-                    <div class="action-circle-btn card-edit-btn" onclick="openDrawer('${item.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
-                    ${item.url ? `<div class="action-circle-btn card-play-btn" onclick="window.open('${item.url}', '_blank')"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
-                    <div class="card-overlay"><p class="text-[9px] font-black text-red-600 mb-0.5 tracking-wider">${item.code || 'SERIES'}</p><p class="text-[13px] font-bold truncate pr-14">${item.name}</p></div>
+                    <div class="action-circle-btn card-edit-btn" onclick="openDrawer('${item.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+                    ${item.url ? `<div class="action-circle-btn card-play-btn" onclick="openExternalUrl('${item.url}', event)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
+                    <div class="card-overlay"><p class="text-[9px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${item.code || 'SERIES'}</p><p class="text-[13px] font-bold truncate pr-14">${item.name}</p></div>
                 </div>
             `).join('');
             renderPagination(total);
         }
 
+        function clearSearch() {
+            document.getElementById('searchInput').value = "";
+            renderGallery();
+        }
+
+        // --- 分頁與跳轉 ---
         function renderPagination(total) {
             const container = document.getElementById('paginationContainer');
             if (total <= 1) { container.innerHTML = ""; return; }
-            let dotsHtml = `<div class="pagination-dots-row">`;
+            let pages = [];
+            const range = 1;
             for (let i = 1; i <= total; i++) {
-                if (i === 1 || i === total || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                    dotsHtml += `<div onclick="changePage(${i})" class="page-dot ${i === currentPage ? 'active' : ''}">${i}</div>`;
+                if (i === 1 || i === total || (i >= currentPage - range && i <= currentPage + range)) {
+                    pages.push(i);
+                } else if (pages[pages.length - 1] !== '...') {
+                    pages.push('...');
                 }
             }
-            dotsHtml += `</div><div class="jump-box"><input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" onkeydown="if(event.key==='Enter') jumpToPage(${total})"><span class="text-[10px] text-zinc-700 font-black ml-1">/ ${total}</span></div>`;
-            container.innerHTML = dotsHtml;
+            let dotsHtml = `<div class="pagination-dots-row">`;
+            dotsHtml += pages.map(p => {
+                if (p === '...') return `<div class="px-1 text-zinc-700 text-[10px] font-black">...</div>`;
+                return `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`;
+            }).join('');
+            dotsHtml += `</div>`;
+            const jumpHtml = `<div class="jump-box"><input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" onkeydown="if(event.key==='Enter') jumpToPage(${total})"><span class="text-[10px] text-zinc-700 font-black ml-1">/ ${total}</span></div>`;
+            container.innerHTML = dotsHtml + jumpHtml;
         }
 
         function jumpToPage(total) {
-            const val = parseInt(document.getElementById('jumpPageInput').value);
+            const input = document.getElementById('jumpPageInput');
+            const val = parseInt(input.value);
             if (val >= 1 && val <= total) changePage(val);
+            else { showToast("頁碼超出範圍"); input.value = ""; }
         }
 
         function changePage(p) { currentPage = p; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); }
 
+        // --- Drawer 開啟 ---
         function openDrawer(id = null) {
             currentId = id;
             document.getElementById('drawer').classList.add('open');
-            // 重置樣式
-            ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => {
-                const el = document.getElementById(k);
-                el.value = ""; el.style.color = "white";
+            
+            // 重置輸入框顏色（防止重複紅標殘留）
+            ['nameInput', 'codeInput', 'urlInput', 'imgInput', 'tagsInput'].forEach(id => {
+                const el = document.getElementById(id);
+                el.style.color = 'white';
             });
 
             if(id) {
@@ -409,64 +394,108 @@
                 document.getElementById('imgInput').value = item.img || "";
                 document.getElementById('drawerDeleteBtn').classList.remove('hidden');
             } else {
+                ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = "");
                 document.getElementById('drawerDeleteBtn').classList.add('hidden');
             }
         }
 
-        // --- 系統功能 ---
-        function switchTab(index) {
-            document.getElementById('pageContainer').style.transform = `translateX(-${index * (100/3)}%)`;
-            document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index));
-            if(index === 1) renderTagCloud();
-            if(index === 2) renderActorList();
-        }
-
-        function renderTagCloud() {
-            const container = document.getElementById('tagCloud');
-            const map = {}; collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1));
-            container.innerHTML = Object.entries(map).map(([tag, count]) => `<div onclick="filterBySearch('${tag}')" class="tag-pill"><span>${tag}</span><span class="text-[10px] opacity-40 ml-2">${count}</span></div>`).join('');
-        }
-
-        function renderActorList() {
-            const list = document.getElementById('actorList');
-            const map = {}; collections.forEach(i => i.name.split(/[\s,]+/).forEach(n => { if(n.length>1) map[n] = (map[n] || 0) + 1 }));
-            list.innerHTML = Object.entries(map).map(([name, count]) => `<div onclick="filterBySearch('${name}')" class="flex flex-col items-center"><div class="actor-badge flex items-center justify-center font-black text-zinc-600">${name[0]}</div><span class="text-xs font-bold mt-2">${name}</span></div>`).join('');
-        }
-
+        // --- 核心系統邏輯 ---
+        function unlockVault() { sessionStorage.setItem('VAULT_UNLOCKED', 'true'); document.getElementById('authOverlay').style.display = 'none'; document.body.style.overflow = 'auto'; document.getElementById('mainHeader').style.visibility = 'visible'; document.getElementById('appContent').style.visibility = 'visible'; document.getElementById('bottomNav').style.visibility = 'visible'; isAutoLogoutPaused = false; document.getElementById('statusLed').className = "status-led led-active"; updateLayout(currentLayout); resetLogoutTimer(); }
+        function switchTab(index) { const container = document.getElementById('pageContainer'); const pages = document.querySelectorAll('.page-content'); container.style.transform = `translateX(-${index * (100/3)}%)`; document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index)); pages.forEach((page, i) => { i === index ? page.classList.add('active-page') : page.classList.remove('active-page'); }); window.scrollTo(0, 0); if(index === 1) renderTagCloud(); if(index === 2) renderActorList(); }
         function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); renderGallery(); }
-        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; setTimeout(() => t.style.opacity = "0", 2000); }
-        function updateLayout(cols) { currentLayout = cols; localStorage.setItem('NF_LAYOUT_SETTING', cols); renderGallery(); }
+        function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); selectedNodes = []; isErrorState = false; isDrawing = false; document.body.style.overflow = 'hidden'; document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('mainHeader').style.visibility = 'hidden'; document.getElementById('appContent').style.visibility = 'hidden'; document.getElementById('bottomNav').style.visibility = 'hidden'; if (logoutTimer) clearTimeout(logoutTimer); toggleFilterDrawer(false); closeDrawer(); }
+        
+        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 3;
+        function resetLogoutTimer() { if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display !== 'none') { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
+        function toggleAutoLogout() { isAutoLogoutPaused = !isAutoLogoutPaused; const led = document.getElementById('statusLed'); if (isAutoLogoutPaused) { clearTimeout(logoutTimer); led.className = "status-led led-paused"; showToast("自動登出已暫停"); } else { led.className = "status-led led-active"; showToast("自動登出已恢復"); resetLogoutTimer(); } }
+        
+        ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, () => { if (document.getElementById('authOverlay').style.display === 'none') resetLogoutTimer(); }, { passive: true }));
+        
+        const canvas = document.getElementById('patternCanvas'); const ctx = canvas.getContext('2d');
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
+        function drawPattern() { ctx.clearRect(0, 0, canvas.width, canvas.height); if (selectedNodes.length > 0 && isErrorState) { ctx.beginPath(); ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = '#ff0000'; const start = nodes.find(n => n.id === selectedNodes[0]); ctx.moveTo(start.x, start.y); for (let i = 1; i < selectedNodes.length; i++) { const n = nodes.find(node => node.id === selectedNodes[i]); ctx.lineTo(n.x, n.y); } ctx.stroke(); } nodes.forEach(node => { const active = selectedNodes.includes(node.id); ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2); ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222'; if (active && !isErrorState) ctx.fillStyle = '#111'; ctx.fill(); }); requestAnimationFrame(drawPattern); }
+        
+        const handleStart = (e) => { if (isErrorState) return; e.preventDefault(); isDrawing = true; selectedNodes = []; };
+        const handleMove = (e) => { if (!isDrawing || isErrorState) return; const rect = canvas.getBoundingClientRect(); const touch = e.touches ? e.touches[0] : e; mousePos = { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) }; nodes.forEach(node => { if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) { selectedNodes.push(node.id); if (window.navigator.vibrate) window.navigator.vibrate(10); } }); };
+        const handleEnd = () => { if (!isDrawing || isErrorState) return; isDrawing = false; if (selectedNodes.join('') === CORRECT_PATTERN) unlockVault(); else if (selectedNodes.length > 0) handleWrongPattern(); };
+        
+        canvas.addEventListener('touchstart', handleStart); canvas.addEventListener('touchmove', handleMove); canvas.addEventListener('touchend', handleEnd);
+        canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
+        
+        function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; }, 600); }
+        drawPattern();
+        
+        function updateLayout(cols) { currentLayout = cols; localStorage.setItem('NF_LAYOUT_SETTING', cols); const b1 = document.getElementById('layoutBtn1'), b2 = document.getElementById('layoutBtn2'); b1.className = cols===1 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; b2.className = cols===2 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; renderGallery(); }
+        function openExternalUrl(url, e) { if(e) e.stopPropagation(); window.open(url.startsWith('http') ? url : 'https://' + url, '_blank'); }
+        function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; t.style.transform = "translate(-50%, -10px)"; setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translate(-50%, 0)"; }, 2000); }
+        
+        // --- 核心儲存與重複檢查機制 ---
+        function saveItem() { 
+            const nameInput = document.getElementById('nameInput');
+            const codeInput = document.getElementById('codeInput');
+            const urlInput = document.getElementById('urlInput');
+            const imgInput = document.getElementById('imgInput');
+
+            const name = nameInput.value.trim();
+            const code = codeInput.value.trim().toUpperCase();
+            const url = urlInput.value.trim();
+            const img = imgInput.value.trim();
+
+            if(!name) { showToast("請輸入名稱"); return; }
+
+            // 重複檢查 (排除當前正在編輯的 ID)
+            const otherItems = collections.filter(i => String(i.id) !== String(currentId));
+            const isCodeDup = code && otherItems.some(i => i.code === code);
+            const isUrlDup = url && otherItems.some(i => i.url === url);
+            const isImgDup = img && otherItems.some(i => i.img === img);
+
+            if (isCodeDup || isUrlDup || isImgDup) {
+                showToast("偵測到重複資料");
+                if (isCodeDup) codeInput.style.color = 'var(--nf-red)';
+                if (isUrlDup) urlInput.style.color = 'var(--nf-red)';
+                if (isImgDup) imgInput.style.color = 'var(--nf-red)';
+                return; 
+            }
+
+            const data = { 
+                id: currentId || Date.now().toString(), 
+                name, 
+                code, 
+                url, 
+                tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), 
+                img 
+            }; 
+            
+            if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data; 
+            else collections.unshift(data); 
+            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); 
+            renderGallery(); 
+            closeDrawer(); 
+            showToast("已儲存"); 
+        }
+
+        // 輸入時將顏色還原
+        ['codeInput', 'urlInput', 'imgInput'].forEach(id => {
+            document.getElementById(id).addEventListener('input', function() {
+                this.style.color = 'white';
+            });
+        });
+
+        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); }
+        function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
+        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
         function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
         function toggleFilterDrawer(open) { document.getElementById('filterDrawer').classList.toggle('open', open); }
-        function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo(0,0); }
-        function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); location.reload(); }
-        function unlockVault() { sessionStorage.setItem('VAULT_UNLOCKED', 'true'); document.getElementById('authOverlay').style.display = 'none'; document.getElementById('mainHeader').style.visibility = 'visible'; document.getElementById('appContent').style.visibility = 'visible'; document.getElementById('bottomNav').style.visibility = 'visible'; renderGallery(); }
-
-        // --- 畫布與解鎖 ---
-        const canvas = document.getElementById('patternCanvas');
-        const ctx = canvas.getContext('2d');
-        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
-        function drawPattern() {
-            ctx.clearRect(0, 0, 300, 300);
-            nodes.forEach(node => {
-                ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
-                ctx.fillStyle = selectedNodes.includes(node.id) ? '#E50914' : '#222';
-                ctx.fill();
-            });
-            requestAnimationFrame(drawPattern);
-        }
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); isDrawing = true; selectedNodes = []; });
-        canvas.addEventListener('touchmove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.touches[0].clientX - rect.left;
-            const y = e.touches[0].clientY - rect.top;
-            nodes.forEach(n => { if(Math.hypot(x-n.x, y-n.y) < 25 && !selectedNodes.includes(n.id)) selectedNodes.push(n.id) });
-        });
-        canvas.addEventListener('touchend', () => { isDrawing = false; if(selectedNodes.join('') === CORRECT_PATTERN) unlockVault(); else selectedNodes = []; });
-        drawPattern();
-
-        function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
-        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED')) unlockVault(); else document.body.style.overflow = 'hidden'; };
+        function exportData() { const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `netflav.json`; a.click(); }
+        function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入成功"); } catch(err) { showToast("格式錯誤"); } }; reader.readAsText(e.target.files[0]); }
+        
+        function renderTagCloud() { const container = document.getElementById('tagCloud'); const map = {}; collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1)); const sortedTags = Object.entries(map).sort((a,b) => b[1] - a[1]); const counts = Object.values(map); const avgCount = counts.length > 0 ? counts.reduce((a, b) => a + b, 0) / counts.length : 0; container.innerHTML = sortedTags.map(([tag, count]) => { const isHot = count > avgCount && count > 1; return `<div onclick="filterBySearch('${tag}')" class="tag-pill ${isHot ? 'hot-tag' : ''}"><span>${tag}</span><span class="tag-count-badge">${count}</span></div>`; }).join(''); }
+        function renderActorList() { const list = document.getElementById('actorList'); const map = {}; collections.forEach(i => { const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1); names.forEach(n => map[n] = (map[n] || 0) + 1); }); const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); list.innerHTML = sorted.map(([name, count]) => { let disp = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : name.substring(0, 1); return `<div onclick="filterBySearch('${name}')" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500">${disp}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${name}</span><span class="block text-[9px] text-zinc-600">${count} 作品</span></div>`; }).join(''); }
+        function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        
+        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); else document.body.style.overflow = 'hidden'; };
     </script>
 </body>
 </html>
