@@ -66,6 +66,18 @@
             color: white;
         }
 
+        /* 登出專屬樣式 */
+        .logout-btn {
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+        }
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+            color: #ff7676;
+        }
+
         .nav-btn-primary { background: var(--mag-accent); color: black; border: 1px solid var(--mag-accent); }
         .nav-btn-primary:hover { background: white; border-color: white; color: black; box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
 
@@ -176,9 +188,13 @@
             </div>
             <div class="flex items-center gap-2 md:gap-3">
                 <button type="button" onclick="exportData()" class="nav-tool-btn">匯出</button>
-                <label class="nav-tool-btn cursor-pointer">
-                    匯入 <input type="file" class="hidden" accept=".json" onchange="importData(event)">
-                </label>
+                
+                <div id="dynamicToolArea">
+                    <label class="nav-tool-btn cursor-pointer">
+                        匯入 <input type="file" class="hidden" accept=".json" onchange="importData(event)">
+                    </label>
+                </div>
+
                 <div class="h-4 w-px bg-zinc-800 mx-1 hidden md:block"></div>
                 <button type="button" onclick="openDrawer()" class="nav-tool-btn nav-btn-primary px-6">新增</button>
             </div>
@@ -204,10 +220,7 @@
                 <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">關鍵字</p>
                 <input type="text" id="searchInput" oninput="debouncedRender(true)" placeholder="名稱或番號" class="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#c5a059] transition-all">
             </div>
-            <div class="space-y-4">
-                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">標籤</p>
-                <div id="filterTagsContainer" class="flex flex-wrap gap-2"></div>
-            </div>
+            <div id="filterTagsContainer" class="flex flex-wrap gap-2 pt-4"></div>
         </div>
     </div>
 
@@ -223,7 +236,7 @@
             <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">番號</label><input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="如：SNIS-001"></div>
             <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">標籤 (以空格分隔)</label><input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="例如：標籤1 標籤2"></div>
             <div class="space-y-4 pt-4">
-                <label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">預覽圖</label>
+                <label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">預覽圖 URL</label>
                 <input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-transparent border-b border-zinc-800 py-2 text-zinc-500 text-[10px] outline-none" placeholder="輸入圖片 URL 地址">
                 <div id="editPreview" class="w-full aspect-video bg-zinc-900/50 flex items-center justify-center rounded-xl border border-dashed border-zinc-800 overflow-hidden"></div>
             </div>
@@ -250,33 +263,26 @@
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[11px] font-black rounded-full opacity-0 transition-all z-[600] uppercase tracking-widest shadow-2xl pointer-events-none"></div>
 
     <script>
-        // --- 解鎖與圖形 ---
+        // --- 解鎖邏輯 ---
         const CORRECT_PATTERN = "0124678";
-        const INFINITE_PATTERN = "03678"; // 秘密指令：L型
+        const INFINITE_PATTERN = "03678";
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
         const patternBox = document.getElementById('patternBox');
-        let isDrawing = false;
-        let selectedNodes = [];
-        let mousePos = { x: 0, y: 0 };
+        let isDrawing = false, selectedNodes = [], mousePos = { x: 0, y: 0 };
         const nodes = [];
-        const nodeRadius = 12;
-        const hitRadius = 35;
+        const nodeRadius = 12, hitRadius = 35;
         
         let idleTimer;
-        let IDLE_TIME_LIMIT = 5000; 
+        const IDLE_TIME_LIMIT = 5000; 
         let isInfiniteMode = false;
 
         for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                nodes.push({ id: (i * 3 + j).toString(), x: 60 + j * 100, y: 60 + i * 100 });
-            }
+            for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 60 + j * 100, y: 60 + i * 100 });
         }
 
         function resetIdleTimer() {
-            // 如果是不限時模式，直接跳過計時器邏輯
             if (isInfiniteMode) return;
-            
             if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
                 clearTimeout(idleTimer);
                 idleTimer = setTimeout(() => { logout(); }, IDLE_TIME_LIMIT);
@@ -293,7 +299,6 @@
                 ctx.beginPath();
                 ctx.lineWidth = 3; ctx.strokeStyle = '#c5a059';
                 ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-                ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(197, 160, 89, 0.5)';
                 const start = nodes.find(n => n.id === selectedNodes[0]);
                 ctx.moveTo(start.x, start.y);
                 for (let i = 1; i < selectedNodes.length; i++) {
@@ -301,22 +306,17 @@
                     ctx.lineTo(node.x, node.y);
                 }
                 if (isDrawing) ctx.lineTo(mousePos.x, mousePos.y);
-                ctx.stroke(); ctx.shadowBlur = 0;
+                ctx.stroke();
             }
             nodes.forEach(node => {
                 const active = selectedNodes.includes(node.id);
                 ctx.beginPath(); ctx.arc(node.x, node.y, nodeRadius, 0, Math.PI * 2);
                 ctx.strokeStyle = active ? '#c5a059' : '#2a2a2a'; ctx.lineWidth = 2; ctx.stroke();
-                if (active) {
-                    ctx.beginPath(); ctx.arc(node.x, node.y, 5, 0, Math.PI * 2); ctx.fillStyle = '#c5a059'; ctx.fill();
-                }
+                if (active) { ctx.beginPath(); ctx.arc(node.x, node.y, 5, 0, Math.PI * 2); ctx.fillStyle = '#c5a059'; ctx.fill(); }
             });
             requestAnimationFrame(drawPattern);
         }
 
-        function handleStart(e) { isDrawing = true; selectedNodes = []; updateMousePos(e); checkCollision(); }
-        function handleMove(e) { if (!isDrawing) return; updateMousePos(e); checkCollision(); }
-        function handleEnd() { if (!isDrawing) return; isDrawing = false; validatePattern(); }
         function updateMousePos(e) {
             const rect = canvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -326,48 +326,46 @@
         function checkCollision() {
             nodes.forEach(node => {
                 const dist = Math.hypot(mousePos.x - node.x, mousePos.y - node.y);
-                if (dist < hitRadius && !selectedNodes.includes(node.id)) {
-                    selectedNodes.push(node.id);
-                }
+                if (dist < hitRadius && !selectedNodes.includes(node.id)) selectedNodes.push(node.id);
             });
         }
         function validatePattern() {
             const input = selectedNodes.join('');
-            if (input === CORRECT_PATTERN) { 
-                unlockVault(false); 
-            } else if (input === INFINITE_PATTERN) {
-                unlockVault(true);
-            } else if (selectedNodes.length > 0) {
+            if (input === CORRECT_PATTERN) unlockVault(false);
+            else if (input === INFINITE_PATTERN) unlockVault(true);
+            else if (selectedNodes.length > 0) {
                 patternBox.classList.add('shake');
                 setTimeout(() => { patternBox.classList.remove('shake'); selectedNodes = []; }, 600);
             }
         }
-        function resetPattern() { selectedNodes = []; }
-
-        canvas.addEventListener('mousedown', handleStart);
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleEnd);
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); });
-        window.addEventListener('touchmove', (e) => { handleMove(e); });
-        window.addEventListener('touchend', handleEnd);
+        canvas.addEventListener('mousedown', (e) => { isDrawing = true; selectedNodes = []; updateMousePos(e); checkCollision(); });
+        window.addEventListener('mousemove', (e) => { if (isDrawing) { updateMousePos(e); checkCollision(); } });
+        window.addEventListener('mouseup', () => { if (isDrawing) { isDrawing = false; validatePattern(); } });
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); isDrawing = true; selectedNodes = []; updateMousePos(e); checkCollision(); });
+        window.addEventListener('touchmove', (e) => { if (isDrawing) { updateMousePos(e); checkCollision(); } });
+        window.addEventListener('touchend', () => { if (isDrawing) { isDrawing = false; validatePattern(); } });
         drawPattern();
 
-        // --- 核心邏輯 ---
+        // --- 核心功能 ---
         const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentId = null;
-        let selectedFilterTags = new Set();
-        let currentPage = 1;
-        const pageSize = 12;
+        let currentId = null, selectedFilterTags = new Set(), currentPage = 1, pageSize = 12;
 
-        function goHome() {
-            document.getElementById('searchInput').value = "";
-            selectedFilterTags.clear();
-            currentPage = 1;
-            renderGallery(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            showToast("已重置並返回主頁");
-            resetIdleTimer();
+        function updateToolUI() {
+            const container = document.getElementById('dynamicToolArea');
+            const navStat = document.getElementById('navStat');
+            
+            if (isInfiniteMode) {
+                // 不限時模式：顯示登出按鈕
+                container.innerHTML = `<button type="button" onclick="logout()" class="nav-tool-btn logout-btn">登出</button>`;
+                navStat.innerText = "不限時模式";
+                navStat.classList.replace('text-zinc-600', 'text-[#c5a059]');
+            } else {
+                // 一般模式：顯示匯入按鈕
+                container.innerHTML = `<label class="nav-tool-btn cursor-pointer">匯入 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>`;
+                navStat.innerText = `${collections.length} 筆`;
+                navStat.classList.replace('text-[#c5a059]', 'text-zinc-600');
+            }
         }
 
         function unlockVault(infinite) {
@@ -377,41 +375,15 @@
                 sessionStorage.setItem('VAULT_INFINITE', 'true');
                 showToast("不限時模式已啟用");
             }
-            
-            resetIdleTimer();
+            updateToolUI();
             const auth = document.getElementById('authOverlay');
             auth.style.opacity = '0'; auth.style.transform = 'scale(1.1)'; auth.style.pointerEvents = 'none';
             setTimeout(() => {
                 auth.style.display = 'none';
                 document.getElementById('mainNav').style.visibility = 'visible';
                 document.getElementById('appContent').style.visibility = 'visible';
-                
-                // 根據模式更新 UI 狀態
-                if (isInfiniteMode) {
-                    const navStat = document.getElementById('navStat');
-                    navStat.innerText = "不限時模式";
-                    navStat.classList.replace('text-zinc-600', 'text-[#c5a059]');
-                }
-                
                 renderGallery();
             }, 800);
-        }
-
-        function showAppDirectly() {
-            // 若為手動重新整理且之前是解鎖狀態，檢查是否帶有不限時標記
-            isInfiniteMode = sessionStorage.getItem('VAULT_INFINITE') === 'true';
-            
-            document.getElementById('authOverlay').style.display = 'none';
-            document.getElementById('mainNav').style.visibility = 'visible';
-            document.getElementById('appContent').style.visibility = 'visible';
-            
-            if (isInfiniteMode) {
-                const navStat = document.getElementById('navStat');
-                navStat.innerText = "不限時模式";
-                navStat.classList.replace('text-zinc-600', 'text-[#c5a059]');
-            }
-            
-            renderGallery();
         }
 
         function logout() {
@@ -420,8 +392,17 @@
             location.reload();
         }
 
-        // ... [其餘功能代碼如 renderGallery, saveItem 等維持原樣，節省空間略過] ...
-        function renderGallery(showSkeleton = true) {
+        function goHome() {
+            document.getElementById('searchInput').value = "";
+            selectedFilterTags.clear();
+            currentPage = 1;
+            renderGallery(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast("已重置並返回主頁");
+        }
+
+        // --- Gallery & CRUD 邏輯 (簡化) ---
+        function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.toLowerCase();
             const filtered = collections.filter(i => {
@@ -429,32 +410,18 @@
                 const matchTags = selectedFilterTags.size === 0 || (i.tags || []).some(t => selectedFilterTags.has(t));
                 return matchSearch && matchTags;
             });
-            const totalItems = filtered.length;
-            const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-            if(currentPage > totalPages) currentPage = totalPages;
-            const startIndex = (currentPage - 1) * pageSize;
-            const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
-
-            // 如果不是不限時模式，才顯示筆數
-            if (!isInfiniteMode) {
-                document.getElementById('navStat').innerText = `${totalItems} 筆`;
-            }
+            const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+            if (!isInfiniteMode) document.getElementById('navStat').innerText = `${filtered.length} 筆`;
             document.getElementById('pageIndicator').innerText = `/  ${currentPage} / ${totalPages}頁 `;
-            gallery.innerHTML = "";
             
-            if(totalItems === 0) {
-                gallery.className = "flex flex-col items-center justify-center col-span-full py-40 opacity-30";
-                gallery.innerHTML = `<h3 class="serif-bold text-2xl uppercase text-white">沒有紀錄</h3>`;
-                return;
-            } else { gallery.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"; }
-
-            paginatedItems.forEach((item, index) => {
+            gallery.innerHTML = "";
+            filtered.slice((currentPage-1)*pageSize, currentPage*pageSize).forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = "entry-card group fade-in";
                 card.style.animationDelay = `${index * 0.05}s`;
                 card.innerHTML = `
                     <div class="aspect-video overflow-hidden border-b border-zinc-900 bg-black">
-                        <img src="${item.img || 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'">
+                        <img src="${item.img || ''}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'">
                     </div>
                     <div class="p-5 flex flex-col flex-grow">
                         <h3 class="serif-bold text-lg text-white truncate mb-1 group-hover:text-[#c5a059] transition-colors">${item.name}</h3>
@@ -472,30 +439,25 @@
         function renderPagination(totalPages) {
             const container = document.getElementById('paginationContainer');
             if(totalPages <= 1) { container.innerHTML = ""; return; }
-            let html = `<button type="button" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="page-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="15 18 9 12 15 6"></polyline></svg></button>`;
-            for(let i = 1; i <= totalPages; i++) {
-                if(i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                    html += `<button type="button" onclick="changePage(${i})" class="page-btn ${i === currentPage ? 'active' : ''}">${i}</button>`;
-                } else if (i === currentPage - 2 || i === currentPage + 2) { html += `<span class="text-zinc-800 font-bold px-1">...</span>`; }
-            }
-            html += `<button type="button" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="page-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg></button>`;
+            let html = `<button type="button" onclick="changePage(${currentPage-1})" ${currentPage===1?'disabled':''} class="page-btn">Prev</button>`;
+            for(let i=1; i<=totalPages; i++) if(i===1 || i===totalPages || (i>=currentPage-1 && i<=currentPage+1)) html += `<button type="button" onclick="changePage(${i})" class="page-btn ${i===currentPage?'active':''}">${i}</button>`;
+            html += `<button type="button" onclick="changePage(${currentPage+1})" ${currentPage===totalPages?'disabled':''} class="page-btn">Next</button>`;
             container.innerHTML = html;
         }
 
-        function changePage(p) { currentPage = p; window.scrollTo({ top: 0, behavior: 'smooth' }); renderGallery(false); }
+        function changePage(p) { currentPage = p; window.scrollTo({ top: 0, behavior: 'smooth' }); renderGallery(); }
 
         function renderTags() {
             const tagCounts = {};
             collections.forEach(i => (i.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1));
             const container = document.getElementById('filterTagsContainer');
-            if(!container) return; container.innerHTML = "";
-            Object.keys(tagCounts).sort((a,b) => tagCounts[b] - tagCounts[a]).forEach(tag => {
+            container.innerHTML = "";
+            Object.keys(tagCounts).forEach(tag => {
                 const btn = document.createElement('button');
                 const active = selectedFilterTags.has(tag);
-                btn.type = "button";
-                btn.className = `px-4 py-2 rounded-lg text-[10px] font-bold border transition-all ${active ? 'bg-[#c5a059] border-[#c5a059] text-black shadow-lg' : 'bg-black border-zinc-800 text-zinc-500 hover:border-zinc-700'}`;
-                btn.innerHTML = `${tag} <span class="ml-1 opacity-50">${tagCounts[tag]}</span>`;
-                btn.onclick = () => { if(selectedFilterTags.has(tag)) selectedFilterTags.delete(tag); else selectedFilterTags.add(tag); currentPage = 1; renderGallery(false); };
+                btn.className = `px-3 py-1 rounded-md text-[10px] border ${active?'bg-[#c5a059] text-black':'border-zinc-800 text-zinc-500'}`;
+                btn.innerText = `${tag} (${tagCounts[tag]})`;
+                btn.onclick = () => { if(active) selectedFilterTags.delete(tag); else selectedFilterTags.add(tag); renderGallery(); };
                 container.appendChild(btn);
             });
         }
@@ -507,89 +469,55 @@
             document.getElementById('overlay').classList.remove('pointer-events-none');
             if(id) {
                 const item = collections.find(i => String(i.id) === String(id));
-                if (item) {
-                    document.getElementById('nameInput').value = item.name;
-                    document.getElementById('codeInput').value = item.code || "";
-                    document.getElementById('tagsInput').value = (item.tags || []).join(' ');
-                    document.getElementById('imgInput').value = item.img || "";
-                    document.getElementById('urlInput').value = item.url || "";
-                    previewImage(item.img || "");
-                    document.getElementById('drawerDeleteBtn').classList.remove('hidden');
-                }
+                document.getElementById('nameInput').value = item.name;
+                document.getElementById('codeInput').value = item.code;
+                document.getElementById('tagsInput').value = item.tags.join(' ');
+                document.getElementById('imgInput').value = item.img;
+                document.getElementById('urlInput').value = item.url;
+                previewImage(item.img);
+                document.getElementById('drawerDeleteBtn').classList.remove('hidden');
             } else {
                 ['nameInput','codeInput','tagsInput','imgInput','urlInput'].forEach(k => document.getElementById(k).value = "");
                 previewImage(""); document.getElementById('drawerDeleteBtn').classList.add('hidden');
             }
         }
 
-        function closeDrawer() {
-            document.getElementById('drawer').classList.remove('open');
-            if(!document.getElementById('filterDrawer').classList.contains('open') && !document.getElementById('confirmModal').classList.contains('open')) {
-                document.getElementById('overlay').classList.replace('opacity-100', 'opacity-0');
-                document.getElementById('overlay').classList.add('pointer-events-none');
-            }
-        }
+        function closeDrawer() { document.getElementById('drawer').classList.remove('open'); document.getElementById('overlay').classList.replace('opacity-100', 'opacity-0'); document.getElementById('overlay').classList.add('pointer-events-none'); }
         function closeAllDrawers() { closeDrawer(); toggleFilterDrawer(false); closeConfirm(); }
-        function toggleFilterDrawer(open) {
-            const d = document.getElementById('filterDrawer');
-            const o = document.getElementById('overlay');
-            if(open) { d.classList.add('open'); o.classList.replace('opacity-0', 'opacity-100'); o.classList.remove('pointer-events-none'); }
-            else { d.classList.remove('open'); if(!document.getElementById('drawer').classList.contains('open')) { o.classList.replace('opacity-100', 'opacity-0'); o.classList.add('pointer-events-none'); } }
-        }
-
+        function toggleFilterDrawer(open) { const d = document.getElementById('filterDrawer'); if(open) d.classList.add('open'); else d.classList.remove('open'); }
         function saveItem() {
-            const name = document.getElementById('nameInput').value.trim();
-            const code = document.getElementById('codeInput').value.trim().toUpperCase();
-            if(!name) return showToast("名稱為必填項目");
-            const data = { 
-                id: currentId || Date.now().toString(),
-                name, code, 
-                tags: document.getElementById('tagsInput').value.split(/\s+/).filter(t => t), 
-                img: document.getElementById('imgInput').value.trim(), 
-                url: document.getElementById('urlInput').value.trim(), 
-                updatedAt: Date.now() 
-            };
-            if(currentId) {
-                const index = collections.findIndex(i => String(i.id) === String(currentId));
-                if(index !== -1) collections[index] = data;
-            } else { collections.unshift(data); }
+            const data = { id: currentId || Date.now().toString(), name: document.getElementById('nameInput').value, code: document.getElementById('codeInput').value, tags: document.getElementById('tagsInput').value.split(' ').filter(t=>t), img: document.getElementById('imgInput').value, url: document.getElementById('urlInput').value };
+            if(currentId) collections = collections.map(i => String(i.id) === String(currentId) ? data : i);
+            else collections.unshift(data);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
-            renderGallery(); closeDrawer(); showToast("紀錄已保存");
+            renderGallery(); closeDrawer();
         }
-
         function exportData() {
-            const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `檔案庫數據.json`; a.click(); showToast("數據導出完成");
+            const blob = new Blob([JSON.stringify(collections)], {type:'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `archive.json`; a.click();
         }
-
         function importData(e) {
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    if(Array.isArray(data)) { collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("數據同步完成"); }
-                } catch(e) { showToast("同步失敗"); }
-            };
+            reader.onload = (ev) => { collections = JSON.parse(ev.target.result); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); };
             reader.readAsText(e.target.files[0]);
         }
-
-        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; setTimeout(() => t.style.opacity = "0", 3000); }
-        function previewImage(url) {
-            const container = document.getElementById('editPreview');
-            container.innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover">` : `<span class="text-zinc-800 text-[10px] font-bold tracking-widest">暫無預覽圖</span>`;
-        }
-        function debouncedRender() { renderGallery(false); }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; setTimeout(() => t.style.opacity = "0", 2000); }
+        function previewImage(url) { document.getElementById('editPreview').innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover">` : ""; }
         function requestDelete() { document.getElementById('confirmModal').classList.add('open'); }
         function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); }
-        function executeDelete() { 
-            if(!currentId) return;
-            collections = collections.filter(i => String(i.id) !== String(currentId)); 
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); 
-            closeConfirm(); closeDrawer(); renderGallery(); showToast("紀錄已刪除");
-        }
+        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); }
+        function debouncedRender() { renderGallery(); }
 
         window.onload = function() {
-            if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') { showAppDirectly(); resetIdleTimer(); }
+            if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
+                isInfiniteMode = sessionStorage.getItem('VAULT_INFINITE') === 'true';
+                updateToolUI();
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('mainNav').style.visibility = 'visible';
+                document.getElementById('appContent').style.visibility = 'visible';
+                renderGallery();
+                resetIdleTimer();
+            }
         };
     </script>
 </body>
