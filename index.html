@@ -3,324 +3,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Netflav - Vault Pro</title>
+    <title>netflav - Vault</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         
         :root {
             --nf-black: #000000;
+            --nf-dark: #141414;
             --nf-red: #E50914;
+            --nf-white: #FFFFFF;
             --nav-height: 60px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --icon-size: 20px;
         }
 
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background-color: var(--nf-black);
-            color: white;
+            color: var(--nf-white);
             margin: 0; padding: 0;
-            user-select: none;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            overflow: hidden; 
         }
 
-        /* --- 演員頭像：簡約風格 --- */
-        .actor-badge { 
-            background: #1a1a1a; border-radius: 50%; width: 70px; height: 70px; 
-            margin: 0 auto 8px; border: 1px solid #333;
-            display: flex; align-items: center; justify-content: center;
+        /* 震動動畫 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-8px); }
         }
-        .actor-initials { font-size: 22px; font-weight: 700; color: #ddd; }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 
-        /* --- 佈局控制 --- */
+        /* 靜態 LED 狀態指示燈 */
+        .status-led {
+            width: 8px; height: 8px; border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 5px currentColor;
+            transition: color 0.3s, background-color 0.3s;
+        }
+        .led-active { color: #22c55e; background-color: #22c55e; }
+        .led-paused { color: #ef4444; background-color: #ef4444; }
+
         .page-overflow-wrapper { width: 100%; overflow: hidden; }
-        .page-container { display: flex; width: 300%; transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1); min-height: 100vh; }
-        .page-content { width: 33.3333%; padding: calc(var(--nav-height) + 20px) 16px 140px 16px; box-sizing: border-box; }
+        .page-container { display: flex; width: 300%; transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1); min-height: 100vh; align-items: flex-start; }
+        .page-content { width: 33.3333%; padding: calc(var(--nav-height) + 20px) 16px 140px 16px; box-sizing: border-box; height: auto; max-height: 100vh; overflow: hidden; }
+        .page-content.active-page { max-height: none; overflow: visible; }
 
-        /* --- 導航與標頭 --- */
         .mobile-header {
             position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height);
             z-index: 1000; display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(15px);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+            backdrop-filter: blur(10px);
+            padding: 0 20px;
         }
-
+        .header-center-box { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; }
+        .brand-logo { color: var(--nf-red); font-size: 24px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; cursor: pointer; transition: opacity 0.2s; }
+        
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0; height: calc(65px + var(--safe-bottom));
-            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); z-index: 1000;
+            background: rgba(18, 18, 18, 0.98); backdrop-filter: blur(20px); z-index: 1000;
             display: flex; align-items: center; padding-bottom: var(--safe-bottom); border-top: 1px solid #222;
         }
-
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; color: #555; }
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #71717a; transition: color 0.2s; height: 100%;
+        }
         .nav-item.active { color: #fff; }
-        .nav-item span { font-size: 10px; margin-top: 4px; font-weight: 600; }
+        .nav-item span { font-size: 10px; font-weight: 600; margin-top: 5px; line-height: 1; }
+        .nav-item svg { width: var(--icon-size); height: var(--icon-size); }
 
-        /* --- 重複檢查告警 --- */
-        .input-error { color: #ff4444 !important; border: 1px solid #ff4444 !important; }
-        .error-hint { color: #ff4444; font-size: 10px; margin-top: 4px; display: none; }
-
-        /* --- 卡片 --- */
-        .poster-card { position: relative; background: #111; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
-        .poster-card img { width: 100%; height: 100%; object-fit: cover; }
-        .card-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; }
-
-        .drawer { position: fixed; inset: 0; background: var(--nf-black); transform: translateY(100%); transition: transform 0.4s ease; z-index: 2000; padding: 25px; overflow-y: auto; }
-        .drawer.open { transform: translateY(0); }
+        .poster-card {
+            position: relative; background: #111; border-radius: 8px; overflow: hidden;
+            aspect-ratio: 16 / 9; width: 100%; margin-bottom: 8px;
+        }
+        .poster-card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         
-        #patternCanvas { touch-action: none; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-        .shake { animation: shake 0.3s ease-in-out; }
+        .grid-cols-2 .poster-card { aspect-ratio: 3 / 4; }
+
+        .action-circle-btn {
+            position: absolute; width: 36px; height: 36px;
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            z-index: 50; border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white; transition: transform 0.2s;
+            cursor: pointer; pointer-events: auto;
+        }
+        .card-edit-btn { top: 10px; right: 10px; }
+        .card-play-btn { bottom: 10px; right: 10px; }
+
+        .card-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 12px;
+            pointer-events: none; z-index: 10;
+        }
+
+        .page-dot-container { display: flex; flex-direction: column; gap: 16px; justify-content: center; align-items: center; padding: 20px 0 60px 0; width: 100%; }
+        .pagination-dots-row { display: flex; gap: 8px; justify-content: center; align-items: center; overflow-x: auto; scrollbar-width: none; width: 100%; }
+        .page-dot { min-width: 32px; height: 32px; border-radius: 50%; background-color: #1a1a1e; color: #71717a; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; transition: all 0.3s; flex-shrink: 0; }
+        .page-dot.active { background-color: var(--nf-red); color: white; transform: scale(1.1); }
+
+        .drawer {
+            position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+            background-color: var(--nf-black); transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000; overflow-y: auto; padding: 25px;
+        }
+        .drawer.open { transform: translateY(0); }
+
+        .search-input { width: 100%; background-color: #18181b; border: none; border-radius: 8px; padding: 0.85rem 1rem 0.85rem 3rem; font-size: 0.875rem; color: white; outline: none; }
+        
+        #authOverlay { position: fixed; inset: 0; background-color: var(--nf-black); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        .tag-pill {
+            background: #1a1a1b; color: #e4e4e7; padding: 8px 16px; border-radius: 12px;
+            font-size: 13px; font-weight: 500; border: 1px solid #27272a;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        #toast { 
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+            background: white; color: black; padding: 10px 24px; 
+            border-radius: 999px; text-xs; font-bold; z-index: 7000; 
+            opacity: 0; transition: all 0.3s; pointer-events: none; 
+        }
+
+        /* 重複警告樣式 */
+        .input-error { color: var(--nf-red) !important; border: 1px solid var(--nf-red) !important; }
     </style>
 </head>
-<body class="overflow-hidden">
+<body>
 
-    <div id="authOverlay" class="fixed inset-0 bg-black z-[5000] flex flex-col items-center justify-center">
-        <h1 class="text-red-600 text-3xl font-black tracking-tighter mb-12">NETFLAV</h1>
-        <canvas id="patternCanvas" width="300" height="300"></canvas>
-        <p class="text-zinc-600 text-[10px] tracking-[0.4em] mt-8">請繪製解鎖圖形</p>
+    <div id="authOverlay">
+        <h1 class="brand-logo mb-10 tracking-widest">Netflav</h1>
+        <div id="patternContainer">
+            <canvas id="patternCanvas" width="300" height="300"></canvas>
+        </div>
+        <p class="text-[10px] text-zinc-600 mt-12 uppercase tracking-[0.3em]">請繪製圖形解鎖</p>
     </div>
 
-    <header class="mobile-header invisible" id="mainHeader">
-        <div class="absolute left-5" onclick="toggleAutoLogout()"><span id="statusLed" class="w-2 h-2 rounded-full inline-block bg-green-500"></span></div>
-        <div class="text-red-600 text-xl font-black tracking-tighter" onclick="refreshAndHome()">NETFLAV</div>
+    <header class="mobile-header" id="mainHeader" style="visibility: hidden;">
+        <div class="header-center-box">
+            <div class="brand-logo" id="logoTitle" onclick="refreshAndHome()">Netflav</div>
+            <div class="led-trigger" onclick="toggleAutoLogout()">
+                <span id="statusLed" class="status-led led-active"></span>
+            </div>
+        </div>
     </header>
 
-    <div id="appContent" class="page-overflow-wrapper invisible">
+    <div id="appContent" class="page-overflow-wrapper" style="visibility: hidden;">
         <div class="page-container" id="pageContainer">
-            <div class="page-content">
-                <div class="flex justify-between items-baseline mb-4">
-                    <h2 class="text-lg font-bold">為您推薦</h2>
-                    <span id="itemCount" class="text-[10px] text-zinc-500">0 ITEMS</span>
+            <div id="page1" class="page-content active-page">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">為您推薦</h2>
+                    <span id="itemCount" class="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-1 rounded tracking-tighter">0 ITEMS</span>
                 </div>
-                <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="搜尋..." class="w-full bg-zinc-900 rounded-lg py-3 px-4 text-sm mb-6 outline-none">
+                
+                <div class="relative mb-6">
+                    <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="搜尋影片..." class="search-input">
+                </div>
+
                 <div id="gallery" class="grid gap-4"></div>
-                <div id="paginationContainer" class="mt-8 flex flex-col items-center gap-4"></div>
+                <div id="paginationContainer" class="page-dot-container mt-8"></div>
             </div>
 
-            <div class="page-content">
-                <h2 class="text-xl font-bold mb-6">探索標籤</h2>
-                <div id="tagCloud" class="flex flex-wrap gap-2"></div>
+            <div id="page2" class="page-content">
+                <h2 class="text-2xl font-bold mb-10 px-2">標籤分類</h2>
+                <div id="tagCloud" class="flex flex-wrap gap-3 px-2"></div>
             </div>
             
-            <div class="page-content">
-                <h2 class="text-xl font-bold mb-6">演員名單</h2>
-                <div id="actorList" class="grid grid-cols-3 gap-y-6"></div>
+            <div id="page3" class="page-content">
+                <h2 class="text-2xl font-bold mb-10 px-2">演員列表</h2>
+                <div id="actorList" class="grid grid-cols-3 gap-y-10 gap-x-2 text-center"></div>
             </div>
         </div>
     </div>
 
-    <nav class="bottom-nav invisible" id="bottomNav">
-        <div class="nav-item active" onclick="switchTab(0)"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg><span>首頁</span></div>
-        <div class="nav-item" onclick="switchTab(1)"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path></svg><span>標籤</span></div>
-        <div class="nav-item" onclick="switchTab(2)"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>演員</span></div>
-        <div class="nav-item" onclick="openDrawer()"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>新增</span></div>
-        <div class="nav-item" onclick="toggleFilterDrawer(true)"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span>設定</span></div>
+    <nav class="bottom-nav" id="bottomNav" style="visibility: hidden;">
+        <div class="nav-item active" id="navHome" onclick="switchTab(0)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            <span>首頁</span>
+        </div>
+        <div class="nav-item" onclick="switchTab(1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path></svg>
+            <span>標籤</span>
+        </div>
+        <div class="nav-item" onclick="openDrawer()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>新增</span>
+        </div>
+        <div class="nav-item" onclick="toggleFilterDrawer(true)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span>設定</span>
+        </div>
     </nav>
 
     <div id="drawer" class="drawer">
-        <div class="flex justify-between items-center mb-8">
-            <h3 class="text-xl font-bold">影片詳細資訊</h3>
-            <button onclick="closeDrawer()"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        <div class="flex items-center justify-between mb-8">
+            <h3 class="text-xl font-bold">影片資訊</h3>
+            <button onclick="closeDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
-        <div class="space-y-4">
-            <div>
-                <input type="text" id="nameInput" placeholder="名稱" class="w-full bg-zinc-900 p-4 rounded-lg outline-none">
+        <div class="space-y-6">
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">名稱 / 演員</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">番號 (ID)</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結 (URL)</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片</label><input type="text" id="imgInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+            <div class="pt-10 space-y-4">
+                <button onclick="saveItem()" class="w-full bg-red-600 py-4 font-bold rounded-lg shadow-lg">儲存內容</button>
+                <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full py-2 text-zinc-600 text-xs font-bold hidden">刪除此項目</button>
             </div>
-            <div>
-                <input type="text" id="codeInput" oninput="validateInput(this, 'code')" placeholder="番號 (不能重複)" class="w-full bg-zinc-900 p-4 rounded-lg outline-none transition-colors">
-                <p id="codeError" class="error-hint">此番號已存在於庫中</p>
-            </div>
-            <div>
-                <input type="text" id="urlInput" oninput="validateInput(this, 'url')" placeholder="影片連結 (不能重複)" class="w-full bg-zinc-900 p-4 rounded-lg outline-none transition-colors">
-                <p id="urlError" class="error-hint">此連結已重複</p>
-            </div>
-            <div>
-                <input type="text" id="tagsInput" placeholder="標籤 (以空白分隔)" class="w-full bg-zinc-900 p-4 rounded-lg outline-none">
-            </div>
-            <div>
-                <input type="text" id="imgInput" oninput="validateInput(this, 'img')" placeholder="封面圖片 URL (不能重複)" class="w-full bg-zinc-900 p-4 rounded-lg outline-none transition-colors">
-                <p id="imgError" class="error-hint">封面網址已重複</p>
-            </div>
-            <button id="saveBtn" onclick="saveItem()" class="w-full bg-red-600 py-4 font-black rounded-lg mt-4 disabled:opacity-30 disabled:bg-zinc-800" disabled>儲存</button>
-            <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full text-zinc-600 text-xs py-2 hidden">刪除項目</button>
         </div>
     </div>
 
     <div id="filterDrawer" class="drawer">
-        <h3 class="text-xl font-bold mb-8">帳戶與顯示</h3>
+        <div class="flex items-center justify-between mb-8">
+            <h3 class="text-xl font-bold">帳戶設定</h3>
+            <button onclick="toggleFilterDrawer(false)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line></svg></button>
+        </div>
         <div class="space-y-4">
-            <div class="bg-zinc-900 p-4 rounded-lg">
-                <p class="text-[10px] text-zinc-500 font-bold mb-3 uppercase">網格顯示</p>
-                <div class="flex gap-2">
-                    <button id="layoutBtn1" onclick="updateLayout(1)" class="flex-1 py-3 rounded text-xs font-bold">單欄</button>
-                    <button id="layoutBtn2" onclick="updateLayout(2)" class="flex-1 py-3 rounded text-xs font-bold">雙欄</button>
-                </div>
-            </div>
-            <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">匯出 JSON 備份</button>
-            <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center">匯入備份數據 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
-            <button onclick="lockApp()" class="w-full py-4 text-red-600 font-bold">安全登出</button>
-            <button onclick="toggleFilterDrawer(false)" class="w-full py-4 text-zinc-500 text-sm">關閉</button>
+            <button onclick="updateLayout(1)" class="w-full py-4 bg-zinc-900 rounded font-bold">單欄模式</button>
+            <button onclick="updateLayout(2)" class="w-full py-4 bg-zinc-900 rounded font-bold">雙欄模式</button>
+            <button onclick="lockApp()" class="w-full py-4 text-red-600 font-bold">立即登出</button>
         </div>
     </div>
 
-    <div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden flex items-center justify-center p-8 text-center">
-        <div><h4 class="text-xl font-bold mb-8">確定刪除此內容？</h4><button onclick="executeDelete()" class="w-64 bg-red-600 py-4 font-bold rounded-lg mb-4">確認刪除</button><button onclick="closeConfirm()" class="block w-full text-zinc-500">取消</button></div>
+    <div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden flex items-center justify-center p-8">
+        <div class="text-center"><h4 class="text-xl font-bold mb-8">確定要刪除嗎？</h4><div class="flex flex-col gap-4"><button onclick="executeDelete()" class="w-64 bg-red-600 py-4 font-bold rounded-lg">刪除</button><button onclick="closeConfirm()" class="py-2 text-zinc-500">取消</button></div></div>
     </div>
-    <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-2 rounded-full text-xs font-bold z-[7000] opacity-0 pointer-events-none transition-all"></div>
+    <div id="toast"></div>
 
     <script>
-        const STORAGE_KEY = 'NF_PRO_VAULT';
+        const STORAGE_KEY = 'NF_MOBILE_VAULT_FINAL';
         const CORRECT_PATTERN = "0124678";
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentId = null, currentPage = 1, pageSize = 12;
-        let isDrawing = false, selectedNodes = [], isErrorState = false;
-        let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT')) || 1;
-        
-        // --- 密碼鎖 ---
-        const nodes = [];
-        const canvas = document.getElementById('patternCanvas');
-        const ctx = canvas.getContext('2d');
-        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
+        let currentId = null, currentPage = 1, pageSize = 12, currentLayout = 1;
 
-        function draw() {
-            ctx.clearRect(0, 0, 300, 300);
-            if (selectedNodes.length > 0) {
-                ctx.beginPath(); ctx.lineWidth = 4; ctx.strokeStyle = isErrorState ? '#ff4444' : '#E50914';
-                const s = nodes.find(n => n.id === selectedNodes[0]); ctx.moveTo(s.x, s.y);
-                selectedNodes.slice(1).forEach(id => { const n = nodes.find(node => node.id === id); ctx.lineTo(n.x, n.y); });
-                ctx.stroke();
-            }
-            nodes.forEach(n => {
-                ctx.beginPath(); ctx.arc(n.x, n.y, 8, 0, Math.PI*2);
-                ctx.fillStyle = selectedNodes.includes(n.id) ? (isErrorState ? '#ff4444' : '#E50914') : '#333'; ctx.fill();
-            });
-            requestAnimationFrame(draw);
-        }
-        draw();
-
-        const getPos = e => {
-            const r = canvas.getBoundingClientRect();
-            const t = e.touches ? e.touches[0] : e;
-            return { x: (t.clientX - r.left) * (300/r.width), y: (t.clientY - r.top) * (300/r.height) };
-        };
-        const handleStart = e => { e.preventDefault(); isDrawing = true; selectedNodes = []; isErrorState = false; };
-        const handleMove = e => {
-            if (!isDrawing || isErrorState) return;
-            const p = getPos(e);
-            nodes.forEach(n => {
-                if (Math.hypot(p.x - n.x, p.y - n.y) < 25 && !selectedNodes.includes(n.id)) selectedNodes.push(n.id);
-            });
-        };
-        const handleEnd = () => {
-            if (!isDrawing) return; isDrawing = false;
-            if (selectedNodes.join('') === CORRECT_PATTERN) unlockVault();
-            else { isErrorState = true; setTimeout(() => { selectedNodes = []; isErrorState = false; }, 500); }
-        };
-        canvas.addEventListener('touchstart', handleStart); canvas.addEventListener('touchmove', handleMove); canvas.addEventListener('touchend', handleEnd);
-        canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
-
-        // --- 重複檢查邏輯 ---
-        function validateInput(el, field) {
-            const val = el.value.trim().toLowerCase();
-            const errorEl = document.getElementById(field + 'Error');
+        // --- 核心邏輯：重複檢查 ---
+        function saveItem() {
+            const name = document.getElementById('nameInput').value.trim();
+            const code = document.getElementById('codeInput').value.trim().toUpperCase();
+            const url = document.getElementById('urlInput').value.trim();
+            const img = document.getElementById('imgInput').value.trim();
             
-            // 排除正在編輯的項目本身
-            const isDuplicate = collections.some(item => 
-                String(item.id) !== String(currentId) && 
-                item[field] && item[field].toLowerCase() === val && val !== ""
-            );
+            if(!name) { showToast("請輸入名稱"); return; }
 
-            if (isDuplicate) {
-                el.classList.add('input-error');
-                errorEl.style.display = 'block';
-            } else {
-                el.classList.remove('input-error');
-                errorEl.style.display = 'none';
+            // 取得除了當前正在編輯的項目以外的所有資料
+            const otherItems = collections.filter(i => String(i.id) !== String(currentId));
+
+            // 檢查重複
+            const isCodeDup = code && otherItems.some(i => i.code === code);
+            const isUrlDup = url && otherItems.some(i => i.url === url);
+            const isImgDup = img && otherItems.some(i => i.img === img);
+
+            if (isCodeDup || isUrlDup || isImgDup) {
+                showToast("偵測到重複資料！請檢查標記欄位");
+                
+                // 變色處理
+                if (isCodeDup) document.getElementById('codeInput').style.color = 'var(--nf-red)';
+                if (isUrlDup) document.getElementById('urlInput').style.color = 'var(--nf-red)';
+                if (isImgDup) document.getElementById('imgInput').style.color = 'var(--nf-red)';
+                
+                return; // 攔截不儲存
             }
-            checkFormValidity();
+
+            const data = {
+                id: currentId || Date.now().toString(),
+                name, code, url, img,
+                tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t)
+            };
+
+            if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data;
+            else collections.unshift(data);
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
+            renderGallery();
+            closeDrawer();
+            showToast("儲存成功");
         }
 
-        function checkFormValidity() {
-            const hasErrors = document.querySelectorAll('.input-error').length > 0;
-            const nameFilled = document.getElementById('nameInput').value.trim() !== "";
-            document.getElementById('saveBtn').disabled = hasErrors || !nameFilled;
-        }
+        // --- 輸入時恢復顏色 ---
+        ['codeInput', 'urlInput', 'imgInput'].forEach(id => {
+            document.getElementById(id).addEventListener('input', function() {
+                this.style.color = 'white';
+            });
+        });
 
-        // --- 核心 App 功能 ---
-        function unlockVault() {
-            sessionStorage.setItem('LOCKED', 'false');
-            document.getElementById('authOverlay').style.display = 'none';
-            document.body.classList.remove('overflow-hidden');
-            ['mainHeader', 'appContent', 'bottomNav'].forEach(id => document.getElementById(id).classList.remove('invisible'));
-            updateLayout(currentLayout);
-        }
-
+        // --- UI & 渲染邏輯 (簡化版整合) ---
         function renderGallery() {
             const gallery = document.getElementById('gallery');
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = collections.filter(i => i.name.toLowerCase().includes(q) || (i.code || "").toLowerCase().includes(q));
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const filtered = collections.filter(i => i.name.toLowerCase().includes(query) || (i.code||"").toLowerCase().includes(query));
             
             document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
             gallery.className = `grid gap-4 ${currentLayout === 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
             
-            const start = (currentPage - 1) * pageSize;
-            const paginated = filtered.slice(start, start + pageSize);
-            
+            const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
             gallery.innerHTML = paginated.map(item => `
-                <div class="poster-card" onclick="openDrawer('${item.id}')">
-                    <img src="${item.img || 'https://via.placeholder.com/400x225/111/333?text=No+Image'}" loading="lazy">
-                    <div class="card-overlay">
-                        <p class="text-[9px] font-black text-red-600 tracking-wider">${item.code || 'SERIES'}</p>
-                        <p class="text-xs font-bold truncate">${item.name}</p>
-                    </div>
+                <div class="poster-card">
+                    <img src="${item.img || 'https://via.placeholder.com/400x225/111/333?text=No+Image'}">
+                    <div class="action-circle-btn card-edit-btn" onclick="openDrawer('${item.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+                    <div class="card-overlay"><p class="text-[9px] font-black text-red-600 mb-0.5">${item.code || ''}</p><p class="text-[13px] font-bold truncate">${item.name}</p></div>
                 </div>
             `).join('');
-            renderSectionPagination(filtered.length);
+            renderPagination(Math.ceil(filtered.length / pageSize));
         }
 
-        // --- 區段式分頁 (Section Pagination) ---
-        function renderSectionPagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / pageSize);
+        function renderPagination(total) {
             const container = document.getElementById('paginationContainer');
-            if (totalPages <= 1) { container.innerHTML = ""; return; }
-
-            const sectionSize = 5;
-            const currentSection = Math.ceil(currentPage / sectionSize);
-            const startPage = (currentSection - 1) * sectionSize + 1;
-            const endPage = Math.min(startPage + sectionSize - 1, totalPages);
-
-            let html = `<div class="flex items-center gap-1">`;
-            
-            if (currentSection > 1) {
-                html += `<button onclick="goToPage(${startPage - 1})" class="w-8 h-8 flex items-center justify-center bg-zinc-900 rounded-full text-zinc-500">«</button>`;
+            if (total <= 1) { container.innerHTML = ""; return; }
+            let dots = "";
+            for (let i = 1; i <= total; i++) {
+                dots += `<div onclick="currentPage=${i};renderGallery();window.scrollTo(0,0)" class="page-dot ${i === currentPage ? 'active' : ''}">${i}</div>`;
             }
-
-            for (let i = startPage; i <= endPage; i++) {
-                html += `<button onclick="goToPage(${i})" class="w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold ${i === currentPage ? 'bg-red-600 text-white' : 'bg-zinc-900 text-zinc-400'}">${i}</button>`;
-            }
-
-            if (endPage < totalPages) {
-                html += `<button onclick="goToPage(${endPage + 1})" class="w-8 h-8 flex items-center justify-center bg-zinc-900 rounded-full text-zinc-500">»</button>`;
-            }
-
-            html += `</div><p class="text-[10px] text-zinc-600">頁面 ${currentPage} / ${totalPages}</p>`;
-            container.innerHTML = html;
+            container.innerHTML = `<div class="pagination-dots-row">${dots}</div>`;
         }
-
-        function goToPage(p) { currentPage = p; renderGallery(); window.scrollTo(0,0); }
 
         function openDrawer(id = null) {
             currentId = id;
-            document.getElementById('drawer').classList.add('open');
-            const inputs = ['nameInput','codeInput','urlInput','tagsInput','imgInput'];
-            const errorHints = ['codeError','urlError','imgError'];
-            
-            inputs.forEach(k => {
+            const drawer = document.getElementById('drawer');
+            drawer.classList.add('open');
+            // 重置所有輸入顏色
+            ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => {
                 const el = document.getElementById(k);
-                el.classList.remove('input-error');
                 el.value = "";
+                el.style.color = "white";
             });
-            errorHints.forEach(k => document.getElementById(k).style.display = 'none');
 
             if(id) {
                 const item = collections.find(i => String(i.id) === String(id));
@@ -333,62 +345,68 @@
             } else {
                 document.getElementById('drawerDeleteBtn').classList.add('hidden');
             }
-            checkFormValidity();
         }
 
-        function saveItem() {
-            const data = {
-                id: currentId || Date.now().toString(),
-                name: document.getElementById('nameInput').value.trim(),
-                code: document.getElementById('codeInput').value.trim().toUpperCase(),
-                url: document.getElementById('urlInput').value.trim(),
-                tags: document.getElementById('tagsInput').value.split(/\s+/).filter(t=>t),
-                img: document.getElementById('imgInput').value.trim()
-            };
-            if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data;
-            else collections.unshift(data);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
-            renderGallery(); closeDrawer(); showToast("儲存成功");
+        // --- 其他系統功能 ---
+        function switchTab(index) {
+            document.getElementById('pageContainer').style.transform = `translateX(-${index * (100/3)}%)`;
+            document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index));
+            if(index === 1) renderTagCloud();
         }
 
-        // --- 其他工具 ---
-        function switchTab(idx) {
-            document.getElementById('pageContainer').style.transform = `translateX(-${idx * 33.3333}%)`;
-            document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === idx));
-            if (idx === 1) renderTags();
-            if (idx === 2) renderActors();
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.opacity = "1";
+            setTimeout(() => t.style.opacity = "0", 2000);
         }
 
-        function renderTags() {
-            const map = {}; collections.forEach(i => (i.tags || []).forEach(t => map[t] = (map[t] || 0) + 1));
-            document.getElementById('tagCloud').innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([t, c]) => `
-                <div onclick="filterByTag('${t}')" class="bg-zinc-900 px-4 py-2 rounded-full text-xs">${t} <span class="text-zinc-600 ml-1">${c}</span></div>
-            `).join('');
+        function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); location.reload(); }
+        function unlockVault() { 
+            sessionStorage.setItem('VAULT_UNLOCKED', 'true');
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('mainHeader').style.visibility = 'visible';
+            document.getElementById('appContent').style.visibility = 'visible';
+            document.getElementById('bottomNav').style.visibility = 'visible';
+            renderGallery();
         }
 
-        function renderActors() {
-            const map = {};
-            collections.forEach(i => {
-                const names = i.name.split(/[\s,，、/]+/).filter(n => n.length > 1 && !/[A-Z]+-\d+/.test(n));
-                names.forEach(n => map[n] = (map[n] || 0) + 1);
+        // --- 解鎖畫布邏輯 ---
+        const canvas = document.getElementById('patternCanvas');
+        const ctx = canvas.getContext('2d');
+        let selectedNodes = [], isDrawing = false;
+        const nodes = [];
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
+
+        function draw() {
+            ctx.clearRect(0,0,300,300);
+            nodes.forEach(n => {
+                ctx.beginPath(); ctx.arc(n.x, n.y, 10, 0, Math.PI*2);
+                ctx.fillStyle = selectedNodes.includes(n.id) ? "#E50914" : "#222";
+                ctx.fill();
             });
-            document.getElementById('actorList').innerHTML = Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([n, c]) => `
-                <div onclick="filterByTag('${n}')" class="flex flex-col items-center"><div class="actor-badge"><span class="actor-initials">${n[0]}</span></div><span class="text-[10px] font-bold text-zinc-400">${n}</span><span class="text-[8px] text-zinc-600">${c} 部</span></div>
-            `).join('');
+            if(isDrawing) requestAnimationFrame(draw);
         }
 
-        function filterByTag(t) { document.getElementById('searchInput').value = t; switchTab(0); renderGallery(); }
-        function updateLayout(c) { currentLayout = c; localStorage.setItem('NF_LAYOUT', c); renderGallery(); }
-        function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
-        function toggleFilterDrawer(o) { document.getElementById('filterDrawer').classList.toggle('open', o); }
-        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = 1; setTimeout(()=>t.style.opacity=0, 2000); }
-        function exportData() { const b = new Blob([JSON.stringify(collections)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'vault.json'; a.click(); }
-        function importData(e) { const r = new FileReader(); r.onload = ev => { collections = JSON.parse(ev.target.result); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入完成"); }; r.readAsText(e.target.files[0]); }
-        function lockApp() { sessionStorage.removeItem('LOCKED'); location.reload(); }
-        function debouncedRender() { clearTimeout(window.t); window.t = setTimeout(renderGallery, 300); }
-        function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; switchTab(0); renderGallery(); }
+        canvas.addEventListener('touchstart', (e) => { isDrawing = true; selectedNodes = []; draw(); });
+        canvas.addEventListener('touchmove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.touches[0].clientX - rect.left;
+            const y = e.touches[0].clientY - rect.top;
+            nodes.forEach(n => {
+                if(Math.hypot(x-n.x, y-n.y) < 25 && !selectedNodes.includes(n.id)) selectedNodes.push(n.id);
+            });
+        });
+        canvas.addEventListener('touchend', () => {
+            isDrawing = false;
+            if(selectedNodes.join('') === CORRECT_PATTERN) unlockVault();
+            else { selectedNodes = []; draw(); }
+        });
 
-        window.onload = () => { if(sessionStorage.getItem('LOCKED') === 'false') unlockVault(); };
+        function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
+        function toggleFilterDrawer(open) { document.getElementById('filterDrawer').classList.toggle('open', open); }
+        function updateLayout(l) { currentLayout = l; renderGallery(); toggleFilterDrawer(false); }
+
+        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED')) unlockVault(); else draw(); };
     </script>
 </body>
 </html>
