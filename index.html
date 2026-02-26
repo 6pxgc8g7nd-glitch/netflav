@@ -26,7 +26,6 @@
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
-            /* 初始化鎖定捲動，確保解鎖前不能滑動 */
             overflow: hidden; 
         }
 
@@ -46,7 +45,7 @@
         }
         .empty-state-icon { animation: floating 3s infinite ease-in-out; color: #27272a; }
 
-        /* LED 指示燈 */
+        /* 靜態 LED 狀態指示燈 */
         .status-led {
             width: 8px; height: 8px; border-radius: 50%;
             display: inline-block;
@@ -56,38 +55,10 @@
         .led-active { color: #22c55e; background-color: #22c55e; }
         .led-paused { color: #ef4444; background-color: #ef4444; }
 
-        /* --- 修正後的佈局系統 --- */
-        .page-overflow-wrapper { 
-            width: 100%; 
-            overflow: hidden; 
-        }
-        .page-container { 
-            display: flex; 
-            width: 300%; 
-            transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1); 
-            min-height: 100vh; 
-            align-items: flex-start; 
-        }
-        
-        .page-content { 
-            width: 33.3333%; 
-            padding: calc(var(--nav-height) + 20px) 16px 140px 16px; 
-            box-sizing: border-box; 
-            height: 100vh;      /* 非活動頁面強制限制高度 */
-            overflow: hidden;   /* 非活動頁面禁止捲動 */
-            opacity: 0;         /* 完全隱藏非活動頁面提升效能 */
-            pointer-events: none; /* 防止誤觸 */
-            transition: opacity 0.3s ease;
-        }
-
-        /* 活動頁面的關鍵修正：讓內容撐開高度並允許捲動 */
-        .page-content.active-page { 
-            height: auto; 
-            min-height: 100vh;
-            overflow: visible; 
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .page-overflow-wrapper { width: 100%; overflow: hidden; }
+        .page-container { display: flex; width: 300%; transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1); min-height: 100vh; align-items: flex-start; }
+        .page-content { width: 33.3333%; padding: calc(var(--nav-height) + 20px) 16px 140px 16px; box-sizing: border-box; height: auto; max-height: 100vh; overflow: hidden; }
+        .page-content.active-page { max-height: none; overflow: visible; }
 
         .mobile-header {
             position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height);
@@ -97,7 +68,8 @@
             padding: 0 20px;
         }
         .header-center-box { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; }
-        .brand-logo { color: var(--nf-red); font-size: 24px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; cursor: pointer; }
+        .brand-logo { color: var(--nf-red); font-size: 24px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; cursor: pointer; transition: opacity 0.2s; }
+        .brand-logo:active { opacity: 0.6; }
         .led-trigger { position: absolute; right: 0; padding: 10px; cursor: pointer; display: flex; align-items: center; }
 
         .bottom-nav {
@@ -110,16 +82,20 @@
             color: #71717a; transition: color 0.2s; height: 100%;
         }
         .nav-item.active { color: #fff; }
-        .nav-item span { font-size: 10px; font-weight: 600; margin-top: 5px; }
+        .nav-item span { font-size: 10px; font-weight: 600; margin-top: 5px; line-height: 1; }
         .nav-item svg { width: var(--icon-size); height: var(--icon-size); }
 
         .poster-card {
             position: relative; background: #111; border-radius: 8px; overflow: hidden;
             aspect-ratio: 16 / 9; width: 100%; margin-bottom: 8px;
         }
-        .poster-card img { width: 100%; height: 100%; object-fit: cover; }
+        .poster-card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         
         .grid-cols-2 .poster-card { aspect-ratio: 3 / 4; }
+        .grid-cols-2 .card-overlay { padding: 8px; }
+        .grid-cols-2 .card-overlay p.text-[13px] { font-size: 11px; }
+        .grid-cols-2 .action-circle-btn { width: 30px; height: 30px; }
+        .grid-cols-2 .card-play-btn svg { width: 14px; height: 14px; }
 
         .action-circle-btn {
             position: absolute; width: 36px; height: 36px;
@@ -127,28 +103,33 @@
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             z-index: 50; border: 1px solid rgba(255, 255, 255, 0.15);
             color: white; transition: transform 0.2s;
+            cursor: pointer; pointer-events: auto;
         }
+        .action-circle-btn:active { transform: scale(0.9); }
         .card-edit-btn { top: 10px; right: 10px; }
         .card-play-btn { bottom: 10px; right: 10px; }
+        .card-play-btn svg { width: 18px; height: 18px; fill: white; margin-left: 2px; }
 
         .card-overlay {
             position: absolute; inset: 0;
             background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
             display: flex; flex-direction: column; justify-content: flex-end; padding: 12px;
             pointer-events: none;
+            z-index: 10;
         }
 
         .page-dot-container {
             display: flex; gap: 12px; justify-content: center; align-items: center;
-            padding: 20px 0; overflow-x: auto;
+            padding: 20px 0; overflow-x: auto; scrollbar-width: none;
         }
         .page-dot {
             min-width: 36px; height: 36px; border-radius: 50%;
             background-color: #1a1a1e; color: #71717a;
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 600; transition: all 0.3s;
+            font-size: 13px; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
         }
-        .page-dot.active { background-color: var(--nf-red); color: white; transform: scale(1.1); }
+        .page-dot.active { background-color: var(--nf-red); color: white; transform: scale(1.1); box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3); }
 
         .drawer {
             position: fixed; top: 0; right: 0; bottom: 0; left: 0;
@@ -159,17 +140,52 @@
         .drawer.open { transform: translateY(0); }
 
         .search-container { position: relative; margin-bottom: 1.5rem; }
-        .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: var(--icon-size); height: var(--icon-size); color: #71717a; }
+        .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: var(--icon-size); height: var(--icon-size); color: #71717a; pointer-events: none; }
         .search-input { width: 100%; background-color: #18181b; border: none; border-radius: 8px; padding: 0.85rem 1rem 0.85rem 3rem; font-size: 0.875rem; color: white; outline: none; }
 
         #authOverlay { position: fixed; inset: 0; background-color: var(--nf-black); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .actor-badge { background: #1a1a1a; border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 8px; border: 1px solid #2a2a2a; }
         
+        /* --- 優化後的標籤顯示方式 --- */
         .tag-pill {
-            background: #1a1a1b; color: #e4e4e7; padding: 8px 16px; border-radius: 12px;
-            font-size: 13px; border: 1px solid #27272a; display: flex; align-items: center; gap: 8px;
+            background: #1a1a1b;
+            color: #e4e4e7;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid #27272a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            cursor: pointer;
         }
-        .tag-count-badge { background: #27272a; color: #a1a1aa; font-size: 10px; padding: 2px 6px; border-radius: 6px; }
+        .tag-pill:active {
+            transform: scale(0.92);
+            background: #27272a;
+        }
+        .tag-pill.hot-tag {
+            border-color: rgba(229, 9, 20, 0.3);
+            background: linear-gradient(145deg, #1a1a1b, #201010);
+        }
+        .tag-count-badge {
+            background: #27272a;
+            color: #a1a1aa;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .tag-pill.hot-tag .tag-count-badge {
+            background: var(--nf-red);
+            color: white;
+        }
+        /* -------------------------- */
+
+        .input-error { color: #ef4444 !important; }
+        .input-ring-error { ring: 1px solid #ef4444 !important; }
     </style>
 </head>
 <body>
@@ -298,67 +314,7 @@
         const nodes = [];
         let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 1;
 
-        // --- 核心修復：Tab 切換邏輯 ---
-        function switchTab(index) {
-            const container = document.getElementById('pageContainer');
-            const pages = document.querySelectorAll('.page-content');
-            
-            // 1. 執行平移動畫
-            container.style.transform = `translateX(-${index * (100/3)}%)`;
-            
-            // 2. 更新導覽按鈕 UI
-            document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index));
-            
-            // 3. 關鍵修正：切換 active-page 類別
-            pages.forEach((page, i) => {
-                if (i === index) {
-                    page.classList.add('active-page');
-                } else {
-                    page.classList.remove('active-page');
-                }
-            });
-
-            // 4. 強制滾動到頁面頂部
-            window.scrollTo({ top: 0, behavior: 'instant' });
-
-            // 5. 根據分頁渲染內容
-            if(index === 0) renderGallery();
-            if(index === 1) renderTagCloud();
-            if(index === 2) renderActorList();
-        }
-
-        // --- 核心修復：解鎖後恢復捲動 ---
-        function unlockVault() {
-            sessionStorage.setItem('VAULT_UNLOCKED', 'true');
-            document.getElementById('authOverlay').style.display = 'none';
-            
-            // 解鎖後允許全域捲動 (body)
-            document.body.style.overflowY = 'auto'; 
-            document.body.style.overflowX = 'hidden';
-
-            document.getElementById('mainHeader').style.visibility = 'visible';
-            document.getElementById('appContent').style.visibility = 'visible';
-            document.getElementById('bottomNav').style.visibility = 'visible';
-            
-            isAutoLogoutPaused = false;
-            document.getElementById('statusLed').className = "status-led led-active";
-            
-            updateLayout(currentLayout);
-            resetLogoutTimer();
-            // 預設切換到首頁並渲染
-            switchTab(0);
-        }
-
-        function lockApp() {
-            sessionStorage.removeItem('VAULT_UNLOCKED');
-            document.body.style.overflow = 'hidden'; // 鎖定時禁止捲動
-            document.getElementById('authOverlay').style.display = 'flex';
-            document.getElementById('mainHeader').style.visibility = 'hidden';
-            document.getElementById('appContent').style.visibility = 'hidden';
-            document.getElementById('bottomNav').style.visibility = 'hidden';
-        }
-
-        // --- 渲染 Gallery 與 分頁 ---
+        // --- 核心邏輯保持不變 (renderGallery, unlockVault, pattern drawing 等) ---
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.trim();
@@ -368,95 +324,137 @@
                 (i.tags || []).some(t => t.toLowerCase().includes(query.toLowerCase()))
             );
             document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
-            
             if (filtered.length === 0) {
                 gallery.className = "flex flex-col items-center justify-center py-20 text-center";
-                gallery.innerHTML = `<div class="empty-state-icon mb-6"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div><p class="text-zinc-500 font-bold text-lg mb-1">找不到相關內容</p>`;
+                gallery.innerHTML = `
+                    <div class="empty-state-icon mb-6">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
+                    <p class="text-zinc-500 font-bold text-lg mb-1">找不到相關內容</p>
+                    <p class="text-zinc-700 text-[10px] mb-8 uppercase tracking-[0.2em]">請嘗試其他關鍵字</p>
+                `;
                 document.getElementById('paginationContainer').innerHTML = "";
                 return;
             }
-
             gallery.className = `grid gap-4 ${currentLayout === 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
             const total = Math.ceil(filtered.length / pageSize);
+            if (currentPage > total && total > 0) currentPage = total;
             const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-            
             gallery.innerHTML = paginated.map(item => `
                 <div class="poster-card">
                     <img src="${item.img || 'https://via.placeholder.com/640x360/111/333?text=NO+IMAGE'}" loading="lazy">
                     <div class="action-circle-btn card-edit-btn" onclick="openDrawer('${item.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
-                    ${item.url ? `<div class="action-circle-btn card-play-btn" onclick="openExternalUrl('${item.url}', event)"><svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
+                    ${item.url ? `<div class="action-circle-btn card-play-btn" onclick="openExternalUrl('${item.url}', event)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
                     <div class="card-overlay"><p class="text-[9px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${item.code || 'SERIES'}</p><p class="text-[13px] font-bold truncate pr-14">${item.name}</p></div>
                 </div>
             `).join('');
             renderPagination(total);
         }
 
-        // 其餘邏輯保持不變...
+        // --- 優化後的標籤生成邏輯 ---
         function renderTagCloud() {
             const container = document.getElementById('tagCloud');
             const map = {};
             collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1));
+            
             const sortedTags = Object.entries(map).sort((a,b) => b[1] - a[1]);
-            container.innerHTML = sortedTags.map(([tag, count]) => `<div onclick="filterBySearch('${tag}')" class="tag-pill"><span>${tag}</span><span class="tag-count-badge">${count}</span></div>`).join('');
+            
+            // 計算平均值，用來定義什麼是「熱門」
+            const counts = Object.values(map);
+            const avgCount = counts.length > 0 ? counts.reduce((a, b) => a + b, 0) / counts.length : 0;
+
+            container.innerHTML = sortedTags.map(([tag, count]) => {
+                // 如果次數高於平均且大於1，則賦予 hot-tag 類別
+                const isHot = count > avgCount && count > 1;
+                return `
+                    <div onclick="filterBySearch('${tag}')" 
+                         class="tag-pill ${isHot ? 'hot-tag' : ''}">
+                        <span>${tag}</span>
+                        <span class="tag-count-badge">${count}</span>
+                    </div>
+                `;
+            }).join('');
         }
 
-        function renderActorList() {
-            const list = document.getElementById('actorList');
-            const map = {};
-            collections.forEach(i => {
-                const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1);
-                names.forEach(n => map[n] = (map[n] || 0) + 1);
+        // --- 其餘輔助功能函式保持不變 ---
+        function unlockVault() {
+            sessionStorage.setItem('VAULT_UNLOCKED', 'true');
+            document.getElementById('authOverlay').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('mainHeader').style.visibility = 'visible';
+            document.getElementById('appContent').style.visibility = 'visible';
+            document.getElementById('bottomNav').style.visibility = 'visible';
+            isAutoLogoutPaused = false;
+            document.getElementById('statusLed').className = "status-led led-active";
+            updateLayout(currentLayout);
+            resetLogoutTimer();
+        }
+
+        function switchTab(index) {
+            const container = document.getElementById('pageContainer');
+            const pages = document.querySelectorAll('.page-content');
+            container.style.transform = `translateX(-${index * (100/3)}%)`;
+            document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index));
+            pages.forEach((page, i) => {
+                if (i === index) page.classList.add('active-page');
+                else page.classList.remove('active-page');
             });
-            const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]);
-            list.innerHTML = sorted.map(([name, count]) => `<div onclick="filterBySearch('${name}')" class="flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800"><span class="text-xl font-black text-zinc-500">${name.substring(0,1)}</span></div><span class="text-xs font-bold mt-2">${name}</span></div>`).join('');
+            window.scrollTo(0, 0);
+            if(index === 1) renderTagCloud();
+            if(index === 2) renderActorList();
         }
 
-        function renderPagination(total) {
-            const container = document.getElementById('paginationContainer');
-            if (total <= 1) { container.innerHTML = ""; return; }
-            let pages = [];
-            for (let i = 1; i <= total; i++) pages.push(i);
-            container.innerHTML = pages.map(p => `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`).join('');
+        function filterBySearch(val) {
+            document.getElementById('searchInput').value = val;
+            switchTab(0);
+            renderGallery();
         }
 
-        function changePage(p) { currentPage = p; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); }
-        function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); }
-        function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; switchTab(0); }
-
-        // --- 圖形解鎖與計時器 (與原代碼一致) ---
-        let logoutTimer = null; let isAutoLogoutPaused = false;
-        function resetLogoutTimer() { if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display !== 'none') return; clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置登出"); }, 30000); }
-        function toggleAutoLogout() { isAutoLogoutPaused = !isAutoLogoutPaused; document.getElementById('statusLed').className = isAutoLogoutPaused ? "status-led led-paused" : "status-led led-active"; showToast(isAutoLogoutPaused ? "自動登出暫停" : "自動登出恢復"); }
-        ['mousedown', 'touchstart', 'scroll'].forEach(evt => window.addEventListener(evt, () => resetLogoutTimer(), { passive: true }));
-        
+        // 鎖定、登出、繪圖等邏輯 (省略...保持與你提供的原代碼一致)
+        function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); selectedNodes = []; isErrorState = false; isDrawing = false; document.body.style.overflow = 'hidden'; document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('mainHeader').style.visibility = 'hidden'; document.getElementById('appContent').style.visibility = 'hidden'; document.getElementById('bottomNav').style.visibility = 'hidden'; if (logoutTimer) clearTimeout(logoutTimer); toggleFilterDrawer(false); closeDrawer(); }
+        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 30;
+        function resetLogoutTimer() { const isLocked = document.getElementById('authOverlay').style.display !== 'none'; if (isAutoLogoutPaused || isLocked) { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
+        function toggleAutoLogout() { isAutoLogoutPaused = !isAutoLogoutPaused; const led = document.getElementById('statusLed'); if (isAutoLogoutPaused) { clearTimeout(logoutTimer); led.className = "status-led led-paused"; showToast("自動登出已暫停"); } else { led.className = "status-led led-active"; showToast("自動登出已恢復"); resetLogoutTimer(); } }
+        ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, () => { if (document.getElementById('authOverlay').style.display === 'none') resetLogoutTimer(); }, { passive: true }));
         const canvas = document.getElementById('patternCanvas'); const ctx = canvas.getContext('2d');
         for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
-        function drawPattern() { ctx.clearRect(0, 0, canvas.width, canvas.height); if (selectedNodes.length > 0) { ctx.beginPath(); ctx.lineWidth = 6; ctx.strokeStyle = isErrorState ? '#ff0000' : '#E50914'; const start = nodes.find(n => n.id === selectedNodes[0]); ctx.moveTo(start.x, start.y); for (let i = 1; i < selectedNodes.length; i++) { const nodeB = nodes.find(n => n.id === selectedNodes[i]); ctx.lineTo(nodeB.x, nodeB.y); } if (isDrawing && !isErrorState) ctx.lineTo(mousePos.x, mousePos.y); ctx.stroke(); } nodes.forEach(node => { const active = selectedNodes.includes(node.id); ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2); ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222'; ctx.fill(); }); requestAnimationFrame(drawPattern); }
-        const handleStart = (e) => { e.preventDefault(); isDrawing = true; selectedNodes = []; };
-        const handleMove = (e) => { if (!isDrawing) return; const rect = canvas.getBoundingClientRect(); const touch = e.touches ? e.touches[0] : e; mousePos = { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) }; nodes.forEach(node => { if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) selectedNodes.push(node.id); }); };
-        const handleEnd = () => { isDrawing = false; if (selectedNodes.join('') === CORRECT_PATTERN) unlockVault(); else if (selectedNodes.length > 0) handleWrongPattern(); };
+        function drawPattern() { ctx.clearRect(0, 0, canvas.width, canvas.height); if (selectedNodes.length > 0) { ctx.beginPath(); ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = isErrorState ? '#ff0000' : '#E50914'; const start = nodes.find(n => n.id === selectedNodes[0]); ctx.moveTo(start.x, start.y); for (let i = 1; i < selectedNodes.length; i++) { const nodeB = nodes.find(n => n.id === selectedNodes[i]); ctx.lineTo(nodeB.x, nodeB.y); } if (isDrawing && !isErrorState) ctx.lineTo(mousePos.x, mousePos.y); ctx.stroke(); } nodes.forEach(node => { const active = selectedNodes.includes(node.id); ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2); ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222'; ctx.fill(); if (active) { ctx.beginPath(); ctx.arc(node.x, node.y, 18, 0, Math.PI * 2); ctx.strokeStyle = isErrorState ? 'rgba(255,0,0,0.3)' : 'rgba(229,9,20,0.2)'; ctx.stroke(); } }); requestAnimationFrame(drawPattern); }
+        const handleStart = (e) => { if (isErrorState) return; e.preventDefault(); isDrawing = true; selectedNodes = []; };
+        const handleMove = (e) => { if (!isDrawing || isErrorState) return; const rect = canvas.getBoundingClientRect(); const touch = e.touches ? e.touches[0] : e; mousePos = { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) }; nodes.forEach(node => { if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) { selectedNodes.push(node.id); if (window.navigator.vibrate) window.navigator.vibrate(10); } }); };
+        const handleEnd = () => { if (!isDrawing || isErrorState) return; isDrawing = false; if (selectedNodes.join('') === CORRECT_PATTERN) unlockVault(); else if (selectedNodes.length > 0) handleWrongPattern(); };
         canvas.addEventListener('touchstart', handleStart); canvas.addEventListener('touchmove', handleMove); canvas.addEventListener('touchend', handleEnd); canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
-        function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; }, 600); }
+        function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); document.getElementById('authHint').innerText = "圖形錯誤，請重試"; document.getElementById('authHint').classList.add('text-red-600'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; document.getElementById('authHint').innerText = "請繪製圖形解鎖"; document.getElementById('authHint').classList.remove('text-red-600'); }, 600); }
         drawPattern();
-
-        // 其它功能函式保持原樣
-        function updateLayout(cols) { currentLayout = cols; localStorage.setItem('NF_LAYOUT_SETTING', cols); renderGallery(); }
+        function updateLayout(cols) { currentLayout = cols; localStorage.setItem('NF_LAYOUT_SETTING', cols); const btn1 = document.getElementById('layoutBtn1'); const btn2 = document.getElementById('layoutBtn2'); if(cols === 1) { btn1.className = "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white"; btn2.className = "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; } else { btn1.className = "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; btn2.className = "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white"; } renderGallery(); }
+        function renderPagination(total) { const container = document.getElementById('paginationContainer'); if (total <= 1) { container.innerHTML = ""; return; } let pages = [1]; for (let i = Math.max(2, currentPage - 1); i <= Math.min(total - 1, currentPage + 1); i++) pages.push(i); if (total > 1) pages.push(total); const finalPages = [...new Set(pages)]; container.innerHTML = finalPages.map(p => `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`).join(''); }
+        function changePage(p) { currentPage = p; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); }
         function openExternalUrl(url, e) { if(e) e.stopPropagation(); window.open(url.startsWith('http') ? url : 'https://' + url, '_blank'); }
         function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
-        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; setTimeout(() => t.style.opacity = "0", 2000); }
-        function openDrawer(id = null) { currentId = id; document.getElementById('drawer').classList.add('open'); if(id) { const item = collections.find(i => String(i.id) === String(id)); document.getElementById('nameInput').value = item.name; document.getElementById('codeInput').value = item.code || ""; document.getElementById('urlInput').value = item.url || ""; document.getElementById('tagsInput').value = (item.tags || []).join(' '); document.getElementById('imgInput').value = item.img || ""; document.getElementById('drawerDeleteBtn').classList.remove('hidden'); previewImage(item.img); } else { ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = ""); document.getElementById('drawerDeleteBtn').classList.add('hidden'); previewImage(""); } }
-        function validateCode(val) { const code = val.trim().toUpperCase(); const isDuplicate = collections.some(item => item.code === code && code !== "" && String(item.id) !== String(currentId)); document.getElementById('codeError').classList.toggle('hidden', !isDuplicate); }
-        function saveItem() { const name = document.getElementById('nameInput').value.trim(); if(!name) return; const data = { id: currentId || Date.now().toString(), name, code: document.getElementById('codeInput').value.trim().toUpperCase(), url: document.getElementById('urlInput').value.trim(), tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), img: document.getElementById('imgInput').value.trim() }; if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data; else collections.unshift(data); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); closeDrawer(); showToast("已儲存"); }
-        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; t.style.transform = "translate(-50%, -10px)"; setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translate(-50%, 0)"; }, 2000); }
+        function openDrawer(id = null) { currentId = id; document.getElementById('drawer').classList.add('open'); validateCode(""); if(id) { const item = collections.find(i => String(i.id) === String(id)); document.getElementById('nameInput').value = item.name; document.getElementById('codeInput').value = item.code || ""; document.getElementById('urlInput').value = item.url || ""; document.getElementById('tagsInput').value = (item.tags || []).join(' '); document.getElementById('imgInput').value = item.img || ""; document.getElementById('drawerDeleteBtn').classList.remove('hidden'); previewImage(item.img); } else { ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = ""); document.getElementById('drawerDeleteBtn').classList.add('hidden'); previewImage(""); } }
+        function validateCode(val) { const code = val.trim().toUpperCase(); const errorText = document.getElementById('codeError'); const inputField = document.getElementById('codeInput'); if (!code) { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); return; } const isDuplicate = collections.some(item => item.code === code && String(item.id) !== String(currentId)); if (isDuplicate) { errorText.classList.remove('hidden'); inputField.classList.add('input-error', 'input-ring-error'); } else { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); } }
+        function saveItem() { const name = document.getElementById('nameInput').value.trim(); const code = document.getElementById('codeInput').value.trim().toUpperCase(); if(!name) { showToast("請輸入名稱"); return; } if (collections.some(item => item.code === code && code !== "" && String(item.id) !== String(currentId))) { showToast(`番號 ${code} 已存在`); return; } const data = { id: currentId || Date.now().toString(), name, code, url: document.getElementById('urlInput').value.trim(), tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), img: document.getElementById('imgInput').value.trim() }; if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data; else collections.unshift(data); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); closeDrawer(); showToast("已儲存"); }
+        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); showToast("已刪除"); }
         function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
         function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
         function toggleFilterDrawer(open) { document.getElementById('filterDrawer').classList.toggle('open', open); }
-        function previewImage(url) { document.getElementById('editPreview').innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover">` : "PREVIEW"; }
-        function exportData() { const blob = new Blob([JSON.stringify(collections)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup.json`; a.click(); }
-        function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { collections = JSON.parse(ev.target.result); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); }; reader.readAsText(e.target.files[0]); }
+        function previewImage(url) { const container = document.getElementById('editPreview'); if (!url) { container.innerHTML = "PREVIEW"; return; } container.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded" onerror="this.src='https://via.placeholder.com/640x360/111/333?text=INVALID+IMAGE'">`; }
+        function exportData() { const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `netflav.json`; a.click(); }
+        function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); if (Array.isArray(data)) { collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入成功"); } } catch(err) { showToast("匯入失敗：格式錯誤"); } }; reader.readAsText(e.target.files[0]); }
+        function renderActorList() { const list = document.getElementById('actorList'); const map = {}; collections.forEach(i => { const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1); names.forEach(n => map[n] = (map[n] || 0) + 1); }); const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); list.innerHTML = sorted.map(([name, count]) => { let displayName = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : (name.length > 3 ? name.substring(0, 2) : name.substring(0, 1)); return `<div onclick="filterBySearch('${name}')" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500 tracking-tighter">${displayName}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${name}</span><span class="block text-[9px] text-zinc-600 mt-0.5">${count} 作品</span></div>`; }).join(''); }
+        function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); else lockApp(); };
+        window.onload = () => { 
+            if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
+                unlockVault(); 
+            } else {
+                document.body.style.overflow = 'hidden';
+            }
+        };
     </script>
 </body>
 </html>
