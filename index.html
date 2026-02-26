@@ -327,10 +327,10 @@
                 
                 if (isAutoLogoutPaused) {
                     clearTimeout(logoutTimer);
-                    showToast("🔒 自動登出已暫停");
+                    showToast("自動登出已暫停");
                 } else {
                     resetLogoutTimer();
-                    showToast("🕒 自動登出已啟用");
+                    showToast("自動登出已啟用");
                 }
             }, 800); // 800ms 觸發長按
         });
