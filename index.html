@@ -37,6 +37,13 @@
         }
         .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 
+        /* 呼吸燈動畫 - 修正版 */
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; filter: drop-shadow(0 0 2px var(--nf-red)); }
+            50% { opacity: 0.5; color: #ff5e5e; filter: drop-shadow(0 0 8px var(--nf-red)); }
+        }
+        .brand-logo.paused { animation: pulse-red 2s infinite !important; }
+
         .page-overflow-wrapper { width: 100%; overflow: hidden; }
         .page-container { display: flex; width: 300%; transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1); min-height: 100vh; }
         .page-content { width: 33.3333%; padding: calc(var(--nav-height) + 20px) 16px 140px 16px; box-sizing: border-box; }
@@ -48,8 +55,6 @@
             backdrop-filter: blur(10px);
         }
         .brand-logo { color: var(--nf-red); font-size: 24px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; cursor: pointer; }
-        .brand-logo.paused { animation: pulse-red 2s infinite; }
-        @keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; color: #ff5e5e; } }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0; height: calc(65px + var(--safe-bottom));
@@ -140,9 +145,8 @@
         .stealth-toggle input:checked ~ span { color: #888; }
     </style>
 </head>
-<body onmousedown="resetLogoutTimer()" ontouchstart="resetLogoutTimer()">
+<body>
 
-    <!-- 登入畫面 -->
     <div id="authOverlay">
         <h1 class="brand-logo mb-10 tracking-widest">Netflav</h1>
         <div id="patternContainer">
@@ -157,14 +161,12 @@
         </label>
     </div>
 
-    <!-- 頂部標題 -->
     <header class="mobile-header" id="mainHeader" style="visibility: hidden;">
         <div class="brand-logo" id="logoTitle" onclick="switchTab(0)">Netflav</div>
     </header>
 
     <div id="appContent" class="page-overflow-wrapper" style="visibility: hidden;">
         <div class="page-container" id="pageContainer">
-            <!-- 首頁 -->
             <div id="page1" class="page-content">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold">為您推薦</h2>
@@ -182,13 +184,11 @@
                 <div id="paginationContainer" class="page-dot-container mt-8"></div>
             </div>
 
-            <!-- 標籤頁 -->
             <div id="page2" class="page-content">
                 <h2 class="text-2xl font-bold mb-10 px-2">影片標籤</h2>
                 <div id="tagCloud" class="flex flex-wrap gap-3 px-2"></div>
             </div>
             
-            <!-- 演員頁 -->
             <div id="page3" class="page-content">
                 <h2 class="text-2xl font-bold mb-10 px-2">所有演員</h2>
                 <div id="actorList" class="grid grid-cols-3 gap-y-10 gap-x-2 text-center"></div>
@@ -196,7 +196,6 @@
         </div>
     </div>
 
-    <!-- 底部導航 -->
     <nav class="bottom-nav" id="bottomNav" style="visibility: hidden;">
         <div class="nav-item active" id="navHome" onclick="switchTab(0)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -230,7 +229,6 @@
         </div>
     </nav>
 
-    <!-- 編輯彈窗、設定彈窗、確認刪除視窗保留原樣... -->
     <div id="drawer" class="drawer">
         <div class="flex items-center justify-between mb-8">
             <h3 class="text-xl font-bold">影片資訊</h3>
@@ -294,13 +292,18 @@
         let isErrorState = false;
         const nodes = [];
 
-        // 自動登出相關
+        // --- 自動登出優化邏輯 ---
         let logoutTimer = null;
         let isAutoLogoutPaused = false;
-        const AUTO_LOGOUT_SECONDS = 5; 
+        const AUTO_LOGOUT_SECONDS = 300; // 設定為 300 秒 (5分鐘)
 
         function resetLogoutTimer() {
-            if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display === 'flex') return;
+            // 如果暫停中、或是 App 仍處於鎖定狀態，則不啟動/重置計時器
+            if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display !== 'none') {
+                if (logoutTimer) clearTimeout(logoutTimer);
+                return;
+            }
+
             clearTimeout(logoutTimer);
             logoutTimer = setTimeout(() => {
                 lockApp();
@@ -308,22 +311,42 @@
             }, AUTO_LOGOUT_SECONDS * 1000);
         }
 
-        /**
-         * 登出並鎖定 App
-         * 修改：登出時重置圖形鎖狀態，要求重新輸入
-         */
+        // 監聽更多類型的互動，確保計時器精準重置
+        ["mousedown", "touchstart", "mousemove", "keydown", "scroll"].forEach(evt => {
+            window.addEventListener(evt, resetLogoutTimer, { passive: true });
+        });
+
+        const logo = document.getElementById('logoTitle');
+        let pressTimer;
+
+        // 長按 Logo 切換暫停模式
+        logo.addEventListener('touchstart', (e) => {
+            pressTimer = setTimeout(() => {
+                isAutoLogoutPaused = !isAutoLogoutPaused;
+                logo.classList.toggle('paused', isAutoLogoutPaused);
+                
+                if (isAutoLogoutPaused) {
+                    clearTimeout(logoutTimer);
+                    showToast("🔒 自動登出已暫停");
+                } else {
+                    resetLogoutTimer();
+                    showToast("🕒 自動登出已啟用");
+                }
+            }, 800); // 800ms 觸發長按
+        });
+
+        logo.addEventListener('touchend', () => clearTimeout(pressTimer));
+        logo.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+        // --- App 基本功能邏輯 ---
+
         function lockApp() {
             sessionStorage.removeItem('VAULT_UNLOCKED');
-            
-            // 重置圖形鎖狀態
             selectedNodes = [];
             isErrorState = false;
             isDrawing = false;
-            
-            // 重新繪製空白畫布
             if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 切換介面顯示
             document.getElementById('authOverlay').style.display = 'flex';
             document.getElementById('authHint').innerText = "請繪製圖形解鎖";
             document.getElementById('authHint').classList.remove('text-red-600');
@@ -333,20 +356,8 @@
             document.getElementById('bottomNav').style.visibility = 'hidden';
             
             clearTimeout(logoutTimer);
-            toggleFilterDrawer(false); // 關閉設定選單
+            toggleFilterDrawer(false);
         }
-
-        const logo = document.getElementById('logoTitle');
-        let pressTimer;
-        logo.addEventListener('touchstart', () => {
-            pressTimer = setTimeout(() => {
-                isAutoLogoutPaused = !isAutoLogoutPaused;
-                logo.classList.toggle('paused', isAutoLogoutPaused);
-                showToast(isAutoLogoutPaused ? "自動登出已暫停" : "自動登出已啟用");
-                if (!isAutoLogoutPaused) resetLogoutTimer();
-            }, 500);
-        });
-        logo.addEventListener('touchend', () => clearTimeout(pressTimer));
 
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
@@ -356,7 +367,6 @@
             }
         }
 
-        // 繪製連線邏輯
         function drawPattern() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const isStealth = document.getElementById('stealthMode').checked;
@@ -374,7 +384,6 @@
                 for (let i = 1; i < selectedNodes.length; i++) {
                     const nodeA = nodes.find(n => n.id === selectedNodes[i-1]);
                     const nodeB = nodes.find(n => n.id === selectedNodes[i]);
-                    
                     const xc = (nodeA.x + nodeB.x) / 2;
                     const yc = (nodeA.y + nodeB.y) / 2;
                     ctx.quadraticCurveTo(nodeA.x, nodeA.y, xc, yc);
@@ -387,7 +396,6 @@
                 ctx.stroke();
             }
 
-            // 繪製點
             nodes.forEach(node => {
                 const active = selectedNodes.includes(node.id);
                 ctx.beginPath();
@@ -417,8 +425,11 @@
         window.addEventListener('touchmove', (e) => {
             if (!isDrawing || isErrorState) return;
             const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            mousePos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+            const touch = e.touches[0] || e;
+            mousePos = { 
+                x: (touch.clientX || touch.pageX) - rect.left, 
+                y: (touch.clientY || touch.pageY) - rect.top 
+            };
             nodes.forEach(node => { 
                 if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) {
                     selectedNodes.push(node.id);
@@ -442,11 +453,9 @@
             isErrorState = true;
             const container = document.getElementById('patternContainer');
             const hint = document.getElementById('authHint');
-            
             container.classList.add('shake');
             hint.innerText = "圖形錯誤，請重試";
             hint.classList.add('text-red-600');
-
             setTimeout(() => {
                 container.classList.remove('shake');
                 selectedNodes = [];
@@ -468,7 +477,6 @@
             resetLogoutTimer();
         }
 
-        // 其他功能維持原樣...
         function switchTab(index) {
             const container = document.getElementById('pageContainer');
             container.style.transform = `translateX(-${index * (100/3)}%)`;
@@ -486,7 +494,6 @@
                 return i.name.toLowerCase().includes(query) || (i.code || "").toLowerCase().includes(query) || (i.tags || []).some(t => t.toLowerCase().includes(query));
             });
             document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
-            
             const total = Math.ceil(filtered.length / pageSize);
             if (currentPage > total && total > 0) currentPage = total;
             const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -636,4 +643,3 @@
     </script>
 </body>
 </html>
-
