@@ -386,7 +386,7 @@
 
         // ... (以下為原本的圖形鎖與輔助邏輯，省略以保持精簡)
         function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 300; 
+        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 5; 
         function resetLogoutTimer() { const isLocked = document.getElementById('authOverlay').style.display !== 'none'; if (isAutoLogoutPaused || isLocked) { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
         function toggleAutoLogout() { isAutoLogoutPaused = !isAutoLogoutPaused; const led = document.getElementById('statusLed'); if (isAutoLogoutPaused) { clearTimeout(logoutTimer); led.className = "status-led led-paused"; showToast("自動登出已暫停"); } else { led.className = "status-led led-active"; showToast("自動登出已恢復"); resetLogoutTimer(); } }
         ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, () => { if (document.getElementById('authOverlay').style.display === 'none') resetLogoutTimer(); }, { passive: true }));
