@@ -28,121 +28,52 @@
             user-select: none;
         }
 
-        /* 震動動畫 */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-8px); }
-            50% { transform: translateX(8px); }
-            75% { transform: translateX(-8px); }
+        /* 呼吸燈動畫：用於暫停狀態 */
+        @keyframes pulse-dot-red {
+            0%, 100% { background-color: #ff0000; box-shadow: 0 0 2px #ff0000; }
+            50% { background-color: #550000; box-shadow: 0 0 10px #ff0000; }
         }
-        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 
-        /* 呼吸燈動畫 - 修正版 */
-        @keyframes pulse-red {
-            0%, 100% { opacity: 1; filter: drop-shadow(0 0 2px var(--nf-red)); }
-            50% { opacity: 0.5; color: #ff5e5e; filter: drop-shadow(0 0 8px var(--nf-red)); }
+        /* 狀態燈樣式 */
+        #statusDot {
+            width: 8px; height: 8px; border-radius: 50%;
+            display: inline-block; margin-left: 10px; vertical-align: middle;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
-        .brand-logo.paused { animation: pulse-red 2s infinite !important; }
+        .dot-protected { background-color: #22c55e; box-shadow: 0 0 6px #22c55e; } 
+        .dot-paused { animation: pulse-dot-red 1.2s infinite; }
 
+        /* 區段頁碼樣式 */
+        .page-segment-nav {
+            display: flex; align-items: center; justify-content: center;
+            gap: 25px; padding: 40px 0; color: #71717a; font-weight: bold;
+        }
+        .page-btn {
+            background: #1a1a1e; padding: 8px 18px; border-radius: 6px;
+            font-size: 12px; transition: all 0.2s; color: #eee;
+            border: 1px solid #333;
+        }
+        .page-btn:active { background: #333; transform: scale(0.9); }
+        .page-btn.disabled { opacity: 0.1; pointer-events: none; }
+
+        /* 全域核心樣式 */
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 50% { transform: translateX(8px); } 75% { transform: translateX(-8px); } }
+        .shake { animation: shake 0.4s both; }
         .page-overflow-wrapper { width: 100%; overflow: hidden; }
         .page-container { display: flex; width: 300%; transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1); min-height: 100vh; }
         .page-content { width: 33.3333%; padding: calc(var(--nav-height) + 20px) 16px 140px 16px; box-sizing: border-box; }
-
-        .mobile-header {
-            position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height);
-            z-index: 1000; display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
-            backdrop-filter: blur(10px);
-        }
+        .mobile-header { position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height); z-index: 1000; display: flex; align-items: center; justify-content: center; background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%); backdrop-filter: blur(10px); }
         .brand-logo { color: var(--nf-red); font-size: 24px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; cursor: pointer; }
-
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; height: calc(65px + var(--safe-bottom));
-            background: rgba(18, 18, 18, 0.98); backdrop-filter: blur(20px); z-index: 1000;
-            display: flex; align-items: center; padding-bottom: var(--safe-bottom); border-top: 1px solid #222;
-        }
-        .nav-item {
-            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: #71717a; transition: color 0.2s; height: 100%;
-        }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: calc(65px + var(--safe-bottom)); background: rgba(18, 18, 18, 0.98); backdrop-filter: blur(20px); z-index: 1000; display: flex; align-items: center; padding-bottom: var(--safe-bottom); border-top: 1px solid #222; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #71717a; transition: color 0.2s; height: 100%; }
         .nav-item.active { color: #fff; }
-        .nav-item span { font-size: 10px; font-weight: 600; margin-top: 5px; line-height: 1; }
-        .nav-item svg { width: var(--icon-size); height: var(--icon-size); }
-
-        .poster-card {
-            position: relative; background: #111; border-radius: 8px; overflow: hidden;
-            aspect-ratio: 16 / 9; width: 100%; margin-bottom: 8px;
-        }
-        .poster-card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-        
-        .action-circle-btn {
-            position: absolute; width: 36px; height: 36px;
-            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            z-index: 20; border: 1px solid rgba(255, 255, 255, 0.15);
-            color: white; transition: transform 0.2s;
-        }
-        .action-circle-btn:active { transform: scale(0.9); }
-        .card-edit-btn { top: 10px; right: 10px; }
-        .card-play-btn { bottom: 10px; right: 10px; }
-        .card-play-btn svg { width: 18px; height: 18px; fill: white; margin-left: 2px; }
-
-        .card-overlay {
-            position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
-            display: flex; flex-direction: column; justify-content: flex-end; padding: 12px;
-            pointer-events: none;
-        }
-
-        .page-dot-container {
-            display: flex; gap: 12px; justify-content: center; align-items: center;
-            padding: 20px 0; overflow-x: auto; scrollbar-width: none;
-        }
-        .page-dot-container::-webkit-scrollbar { display: none; }
-        .page-dot {
-            min-width: 36px; height: 36px; border-radius: 50%;
-            background-color: #1a1a1e; color: #71717a;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0;
-        }
-        .page-dot.active { background-color: var(--nf-red); color: white; transform: scale(1.1); box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3); }
-
-        .drawer {
-            position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-            background-color: var(--nf-black); transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 2000; overflow-y: auto; padding: 25px;
-        }
-        .drawer.open { transform: translateY(0); }
-
-        .search-container { position: relative; margin-bottom: 1.5rem; }
-        .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: var(--icon-size); height: var(--icon-size); color: #71717a; pointer-events: none; }
-        .search-input { width: 100%; background-color: #18181b; border: none; border-radius: 8px; padding: 0.85rem 1rem 0.85rem 3rem; font-size: 0.875rem; color: white; outline: none; }
-
+        .nav-item span { font-size: 10px; font-weight: 600; margin-top: 5px; }
+        .poster-card { position: relative; background: #111; border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 9; width: 100%; margin-bottom: 8px; }
+        .poster-card img { width: 100%; height: 100%; object-fit: cover; }
+        .card-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%); display: flex; flex-direction: column; justify-content: flex-end; padding: 12px; pointer-events: none; }
         #authOverlay { position: fixed; inset: 0; background-color: var(--nf-black); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .actor-badge { background: #222; border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 8px; border: 2px solid #333; }
-        .tag-pill { background: #1a1a1a; color: #ccc; padding: 10px 18px; border-radius: 4px; font-size: 13px; font-weight: 500; border: 1px solid #333; }
-        
-        .input-error { color: #ef4444 !important; }
-        .input-ring-error { ring: 1px solid #ef4444 !important; }
-
-        /* 隱形模式切換鈕樣式 */
-        .stealth-toggle {
-            margin-top: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 10px;
-            color: #444;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            cursor: pointer;
-        }
-        .stealth-toggle input { display: none; }
-        .stealth-toggle .box { width: 12px; height: 12px; border: 1px solid #333; border-radius: 2px; position: relative; }
-        .stealth-toggle input:checked + .box::after { content: ''; position: absolute; inset: 2px; background: var(--nf-red); }
-        .stealth-toggle input:checked ~ span { color: #888; }
+        .search-input { width: 100%; background-color: #18181b; border: none; border-radius: 8px; padding: 0.85rem 1rem 0.85rem 3rem; font-size: 0.875rem; color: white; outline: none; }
     </style>
 </head>
 <body>
@@ -150,19 +81,16 @@
     <div id="authOverlay">
         <h1 class="brand-logo mb-10 tracking-widest">Netflav</h1>
         <div id="patternContainer">
-            <div id="patternBox"><canvas id="patternCanvas" width="300" height="300"></canvas></div>
+            <canvas id="patternCanvas" width="300" height="300"></canvas>
         </div>
         <p id="authHint" class="text-[10px] text-zinc-600 mt-12 uppercase tracking-[0.3em]">請繪製圖形解鎖</p>
-        
-        <label class="stealth-toggle">
-            <input type="checkbox" id="stealthMode">
-            <div class="box"></div>
-            <span>隱形繪製模式</span>
-        </label>
     </div>
 
     <header class="mobile-header" id="mainHeader" style="visibility: hidden;">
-        <div class="brand-logo" id="logoTitle" onclick="switchTab(0)">Netflav</div>
+        <div class="flex items-center">
+            <div class="brand-logo" id="logoTitle" onclick="handleLogoClick()">Netflav</div>
+            <div id="statusDot" class="dot-protected" onclick="toggleAutoLogout()"></div>
+        </div>
     </header>
 
     <div id="appContent" class="page-overflow-wrapper" style="visibility: hidden;">
@@ -170,303 +98,103 @@
             <div id="page1" class="page-content">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold">為您推薦</h2>
-                    <span id="itemCount" class="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-1 rounded tracking-tighter">0 ITEMS</span>
+                    <span id="itemCount" class="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-1 rounded">0 ITEMS</span>
                 </div>
-                
-                <div class="search-container">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="搜尋影片、番號或演員..." class="search-input">
+                <div class="relative mb-6">
+                    <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="搜尋..." class="search-input">
                 </div>
-
                 <div id="gallery" class="grid grid-cols-1 gap-4"></div>
-                <div id="paginationContainer" class="page-dot-container mt-8"></div>
-            </div>
-
-            <div id="page2" class="page-content">
-                <h2 class="text-2xl font-bold mb-10 px-2">影片標籤</h2>
-                <div id="tagCloud" class="flex flex-wrap gap-3 px-2"></div>
+                
+                <div id="paginationContainer"></div> 
             </div>
             
-            <div id="page3" class="page-content">
-                <h2 class="text-2xl font-bold mb-10 px-2">所有演員</h2>
-                <div id="actorList" class="grid grid-cols-3 gap-y-10 gap-x-2 text-center"></div>
-            </div>
+            <div id="page2" class="page-content"><div id="tagCloud" class="flex flex-wrap gap-3"></div></div>
+            <div id="page3" class="page-content"><div id="actorList" class="grid grid-cols-3 gap-y-10"></div></div>
         </div>
     </div>
 
     <nav class="bottom-nav" id="bottomNav" style="visibility: hidden;">
-        <div class="nav-item active" id="navHome" onclick="switchTab(0)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-            <span>首頁</span>
-        </div>
-        <div class="nav-item" id="navTags" onclick="switchTab(1)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path>
-            </svg>
-            <span>標籤</span>
-        </div>
-        <div class="nav-item" id="navActor" onclick="switchTab(2)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <span>演員</span>
-        </div>
-        <div class="nav-item" onclick="openDrawer()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            <span>新增</span>
-        </div>
-        <div class="nav-item" onclick="toggleFilterDrawer(true)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            <span>設定</span>
-        </div>
+        <div class="nav-item active" onclick="switchTab(0)"><span>首頁</span></div>
+        <div class="nav-item" onclick="switchTab(1)"><span>標籤</span></div>
+        <div class="nav-item" onclick="switchTab(2)"><span>演員</span></div>
+        <div class="nav-item" onclick="showToast('功能開發中')"><span>設定</span></div>
     </nav>
-
-    <div id="drawer" class="drawer">
-        <div class="flex items-center justify-between mb-8">
-            <h3 class="text-xl font-bold">影片資訊</h3>
-            <button onclick="closeDrawer()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
-        <div class="space-y-6">
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">名稱 / 演員</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600"></div>
-            <div>
-                <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest flex justify-between">
-                    番號 (ID) <span id="codeError" class="text-red-500 hidden">此番號已存在</span>
-                </label>
-                <input type="text" id="codeInput" oninput="validateCode(this.value)" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600" placeholder="例如: ABC-123">
-            </div>
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">觀看連結 (URL)</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600"></div>
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤 (空格分隔)</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600"></div>
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片路徑</label><input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600"></div>
-            <div id="editPreview" class="aspect-[16/9] w-full bg-zinc-900 rounded-lg overflow-hidden flex items-center justify-center text-[10px] text-zinc-700">PREVIEW</div>
-            <div class="pt-10 space-y-4">
-                <button onclick="saveItem()" class="w-full bg-red-600 py-4 font-bold rounded-lg shadow-lg">儲存內容</button>
-                <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full py-2 text-zinc-600 text-xs font-bold hidden">刪除此項目</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="filterDrawer" class="drawer">
-        <div class="flex items-center justify-between mb-8">
-            <h3 class="text-xl font-bold">帳戶設定</h3>
-            <button onclick="toggleFilterDrawer(false)">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
-        <div class="space-y-4">
-            <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
-            <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">
-                匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)">
-            </label>
-            <button onclick="lockApp()" class="w-full py-4 text-red-600 font-bold">立即登出鎖定</button>
-        </div>
-    </div>
-
-    <div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden flex items-center justify-center p-8">
-        <div class="text-center">
-            <h4 class="text-xl font-bold mb-8">確定要刪除嗎？</h4>
-            <div class="flex flex-col gap-4">
-                <button onclick="executeDelete()" class="w-64 bg-red-600 py-4 font-bold rounded-lg">刪除</button>
-                <button onclick="closeConfirm()" class="py-2 text-zinc-500">取消</button>
-            </div>
-        </div>
-    </div>
 
     <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-2 rounded-full text-xs font-bold z-[7000] opacity-0 transition-all pointer-events-none"></div>
 
     <script>
-        const CORRECT_PATTERN = "0124678";
         const STORAGE_KEY = 'NF_MOBILE_VAULT_FINAL';
+        const CORRECT_PATTERN = "0124678";
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentId = null, currentPage = 1, pageSize = 12;
-        let isDrawing = false, selectedNodes = [], mousePos = { x: 0, y: 0 };
-        let isErrorState = false;
-        const nodes = [];
+        let currentPage = 1, pageSize = 12;
 
-        // --- 自動登出優化邏輯 ---
+        // --- 1. 自動登出與狀態指示燈邏輯 ---
         let logoutTimer = null;
         let isAutoLogoutPaused = false;
-        const AUTO_LOGOUT_SECONDS = 5; // 設定為 300 秒 (5分鐘)
+        const AUTO_LOGOUT_SECONDS = 300; // 5分鐘
+
+        function updateStatusUI() {
+            const dot = document.getElementById('statusDot');
+            if (isAutoLogoutPaused) {
+                dot.className = 'dot-paused';
+                showToast("自動登出：已暫停");
+            } else {
+                dot.className = 'dot-protected';
+                showToast("自動登出：保護中");
+                resetLogoutTimer();
+            }
+        }
+
+        function toggleAutoLogout() {
+            isAutoLogoutPaused = !isAutoLogoutPaused;
+            updateStatusUI();
+        }
 
         function resetLogoutTimer() {
-            // 如果暫停中、或是 App 仍處於鎖定狀態，則不啟動/重置計時器
             if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display !== 'none') {
                 if (logoutTimer) clearTimeout(logoutTimer);
                 return;
             }
-
             clearTimeout(logoutTimer);
             logoutTimer = setTimeout(() => {
-                lockApp();
-                showToast("閒置過久，已自動登出");
+                sessionStorage.removeItem('VAULT_UNLOCKED');
+                location.reload();
             }, AUTO_LOGOUT_SECONDS * 1000);
         }
 
-        // 監聽更多類型的互動，確保計時器精準重置
-        ["mousedown", "touchstart", "mousemove", "keydown", "scroll"].forEach(evt => {
-            window.addEventListener(evt, resetLogoutTimer, { passive: true });
-        });
+        // 長按 Logo 也能切換狀態
+        let logoTimer;
+        function handleLogoClick() { /* 普通點擊不觸發，避免誤觸 */ }
+        const logoEl = document.getElementById('logoTitle');
+        logoEl.addEventListener('touchstart', () => logoTimer = setTimeout(toggleAutoLogout, 800));
+        logoEl.addEventListener('touchend', () => clearTimeout(logoTimer));
 
-        const logo = document.getElementById('logoTitle');
-        let pressTimer;
+        // 監控任何觸摸動作來重置計時器
+        window.addEventListener('touchstart', resetLogoutTimer);
 
-        // 長按 Logo 切換暫停模式
-        logo.addEventListener('touchstart', (e) => {
-            pressTimer = setTimeout(() => {
-                isAutoLogoutPaused = !isAutoLogoutPaused;
-                logo.classList.toggle('paused', isAutoLogoutPaused);
-                
-                if (isAutoLogoutPaused) {
-                    clearTimeout(logoutTimer);
-                    showToast("自動登出已暫停");
-                } else {
-                    resetLogoutTimer();
-                    showToast("自動登出已啟用");
-                }
-            }, 800); // 800ms 觸發長按
-        });
+        // --- 2. 區段式頁碼邏輯 ---
+        function renderPagination(total) {
+            const container = document.getElementById('paginationContainer');
+            if (total <= 1) { container.innerHTML = ""; return; }
 
-        logo.addEventListener('touchend', () => clearTimeout(pressTimer));
-        logo.addEventListener('touchmove', () => clearTimeout(pressTimer));
-
-        // --- App 基本功能邏輯 ---
-
-        function lockApp() {
-            sessionStorage.removeItem('VAULT_UNLOCKED');
-            selectedNodes = [];
-            isErrorState = false;
-            isDrawing = false;
-            if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            document.getElementById('authOverlay').style.display = 'flex';
-            document.getElementById('authHint').innerText = "請繪製圖形解鎖";
-            document.getElementById('authHint').classList.remove('text-red-600');
-            
-            document.getElementById('mainHeader').style.visibility = 'hidden';
-            document.getElementById('appContent').style.visibility = 'hidden';
-            document.getElementById('bottomNav').style.visibility = 'hidden';
-            
-            clearTimeout(logoutTimer);
-            toggleFilterDrawer(false);
+            container.innerHTML = `
+                <div class="page-segment-nav">
+                    <div class="page-btn ${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">PREV</div>
+                    <div class="text-white text-sm tracking-widest">
+                        <span class="text-red-600">${currentPage}</span> / ${total}
+                    </div>
+                    <div class="page-btn ${currentPage === total ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">NEXT</div>
+                </div>
+            `;
         }
 
-        const canvas = document.getElementById('patternCanvas');
-        const ctx = canvas.getContext('2d');
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
-            }
+        function changePage(p) {
+            currentPage = p;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderGallery();
         }
 
-        function drawPattern() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const isStealth = document.getElementById('stealthMode').checked;
-
-            if (selectedNodes.length > 0 && (!isStealth || isErrorState)) {
-                ctx.beginPath();
-                ctx.lineWidth = 6;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.strokeStyle = isErrorState ? '#ff0000' : '#E50914';
-
-                const start = nodes.find(n => n.id === selectedNodes[0]);
-                ctx.moveTo(start.x, start.y);
-
-                for (let i = 1; i < selectedNodes.length; i++) {
-                    const nodeA = nodes.find(n => n.id === selectedNodes[i-1]);
-                    const nodeB = nodes.find(n => n.id === selectedNodes[i]);
-                    const xc = (nodeA.x + nodeB.x) / 2;
-                    const yc = (nodeA.y + nodeB.y) / 2;
-                    ctx.quadraticCurveTo(nodeA.x, nodeA.y, xc, yc);
-                    ctx.lineTo(nodeB.x, nodeB.y);
-                }
-
-                if (isDrawing && !isErrorState) {
-                    ctx.lineTo(mousePos.x, mousePos.y);
-                }
-                ctx.stroke();
-            }
-
-            nodes.forEach(node => {
-                const active = selectedNodes.includes(node.id);
-                ctx.beginPath();
-                ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
-                ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222';
-                
-                if (active || !isStealth) {
-                    ctx.fill();
-                    if (active) {
-                        ctx.beginPath();
-                        ctx.arc(node.x, node.y, 18, 0, Math.PI * 2);
-                        ctx.strokeStyle = isErrorState ? 'rgba(255,0,0,0.3)' : 'rgba(229,9,20,0.2)';
-                        ctx.stroke();
-                    }
-                }
-            });
-            requestAnimationFrame(drawPattern);
-        }
-
-        canvas.addEventListener('touchstart', (e) => { 
-            if (isErrorState) return;
-            e.preventDefault(); 
-            isDrawing = true; 
-            selectedNodes = []; 
-        });
-
-        window.addEventListener('touchmove', (e) => {
-            if (!isDrawing || isErrorState) return;
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0] || e;
-            mousePos = { 
-                x: (touch.clientX || touch.pageX) - rect.left, 
-                y: (touch.clientY || touch.pageY) - rect.top 
-            };
-            nodes.forEach(node => { 
-                if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) {
-                    selectedNodes.push(node.id);
-                    if (window.navigator.vibrate) window.navigator.vibrate(10);
-                } 
-            });
-        });
-
-        window.addEventListener('touchend', () => {
-            if (!isDrawing || isErrorState) return; 
-            isDrawing = false;
-            
-            if (selectedNodes.join('') === CORRECT_PATTERN) {
-                unlockVault();
-            } else if (selectedNodes.length > 0) {
-                handleWrongPattern();
-            }
-        });
-
-        function handleWrongPattern() {
-            isErrorState = true;
-            const container = document.getElementById('patternContainer');
-            const hint = document.getElementById('authHint');
-            container.classList.add('shake');
-            hint.innerText = "圖形錯誤，請重試";
-            hint.classList.add('text-red-600');
-            setTimeout(() => {
-                container.classList.remove('shake');
-                selectedNodes = [];
-                isErrorState = false;
-                hint.innerText = "請繪製圖形解鎖";
-                hint.classList.remove('text-red-600');
-            }, 600);
-        }
-
-        drawPattern();
-
+        // --- 3. 核心功能 (解鎖、渲染) ---
         function unlockVault() {
             sessionStorage.setItem('VAULT_UNLOCKED', 'true');
             document.getElementById('authOverlay').style.display = 'none';
@@ -477,169 +205,79 @@
             resetLogoutTimer();
         }
 
-        function switchTab(index) {
-            const container = document.getElementById('pageContainer');
-            container.style.transform = `translateX(-${index * (100/3)}%)`;
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach((el, i) => el.classList.toggle('active', i === index));
-            if(index === 1) renderTagCloud();
-            if(index === 2) renderActorList();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = collections.filter(i => {
-                return i.name.toLowerCase().includes(query) || (i.code || "").toLowerCase().includes(query) || (i.tags || []).some(t => t.toLowerCase().includes(query));
-            });
-            document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
-            const total = Math.ceil(filtered.length / pageSize);
-            if (currentPage > total && total > 0) currentPage = total;
-            const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+            const filtered = collections.filter(i => i.name.toLowerCase().includes(query));
             
+            document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
+            const totalPages = Math.ceil(filtered.length / pageSize);
+            const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+            if (paginated.length === 0) {
+                gallery.innerHTML = '<p class="text-center text-zinc-600 py-10">尚無內容</p>';
+                renderPagination(0);
+                return;
+            }
+
             gallery.innerHTML = paginated.map(item => `
                 <div class="poster-card">
-                    <img src="${item.img || 'https://images.unsplash.com/photo-1616469829581-73993eb86b02?q=80&w=640'}" loading="lazy">
-                    <div class="action-circle-btn card-edit-btn" onclick="openDrawer('${item.id}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    </div>
-                    ${item.url ? `<div class="action-circle-btn card-play-btn" onclick="openExternalUrl('${item.url}', event)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
+                    <img src="${item.img || 'https://via.placeholder.com/640x360'}" loading="lazy">
                     <div class="card-overlay">
-                        <p class="text-[9px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${item.code || 'SERIES'}</p>
-                        <p class="text-[13px] font-bold truncate pr-14">${item.name}</p>
+                        <p class="text-[13px] font-bold truncate">${item.name}</p>
                     </div>
                 </div>
             `).join('');
-            renderPagination(total);
-        }
-
-        function openExternalUrl(url, e) { 
-            if(e) e.stopPropagation(); 
-            window.open(url.startsWith('http') ? url : 'https://' + url, '_blank'); 
-        }
-
-        function renderTagCloud() {
-            const container = document.getElementById('tagCloud');
-            const map = {}; collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1));
-            const sortedTags = Object.entries(map).sort((a,b) => b[1] - a[1]);
-            container.innerHTML = sortedTags.map(([tag, count]) => `<div onclick="filterBySearch('${tag}')" class="tag-pill">${tag} <span class="ml-1 text-[10px] opacity-40">${count}</span></div>`).join('');
-        }
-
-        function renderActorList() {
-            const list = document.getElementById('actorList');
-            const map = {};
-            collections.forEach(i => {
-                const names = i.name.split(/[\s,，]+/).filter(n => n.trim());
-                names.forEach(n => map[n] = (map[n] || 0) + 1);
-            });
-            const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]);
-            list.innerHTML = sorted.map(([name, count]) => `
-                <div onclick="filterBySearch('${name}')">
-                    <div class="actor-badge overflow-hidden flex items-center justify-center">
-                        <img src="https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=141414" class="w-full h-full">
-                    </div>
-                    <span class="text-xs font-bold">${name}</span>
-                    <span class="block text-[9px] text-zinc-600 mt-0.5">${count} 作品</span>
-                </div>
-            `).join('');
-        }
-
-        function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); renderGallery(); }
-
-        function openDrawer(id = null) {
-            currentId = id; document.getElementById('drawer').classList.add('open');
-            validateCode(""); 
-            if(id) {
-                const item = collections.find(i => String(i.id) === String(id));
-                document.getElementById('nameInput').value = item.name;
-                document.getElementById('codeInput').value = item.code || "";
-                document.getElementById('urlInput').value = item.url || "";
-                document.getElementById('tagsInput').value = (item.tags || []).join(' ');
-                document.getElementById('imgInput').value = item.img || "";
-                document.getElementById('drawerDeleteBtn').classList.remove('hidden');
-                previewImage(item.img);
-            } else {
-                ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = "");
-                document.getElementById('drawerDeleteBtn').classList.add('hidden');
-                previewImage("");
-            }
-        }
-
-        function validateCode(val) {
-            const code = val.trim().toUpperCase();
-            const errorText = document.getElementById('codeError');
-            const inputField = document.getElementById('codeInput');
-            if (!code) { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); return; }
-            const isDuplicate = collections.some(item => item.code === code && String(item.id) !== String(currentId));
-            if (isDuplicate) { errorText.classList.remove('hidden'); inputField.classList.add('input-error', 'input-ring-error'); }
-            else { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); }
-        }
-
-        function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
-        function toggleFilterDrawer(open) { document.getElementById('filterDrawer').classList.toggle('open', open); }
-
-        function saveItem() {
-            const name = document.getElementById('nameInput').value.trim();
-            const code = document.getElementById('codeInput').value.trim().toUpperCase();
-            if(!name) { showToast("請輸入名稱"); return; }
-            const isDuplicate = collections.some(item => item.code === code && code !== "" && String(item.id) !== String(currentId));
-            if (isDuplicate) { showToast(`番號 ${code} 已存在`); return; }
-
-            const data = { 
-                id: currentId || Date.now().toString(), 
-                name, code, 
-                url: document.getElementById('urlInput').value.trim(), 
-                tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), 
-                img: document.getElementById('imgInput').value.trim() 
-            };
-
-            if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data;
-            else collections.unshift(data);
             
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
-            renderGallery(); closeDrawer(); showToast("已儲存");
+            renderPagination(totalPages);
         }
 
-        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); showToast("已刪除"); }
-        function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
-        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
-
-        function renderPagination(total) {
-            const container = document.getElementById('paginationContainer');
-            if(total <= 1) { container.innerHTML = ""; return; }
-            let html = "";
-            for(let i = 1; i <= total; i++) html += `<div onclick="changePage(${i})" class="page-dot ${i === currentPage ? 'active' : ''}">${i}</div>`;
-            container.innerHTML = html;
-        }
-
-        function changePage(p) { currentPage = p; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); }
-        function previewImage(url) { document.getElementById('editPreview').innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover rounded">` : "PREVIEW"; }
-        
         function showToast(msg) {
             const t = document.getElementById('toast');
-            t.innerText = msg; t.style.opacity = "1"; t.style.transform = "translate(-50%, -10px)";
-            setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translate(-50%, 0)"; }, 2000);
+            t.innerText = msg; t.style.opacity = "1";
+            setTimeout(() => t.style.opacity = "0", 2000);
         }
 
-        function exportData() {
-            const blob = new Blob([JSON.stringify(collections)], {type: 'application/json'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'netflav.json'; a.click();
+        function switchTab(index) {
+            document.getElementById('pageContainer').style.transform = `translateX(-${index * (100/3)}%)`;
+            const navs = document.querySelectorAll('.nav-item');
+            navs.forEach((n, i) => n.classList.toggle('active', i === index));
         }
 
-        function importData(e) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    if (Array.isArray(data)) { collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入成功"); }
-                } catch(err) { showToast("匯入失敗"); }
-            };
-            reader.readAsText(e.target.files[0]);
+        function debouncedRender() { 
+            currentPage = 1; // 搜尋時回到第一頁
+            clearTimeout(window.timer); 
+            window.timer = setTimeout(renderGallery, 300); 
         }
 
-        function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
-        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); };
+        // --- 圖形解鎖 (簡易實現) ---
+        const canvas = document.getElementById('patternCanvas');
+        const nodes = [];
+        for(let i=0; i<3; i++) for(let j=0; j<3; j++) nodes.push({id:(i*3+j).toString(), x:50+j*100, y:50+i*100});
+        let selected = [];
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); selected = []; });
+        canvas.addEventListener('touchmove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left, y = touch.clientY - rect.top;
+            nodes.forEach(n => {
+                if(Math.hypot(x-n.x, y-n.y) < 30 && !selected.includes(n.id)) {
+                    selected.push(n.id);
+                    if(navigator.vibrate) navigator.vibrate(10);
+                }
+            });
+        });
+        canvas.addEventListener('touchend', () => {
+            if(selected.join('') === CORRECT_PATTERN) unlockVault();
+            else {
+                document.getElementById('patternContainer').classList.add('shake');
+                setTimeout(() => document.getElementById('patternContainer').classList.remove('shake'), 400);
+            }
+        });
+
+        window.onload = () => { 
+            if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); 
+        };
     </script>
 </body>
 </html>
