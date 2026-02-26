@@ -118,12 +118,17 @@
             z-index: 10;
         }
 
-        /* --- 優化分頁容器 --- */
+        /* --- 優化分頁容器：改為垂直堆疊 --- */
         .page-dot-container {
-            display: flex; gap: 8px; justify-content: center; align-items: center;
-            padding: 20px 0 40px 0; overflow-x: auto; scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
+            display: flex; flex-direction: column; gap: 16px; justify-content: center; align-items: center;
+            padding: 20px 0 60px 0; width: 100%;
         }
+        .pagination-dots-row {
+            display: flex; gap: 8px; justify-content: center; align-items: center;
+            overflow-x: auto; scrollbar-width: none; width: 100%;
+        }
+        .pagination-dots-row::-webkit-scrollbar { display: none; }
+
         .page-dot {
             min-width: 32px; height: 32px; border-radius: 50%;
             background-color: #1a1a1e; color: #71717a;
@@ -135,14 +140,14 @@
 
         .jump-box {
             display: flex; align-items: center; background: #1a1a1e; 
-            border-radius: 20px; padding: 0 10px; height: 32px; 
-            border: 1px solid #27272a; margin-left: 4px;
+            border-radius: 12px; padding: 0 12px; height: 36px; 
+            border: 1px solid #27272a;
         }
         .jump-input {
-            background: transparent; width: 28px; text-align: center;
-            font-size: 12px; font-weight: 900; color: white; outline: none;
+            background: transparent; width: 35px; text-align: center;
+            font-size: 14px; font-weight: 900; color: var(--nf-red); outline: none;
+            border-bottom: 1px solid #333;
         }
-        /* 移除 number input 箭頭 */
         .jump-input::-webkit-inner-spin-button, .jump-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
         .drawer {
@@ -301,7 +306,7 @@
         const nodes = [];
         let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 1;
 
-        // --- 核心邏輯 ---
+        // --- 核心渲染邏輯 ---
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.trim();
@@ -335,13 +340,13 @@
             renderPagination(total);
         }
 
-        // --- 改寫分頁邏輯：區段式 + 跳轉 ---
+        // --- 優化後的整合分頁邏輯：區段顯示 + 下方跳轉 ---
         function renderPagination(total) {
             const container = document.getElementById('paginationContainer');
             if (total <= 1) { container.innerHTML = ""; return; }
 
             let pages = [];
-            const range = 1; // 當前頁碼前後顯示的數量
+            const range = 1;
 
             for (let i = 1; i <= total; i++) {
                 if (i === 1 || i === total || (i >= currentPage - range && i <= currentPage + range)) {
@@ -351,29 +356,36 @@
                 }
             }
 
-            let html = pages.map(p => {
+            // 上方：分頁按鈕列
+            let dotsHtml = `<div class="pagination-dots-row">`;
+            dotsHtml += pages.map(p => {
                 if (p === '...') return `<div class="px-1 text-zinc-700 text-[10px] font-black">...</div>`;
                 return `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`;
             }).join('');
+            dotsHtml += `</div>`;
 
-            // 加入跳轉輸入
-            html += `
+            // 下方：跳轉框
+            const jumpHtml = `
                 <div class="jump-box">
-                    <input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" 
+                    <span class="text-[10px] text-zinc-600 font-bold mr-2 uppercase tracking-tighter">Jump to</span>
+                    <input type="number" id="jumpPageInput" class="jump-input" 
+                        placeholder="${currentPage}" 
                         onkeydown="if(event.key==='Enter') jumpToPage(${total})">
-                    <span class="text-[10px] text-zinc-700 font-black ml-1">/ ${total}</span>
+                    <span class="text-[10px] text-zinc-700 font-black ml-2">/ ${total}</span>
                 </div>
             `;
 
-            container.innerHTML = html;
+            container.innerHTML = dotsHtml + jumpHtml;
         }
 
         function jumpToPage(total) {
-            const val = parseInt(document.getElementById('jumpPageInput').value);
+            const input = document.getElementById('jumpPageInput');
+            const val = parseInt(input.value);
             if (val >= 1 && val <= total) {
                 changePage(val);
             } else {
                 showToast("頁碼超出範圍");
+                input.value = "";
             }
         }
 
@@ -383,20 +395,7 @@
             renderGallery(); 
         }
 
-        // --- 以下功能保持不變 ---
-        function renderTagCloud() {
-            const container = document.getElementById('tagCloud');
-            const map = {};
-            collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1));
-            const sortedTags = Object.entries(map).sort((a,b) => b[1] - a[1]);
-            const counts = Object.values(map);
-            const avgCount = counts.length > 0 ? counts.reduce((a, b) => a + b, 0) / counts.length : 0;
-            container.innerHTML = sortedTags.map(([tag, count]) => {
-                const isHot = count > avgCount && count > 1;
-                return `<div onclick="filterBySearch('${tag}')" class="tag-pill ${isHot ? 'hot-tag' : ''}"><span>${tag}</span><span class="tag-count-badge">${count}</span></div>`;
-            }).join('');
-        }
-
+        // --- 其餘解鎖、切換、繪製邏輯保持不變 ---
         function unlockVault() {
             sessionStorage.setItem('VAULT_UNLOCKED', 'true');
             document.getElementById('authOverlay').style.display = 'none';
@@ -434,7 +433,6 @@
         
         function drawPattern() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // 預設為隱形繪製模式 (不畫線)
             if (selectedNodes.length > 0 && isErrorState) {
                 ctx.beginPath(); ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = '#ff0000';
                 const start = nodes.find(n => n.id === selectedNodes[0]); ctx.moveTo(start.x, start.y);
@@ -445,8 +443,7 @@
                 const active = selectedNodes.includes(node.id);
                 ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
                 ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222';
-                // 隱形模式：正常繪製時點不變紅，只有錯誤時才變紅
-                if (active && !isErrorState) ctx.fillStyle = '#111'; 
+                if (active && !isErrorState) ctx.fillStyle = '#111'; // 隱形模式
                 ctx.fill();
             });
             requestAnimationFrame(drawPattern);
@@ -462,12 +459,13 @@
         function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; }, 600); }
         drawPattern();
 
+        // 佈局與通用功能 (省略未變動部分以節省空間)
         function updateLayout(cols) { currentLayout = cols; localStorage.setItem('NF_LAYOUT_SETTING', cols); const b1 = document.getElementById('layoutBtn1'), b2 = document.getElementById('layoutBtn2'); b1.className = cols===1 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; b2.className = cols===2 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; renderGallery(); }
         function openExternalUrl(url, e) { if(e) e.stopPropagation(); window.open(url.startsWith('http') ? url : 'https://' + url, '_blank'); }
         function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; t.style.transform = "translate(-50%, -10px)"; setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translate(-50%, 0)"; }, 2000); }
         function openDrawer(id = null) { currentId = id; document.getElementById('drawer').classList.add('open'); if(id) { const item = collections.find(i => String(i.id) === String(id)); document.getElementById('nameInput').value = item.name; document.getElementById('codeInput').value = item.code || ""; document.getElementById('urlInput').value = item.url || ""; document.getElementById('tagsInput').value = (item.tags || []).join(' '); document.getElementById('imgInput').value = item.img || ""; document.getElementById('drawerDeleteBtn').classList.remove('hidden'); previewImage(item.img); } else { ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = ""); document.getElementById('drawerDeleteBtn').classList.add('hidden'); previewImage(""); } }
-        function validateCode(val) { /* 保持原樣 */ }
+        function validateCode(val) {}
         function saveItem() { const name = document.getElementById('nameInput').value.trim(); const code = document.getElementById('codeInput').value.trim().toUpperCase(); if(!name) { showToast("請輸入名稱"); return; } const data = { id: currentId || Date.now().toString(), name, code, url: document.getElementById('urlInput').value.trim(), tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), img: document.getElementById('imgInput').value.trim() }; if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data; else collections.unshift(data); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); closeDrawer(); showToast("已儲存"); }
         function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); }
         function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
@@ -477,6 +475,7 @@
         function previewImage(url) { const c = document.getElementById('editPreview'); c.innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover rounded">` : "PREVIEW"; }
         function exportData() { const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `netflav.json`; a.click(); }
         function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入成功"); } catch(err) { showToast("格式錯誤"); } }; reader.readAsText(e.target.files[0]); }
+        function renderTagCloud() { const container = document.getElementById('tagCloud'); const map = {}; collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1)); const sortedTags = Object.entries(map).sort((a,b) => b[1] - a[1]); const counts = Object.values(map); const avgCount = counts.length > 0 ? counts.reduce((a, b) => a + b, 0) / counts.length : 0; container.innerHTML = sortedTags.map(([tag, count]) => { const isHot = count > avgCount && count > 1; return `<div onclick="filterBySearch('${tag}')" class="tag-pill ${isHot ? 'hot-tag' : ''}"><span>${tag}</span><span class="tag-count-badge">${count}</span></div>`; }).join(''); }
         function renderActorList() { const list = document.getElementById('actorList'); const map = {}; collections.forEach(i => { const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1); names.forEach(n => map[n] = (map[n] || 0) + 1); }); const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); list.innerHTML = sorted.map(([name, count]) => { let disp = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : name.substring(0, 1); return `<div onclick="filterBySearch('${name}')" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500">${disp}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${name}</span><span class="block text-[9px] text-zinc-600">${count} 作品</span></div>`; }).join(''); }
         function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
