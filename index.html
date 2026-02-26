@@ -193,7 +193,7 @@
                 
                 <div id="page2" class="page-content container mx-auto px-6 mt-10">
                     <div class="mb-10 flex justify-between items-end">
-                        <h3 class="serif-bold text-3xl text-white uppercase tracking-widest">Cast List</h3>
+                        <h3 class="serif-bold text-3xl text-white uppercase tracking-widest">女優列表</h3>
                         <p id="actorCount" class="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em]"></p>
                     </div>
                     <div id="actorList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -320,7 +320,7 @@
         function switchTab(index) {
             currentTabIndex = index;
             pageContainer.style.transform = `translateX(-${index * 50}%)`;
-            tabIndicator.innerText = index === 0 ? "主頁面" : "女優列表";
+            tabIndicator.innerText = index === 0 ? "主頁面" : "女優";
             if(index === 1) renderActorList();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
