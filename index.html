@@ -165,7 +165,7 @@
     </div>
 
     <header class="mobile-header" id="mainHeader" style="visibility: hidden;">
-        <div class="brand-logo" id="logoTitle" onclick="switchTab(0)">Netflav</div>
+        <div class="brand-logo" id="logoTitle">Netflav</div>
     </header>
 
     <div id="appContent" class="page-overflow-wrapper" style="visibility: hidden;">
@@ -298,44 +298,55 @@
         let isErrorState = false;
         const nodes = [];
 
-        // --- 自動登出優化邏輯 ---
+        // --- 核心：強化版自動登出邏輯 ---
         let logoutTimer = null;
         let isAutoLogoutPaused = false;
-        const AUTO_LOGOUT_SECONDS = 300;
+        const AUTO_LOGOUT_SECONDS = 300; 
 
         function resetLogoutTimer() {
-            if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display !== 'none') {
+            // 邏輯關鍵：若已鎖定或暫停，則不計時
+            const isLocked = document.getElementById('authOverlay').style.display !== 'none';
+            if (isAutoLogoutPaused || isLocked) {
                 if (logoutTimer) clearTimeout(logoutTimer);
                 return;
             }
+
             clearTimeout(logoutTimer);
             logoutTimer = setTimeout(() => {
+                console.log("Idle timeout reached.");
                 lockApp();
-                showToast("閒置過久，已自動登出");
+                showToast("⏳ 閒置過久，已自動登出");
             }, AUTO_LOGOUT_SECONDS * 1000);
         }
 
-        ["mousedown", "touchstart", "mousemove", "keydown", "scroll"].forEach(evt => {
-            window.addEventListener(evt, resetLogoutTimer, { passive: true });
+        // 監聽互動重設計時器
+        ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => {
+            window.addEventListener(evt, () => {
+                if (document.getElementById('authOverlay').style.display === 'none') {
+                    resetLogoutTimer();
+                }
+            }, { passive: true });
         });
 
+        // Logo 長按邏輯
         const logo = document.getElementById('logoTitle');
         let pressTimer;
 
         logo.addEventListener('touchstart', (e) => {
             pressTimer = setTimeout(() => {
                 isAutoLogoutPaused = !isAutoLogoutPaused;
-                logo.classList.toggle('paused', isAutoLogoutPaused);
-                
                 const led = document.getElementById('statusLed');
+                
                 if (isAutoLogoutPaused) {
                     clearTimeout(logoutTimer);
-                    showToast("🔒 自動登出已暫停");
+                    logo.classList.add('paused');
                     led.className = "status-led led-paused";
+                    showToast("🔒 自動登出已暫停");
                 } else {
-                    resetLogoutTimer();
-                    showToast("🕒 自動登出已啟用");
+                    logo.classList.remove('paused');
                     led.className = "status-led led-active";
+                    showToast("🕒 自動登出已恢復");
+                    resetLogoutTimer();
                 }
             }, 800);
         });
@@ -426,15 +437,24 @@
         }
         drawPattern();
 
+        // 解鎖 App
         function unlockVault() {
             sessionStorage.setItem('VAULT_UNLOCKED', 'true');
             document.getElementById('authOverlay').style.display = 'none';
             document.getElementById('mainHeader').style.visibility = 'visible';
             document.getElementById('appContent').style.visibility = 'visible';
             document.getElementById('bottomNav').style.visibility = 'visible';
-            renderGallery(); resetLogoutTimer();
+            
+            // 重要：重設計時器
+            isAutoLogoutPaused = false;
+            logo.classList.remove('paused');
+            document.getElementById('statusLed').className = "status-led led-active";
+            
+            renderGallery(); 
+            resetLogoutTimer();
         }
 
+        // 鎖定 App
         function lockApp() {
             sessionStorage.removeItem('VAULT_UNLOCKED');
             selectedNodes = []; isErrorState = false; isDrawing = false;
@@ -442,10 +462,12 @@
             document.getElementById('mainHeader').style.visibility = 'hidden';
             document.getElementById('appContent').style.visibility = 'hidden';
             document.getElementById('bottomNav').style.visibility = 'hidden';
-            clearTimeout(logoutTimer);
+            if (logoutTimer) clearTimeout(logoutTimer);
+            toggleFilterDrawer(false); // 關閉設定抽屜
+            closeDrawer(); // 關閉新增抽屜
         }
 
-        // --- 核心渲染與分頁邏輯 ---
+        // --- 其餘資料渲染與 UI 功能 (保持不變) ---
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.toLowerCase();
@@ -476,27 +498,16 @@
         function renderPagination(total) {
             const container = document.getElementById('paginationContainer');
             if (total <= 1) { container.innerHTML = ""; return; }
-
             let pages = [];
-            const delta = 1; 
-
             pages.push(1);
-            for (let i = Math.max(2, currentPage - delta); i <= Math.min(total - 1, currentPage + delta); i++) {
-                if (i === currentPage - delta && i > 2) pages.push('...');
+            for (let i = Math.max(2, currentPage - 1); i <= Math.min(total - 1, currentPage + 1); i++) {
                 pages.push(i);
-                if (i === currentPage + delta && i < total - 1) pages.push('...');
             }
             if (total > 1) pages.push(total);
-
-            const finalPages = pages.filter((item, pos) => pages.indexOf(item) === pos);
-
-            container.innerHTML = finalPages.map(p => {
-                if (p === '...') return `<div class="text-zinc-700 px-1 text-xs">...</div>`;
-                return `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`;
-            }).join('');
+            const finalPages = [...new Set(pages)];
+            container.innerHTML = finalPages.map(p => `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`).join('');
         }
 
-        // --- 其他輔助功能 ---
         function switchTab(index) {
             const container = document.getElementById('pageContainer');
             container.style.transform = `translateX(-${index * (100/3)}%)`;
@@ -515,7 +526,6 @@
             setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translate(-50%, 0)"; }, 2000);
         }
 
-        // 原有 CRUD 功能保持不變
         function openDrawer(id = null) {
             currentId = id; document.getElementById('drawer').classList.add('open');
             validateCode(""); 
@@ -560,10 +570,10 @@
             if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data;
             else collections.unshift(data);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
-            renderGallery(); document.getElementById('drawer').classList.remove('open'); showToast("已儲存");
+            renderGallery(); closeDrawer(); showToast("已儲存");
         }
 
-        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); document.getElementById('drawer').classList.remove('open'); renderGallery(); showToast("已刪除"); }
+        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); showToast("已刪除"); }
         function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
         function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
@@ -575,7 +585,11 @@
         function renderActorList() { const list = document.getElementById('actorList'); const map = {}; collections.forEach(i => { const names = i.name.split(/[\s,，]+/).filter(n => n.trim()); names.forEach(n => map[n] = (map[n] || 0) + 1); }); const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); list.innerHTML = sorted.map(([name, count]) => `<div onclick="filterBySearch('${name}')"><div class="actor-badge overflow-hidden flex items-center justify-center"><img src="https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=141414" class="w-full h-full"></div><span class="text-xs font-bold">${name}</span><span class="block text-[9px] text-zinc-600 mt-0.5">${count} 作品</span></div>`).join(''); }
         function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); renderGallery(); }
 
-        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); };
+        window.onload = () => { 
+            if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
+                unlockVault();
+            }
+        };
     </script>
 </body>
 </html>
