@@ -250,7 +250,7 @@
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[11px] font-black rounded-full opacity-0 transition-all z-[600] uppercase tracking-widest shadow-2xl pointer-events-none"></div>
 
     <script>
-        // 解鎖邏輯與核心變數
+        // --- 解鎖與圖形 ---
         const CORRECT_PATTERN = "0124678";
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
@@ -261,8 +261,10 @@
         const nodes = [];
         const nodeRadius = 12;
         const hitRadius = 35;
+        
+        // --- 重點：5秒鎖定恢復 ---
         let idleTimer;
-        const IDLE_TIME_LIMIT = 300000; 
+        const IDLE_TIME_LIMIT = 5000; 
 
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
@@ -342,6 +344,7 @@
         window.addEventListener('touchend', handleEnd);
         drawPattern();
 
+        // --- 核心邏輯 ---
         const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentId = null;
@@ -349,7 +352,6 @@
         let currentPage = 1;
         const pageSize = 12;
 
-        // 回到主頁函式
         function goHome() {
             document.getElementById('searchInput').value = "";
             selectedFilterTags.clear();
@@ -357,6 +359,7 @@
             renderGallery(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
             showToast("已重置並返回主頁");
+            resetIdleTimer(); // 點擊主頁也視為互動
         }
 
         function unlockVault() {
