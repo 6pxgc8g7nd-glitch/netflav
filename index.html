@@ -360,7 +360,7 @@
                 return `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`;
             }).join('');
             dotsHtml += `</div>`;
-            const jumpHtml = `<div class="jump-box"><span class="text-[10px] text-zinc-600 font-bold mr-2 uppercase tracking-tighter">Jump to</span><input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" onkeydown="if(event.key==='Enter') jumpToPage(${total})"><span class="text-[10px] text-zinc-700 font-black ml-2">/ ${total}</span></div>`;
+            const jumpHtml = `<div class="jump-box"><span class="text-[10px] text-zinc-600 font-bold mr-2 uppercase tracking-tighter"></span><input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" onkeydown="if(event.key==='Enter') jumpToPage(${total})"><span class="text-[10px] text-zinc-700 font-black ml-2">/ ${total}</span></div>`;
             container.innerHTML = dotsHtml + jumpHtml;
         }
 
@@ -396,7 +396,7 @@
         function switchTab(index) { const container = document.getElementById('pageContainer'); const pages = document.querySelectorAll('.page-content'); container.style.transform = `translateX(-${index * (100/3)}%)`; document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index)); pages.forEach((page, i) => { i === index ? page.classList.add('active-page') : page.classList.remove('active-page'); }); window.scrollTo(0, 0); if(index === 1) renderTagCloud(); if(index === 2) renderActorList(); }
         function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); renderGallery(); }
         function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); selectedNodes = []; isErrorState = false; isDrawing = false; document.body.style.overflow = 'hidden'; document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('mainHeader').style.visibility = 'hidden'; document.getElementById('appContent').style.visibility = 'hidden'; document.getElementById('bottomNav').style.visibility = 'hidden'; if (logoutTimer) clearTimeout(logoutTimer); toggleFilterDrawer(false); closeDrawer(); }
-        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 30;
+        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 3;
         function resetLogoutTimer() { if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display !== 'none') { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
         function toggleAutoLogout() { isAutoLogoutPaused = !isAutoLogoutPaused; const led = document.getElementById('statusLed'); if (isAutoLogoutPaused) { clearTimeout(logoutTimer); led.className = "status-led led-paused"; showToast("自動登出已暫停"); } else { led.className = "status-led led-active"; showToast("自動登出已恢復"); resetLogoutTimer(); } }
         ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, () => { if (document.getElementById('authOverlay').style.display === 'none') resetLogoutTimer(); }, { passive: true }));
