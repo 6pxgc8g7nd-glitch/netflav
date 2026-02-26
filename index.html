@@ -168,7 +168,7 @@
                     </h2>
                     <div class="flex items-center gap-2">
                         <span id="navStat" class="text-[9px] font-black text-zinc-600 tracking-[0.1em] uppercase">就緒</span>
-                        <span id="tabIndicator" class="text-[9px] font-black text-[#c5a059] tracking-[0.1em] uppercase ml-1">GALLERY</span>
+                        <span id="tabIndicator" class="text-[9px] font-black text-[#c5a059] tracking-[0.1em] uppercase ml-1">主頁面</span>
                     </div>
                 </div>
             </div>
@@ -229,7 +229,7 @@
             </button>
         </div>
         <div class="space-y-6">
-            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">女優名稱</label><input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl text-white outline-none focus:border-[#c5a059]" placeholder="請輸入名稱 (多個請用空格區分)"></div>
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">女優名稱 (多個請用空格區分)</label><input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl text-white outline-none focus:border-[#c5a059]" placeholder="請輸入名稱"></div>
             <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">番號</label><input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="如：SNIS-001"></div>
             <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">標籤 (以空格分隔)</label><input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="例如：標籤1 標籤2"></div>
             <div class="space-y-4 pt-4">
@@ -268,7 +268,7 @@
         const nodes = [];
         
         let idleTimer;
-        const IDLE_TIME_LIMIT = 30000; 
+        const IDLE_TIME_LIMIT = 3000; 
         let isTimerSuspended = false, longPressTimer;
 
         for (let i = 0; i < 3; i++) {
@@ -320,7 +320,7 @@
         function switchTab(index) {
             currentTabIndex = index;
             pageContainer.style.transform = `translateX(-${index * 50}%)`;
-            tabIndicator.innerText = index === 0 ? "GALLERY" : "CAST";
+            tabIndicator.innerText = index === 0 ? "主頁面" : "女優列表";
             if(index === 1) renderActorList();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
