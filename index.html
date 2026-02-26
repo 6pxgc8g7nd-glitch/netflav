@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE ARCHIVE | 檔案庫</title>
+    <title>THE ARCHIVE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,900;1,900&family=Noto+Serif+TC:wght@900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
@@ -25,16 +25,18 @@
             padding: 0;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
+            touch-action: manipulation;
         }
 
         .serif-bold { font-family: 'Noto Serif TC', serif; }
 
+        /* 固定導覽列 */
         nav.sticky-header {
             position: fixed;
             top: 0; left: 0; right: 0;
             height: var(--nav-height);
             z-index: 100;
-            background: rgba(10, 10, 10, 0.85);
+            background: rgba(10, 10, 10, 0.8);
             backdrop-filter: blur(25px);
             border-bottom: 1px solid rgba(197, 160, 89, 0.15);
             display: flex;
@@ -43,52 +45,81 @@
 
         #appContent { padding-top: var(--nav-height); }
 
+        /* 統一導覽按鈕風格 */
         .nav-tool-btn {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(197, 160, 89, 0.3);
             color: var(--mag-accent);
-            padding: 6px 12px;
+            padding: 6px 16px;
             border-radius: 6px;
             font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.1em;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             height: 32px;
-            display: flex; align-items: center; justify-content: center;
-            white-space: nowrap;
         }
         .nav-tool-btn:hover {
             background: rgba(197, 160, 89, 0.1);
             border-color: var(--mag-accent);
+            box-shadow: 0 0 15px rgba(197, 160, 89, 0.2);
             color: white;
         }
 
         .nav-btn-primary { background: var(--mag-accent); color: black; border: 1px solid var(--mag-accent); }
+        .nav-btn-primary:hover { background: white; border-color: white; color: black; box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
 
+        /* 登入介面 */
         #authOverlay {
-            position: fixed; inset: 0;
+            position: fixed;
+            inset: 0;
             background-color: var(--mag-black);
             z-index: 500;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.8s cubic-bezier(0.8, 0, 0.2, 1);
         }
         
-        #patternCanvas { cursor: crosshair; touch-action: none; }
+        .pattern-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin-top: 2rem;
+        }
 
+        #patternCanvas {
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        /* 抽屜樣式 */
         .drawer {
-            position: fixed; top: 0; right: 0; height: 100%;
+            position: fixed;
+            top: 0; right: 0; height: 100%;
             background-color: #161616;
             border-left: 1px solid var(--mag-gray);
+            box-shadow: -20px 0 50px rgba(0,0,0,0.5);
             transform: translateX(100%);
-            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
             z-index: 200;
             overflow-y: auto;
         }
         .drawer.open { transform: translateX(0); }
 
+        /* 修復全域遮罩 Z-index */
+        #overlay {
+            z-index: 150;
+        }
+
         .entry-card {
             background: var(--mag-dark);
             border: 1px solid var(--mag-gray);
             border-radius: 12px;
+            overflow: hidden;
             transition: all 0.4s;
             display: flex; flex-direction: column; height: 100%;
         }
@@ -99,378 +130,497 @@
         }
 
         .page-btn {
-            width: 36px; height: 36px;
+            width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
             border-radius: 8px; border: 1px solid var(--mag-gray);
-            font-weight: 700; font-size: 11px; transition: all 0.3s;
+            font-weight: 700; font-size: 12px; transition: all 0.3s;
             background: #000; color: #666;
         }
-        .page-btn.active { background: var(--mag-accent); border-color: var(--mag-accent); color: #000; }
+        .page-btn.active { background: var(--mag-accent); border-color: var(--mag-accent); color: #000; box-shadow: 0 0 15px rgba(197, 160, 89, 0.3); }
 
-        .shake { animation: shake 0.5s ease-in-out; }
+        #confirmModal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 600; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease; backdrop-filter: blur(8px);
+        }
+        #confirmModal.open { opacity: 1; pointer-events: auto; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--mag-accent); border-radius: 10px; }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
         }
         
-        .fade-in { animation: fadeIn 0.5s ease forwards; }
+        .fade-in { animation: fadeIn 0.6s ease forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <!-- 解鎖介面 -->
+    <!-- 圖形解鎖登入介面 -->
     <div id="authOverlay">
-        <div class="text-center mb-6 px-4">
-            <h2 class="serif-bold text-2xl text-white tracking-[0.2em] uppercase">檔案存取控制</h2>
-            <p id="authStatusText" class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] mt-3">請繪製解鎖圖形</p>
+        <div class="text-center mb-6 px-6">
+            <div class="text-[#c5a059] mb-4 flex justify-center scale-125">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h2 class="serif-bold text-2xl text-white tracking-[0.2em] uppercase">ビデオを見る</h2>
+            <p id="authStatusText" class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] mt-3">パスワードを入力してください。</p>
         </div>
-        <div id="patternBox">
+
+        <div class="pattern-container" id="patternBox">
             <canvas id="patternCanvas" width="320" height="320"></canvas>
         </div>
-        <button onclick="resetPattern()" class="mt-8 text-[10px] text-zinc-600 hover:text-white tracking-widest uppercase">清除繪製</button>
+
+        <div class="mt-12 text-center">
+            <p class="text-[8px] text-zinc-700 uppercase tracking-[0.4em]">由 OBSIDIAN 協議加密保護</p>
+            <button type="button" onclick="resetPattern()" class="mt-4 text-[10px] text-zinc-500 font-bold hover:text-white transition-colors tracking-widest">重置繪製</button>
+        </div>
     </div>
 
-    <!-- 導航欄 -->
-    <nav class="sticky-header" id="mainNav" style="display: none;">
-        <div class="container mx-auto px-4 md:px-6 flex justify-between items-center">
-            <div class="flex items-center gap-3 md:gap-6">
-                <button onclick="toggleFilterDrawer(true)" class="text-[#c5a059] p-2">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    <!-- 固定導航欄 -->
+    <nav class="sticky-header" id="mainNav" style="visibility: hidden;">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center gap-4 md:gap-8">
+                <button type="button" onclick="toggleFilterDrawer(true)" class="text-[#c5a059] hover:text-white transition-all transform hover:scale-110 active:scale-95">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
                 <div class="flex flex-col">
-                    <h2 class="serif-bold text-lg md:text-xl text-white tracking-tighter">THE ARCHIVE<span class="text-[#c5a059]">.</span></h2>
-                    <span id="navStat" class="text-[8px] md:text-[9px] font-black text-zinc-600 tracking-widest">載入中...</span>
+                    <h2 onclick="logout()" title="點擊鎖定/切換使用者" class="serif-bold text-xl md:text-2xl text-white tracking-tighter cursor-pointer hover:text-[#c5a059] transition-colors duration-300 group">
+                        ムービー<span class="text-[#c5a059] group-hover:text-white transition-colors duration-300">.</span>
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span id="navStat" class="text-[9px] font-black text-zinc-600 tracking-[0.1em] uppercase">就緒</span>
+                        <span id="pageIndicator" class="text-[9px] font-black text-[#c5a059] tracking-[0.1em] uppercase"></span>
+                    </div>
                 </div>
             </div>
             
-            <div class="flex items-center gap-2">
-                <!-- 匯入與導出按鈕 -->
-                <button onclick="exportData()" class="nav-tool-btn px-2 md:px-4" title="導出 JSON 備份">導出</button>
-                <label class="nav-tool-btn px-2 md:px-4 cursor-pointer">
-                    導入 <input type="file" accept=".json" class="hidden" onchange="importData(event)">
+            <div class="flex items-center gap-2 md:gap-3">
+                <button type="button" onclick="exportData()" class="nav-tool-btn">匯出</button>
+                <label class="nav-tool-btn cursor-pointer">
+                    匯入 <input type="file" class="hidden" accept=".json" onchange="importData(event)">
                 </label>
-                <div class="w-px h-4 bg-zinc-800 mx-1"></div>
-                <button onclick="openDrawer()" class="nav-tool-btn nav-btn-primary px-3 md:px-6">新增</button>
+                <div class="h-4 w-px bg-zinc-800 mx-1 hidden md:block"></div>
+                <button type="button" onclick="openDrawer()" class="nav-tool-btn nav-btn-primary px-6">新增</button>
             </div>
         </div>
     </nav>
 
-    <!-- 主內容 -->
-    <div id="appContent" style="display: none;">
+    <!-- 主內容區 -->
+    <div id="appContent" style="visibility: hidden;">
         <div class="container mx-auto px-6 mt-10">
-            <div id="gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
-            <div id="paginationContainer" class="my-16 flex justify-center items-center gap-2"></div>
+            <main id="gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 min-h-[50vh]"></main>
+            <div id="paginationContainer" class="my-16 flex justify-center items-center gap-3"></div>
         </div>
     </div>
 
-    <!-- 搜尋與篩選抽屜 -->
-    <div id="filterDrawer" class="drawer p-8 w-[320px] md:w-[350px]">
+    <!-- 篩選抽屜 -->
+    <div id="filterDrawer" class="drawer p-8 w-[380px]">
         <div class="flex justify-between items-center mb-10">
-            <h3 class="serif-bold text-xl text-white uppercase tracking-widest">搜尋工具</h3>
-            <button onclick="toggleFilterDrawer(false)" class="text-zinc-500 hover:text-white text-xl">✕</button>
+            <h3 class="serif-bold text-xl text-white uppercase tracking-widest">篩選</h3>
+            <button type="button" onclick="toggleFilterDrawer(false)" class="text-zinc-500 hover:text-white">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
         </div>
         <div class="space-y-8">
             <div class="space-y-2">
-                <label class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">關鍵字 (名稱、番號)</label>
-                <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="搜尋關鍵字..." class="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white focus:border-[#c5a059] outline-none">
+                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">關鍵字</p>
+                <input type="text" id="searchInput" oninput="debouncedRender(true)" placeholder="名稱或番號" class="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#c5a059] transition-all">
             </div>
             <div class="space-y-4">
-                <label class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">標籤快選</label>
+                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">標籤</p>
                 <div id="filterTagsContainer" class="flex flex-wrap gap-2"></div>
             </div>
-            <button onclick="clearFilters()" class="w-full py-3 text-[10px] text-zinc-500 border border-zinc-800 rounded-lg hover:bg-zinc-900 transition-all font-bold">重置篩選</button>
         </div>
     </div>
 
     <!-- 編輯抽屜 -->
-    <div id="drawer" class="drawer p-10 w-full max-w-[500px]">
+    <div id="drawer" class="drawer p-10 w-full max-w-[550px]">
         <div class="flex justify-between items-center mb-10">
-            <h3 class="serif-bold text-2xl text-white uppercase tracking-wider">編輯紀錄</h3>
-            <button onclick="closeDrawer()" class="text-zinc-500 hover:text-white text-xl">✕</button>
+            <h3 class="serif-bold text-2xl text-white uppercase tracking-wider">紀錄編輯器</h3>
+            <button type="button" onclick="closeDrawer()" class="text-zinc-500 hover:text-white">
+                <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         </div>
         <div class="space-y-6">
-            <div class="space-y-1">
-                <label class="text-[10px] text-zinc-600 uppercase font-bold">標題 / 女優名稱</label>
-                <input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl text-white outline-none focus:border-[#c5a059]">
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">女優名稱</label><input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl text-white outline-none focus:border-[#c5a059]" placeholder="請輸入名稱"></div>
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">番號</label><input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="如：SNIS-001"></div>
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">標籤 (以空格分隔)</label><input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="例如：標籤1 標籤2"></div>
+            <div class="space-y-4 pt-4">
+                <label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">預覽圖</label>
+                <input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-transparent border-b border-zinc-800 py-2 text-zinc-500 text-[10px] outline-none" placeholder="輸入圖片 URL 地址">
+                <div id="editPreview" class="w-full aspect-video bg-zinc-900/50 flex items-center justify-center rounded-xl border border-dashed border-zinc-800 overflow-hidden"></div>
             </div>
-            <div class="space-y-1">
-                <label class="text-[10px] text-zinc-600 uppercase font-bold">番號 (序列碼)</label>
-                <input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]">
-            </div>
-            <div class="space-y-1">
-                <label class="text-[10px] text-zinc-600 uppercase font-bold">標籤 (以空格分隔)</label>
-                <input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]">
-            </div>
-            <div class="space-y-1">
-                <label class="text-[10px] text-zinc-600 uppercase font-bold">圖片 URL</label>
-                <input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-transparent border-b border-zinc-800 py-3 text-zinc-500 text-xs outline-none">
-            </div>
-            <div id="editPreview" class="w-full aspect-video bg-zinc-900 flex items-center justify-center rounded-xl overflow-hidden border border-zinc-800"></div>
-            <div class="space-y-1">
-                <label class="text-[10px] text-zinc-600 uppercase font-bold">外部跳轉連結</label>
-                <input type="text" id="urlInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-[#c5a059] text-xs outline-none">
-            </div>
-            <div class="pt-8 space-y-4">
-                <button onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-4 font-black uppercase text-xs tracking-widest hover:bg-white transition-all">更新紀錄</button>
-                <button id="deleteBtn" onclick="deleteItem()" class="w-full text-red-900 text-[10px] font-bold uppercase hover:text-red-500 transition-colors hidden">刪除紀錄</button>
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">外部連結</label><input type="text" id="urlInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-[#c5a059] text-[10px] outline-none" placeholder="https://..."></div>
+            <div class="pt-10 flex flex-col gap-4">
+                <button type="button" onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-4 font-black uppercase tracking-[0.2em] text-[12px] hover:bg-white transition-all shadow-xl">儲存</button>
+                <button type="button" id="drawerDeleteBtn" onclick="requestDelete()" class="w-full text-zinc-700 text-[10px] uppercase font-bold hover:text-red-500 transition-colors hidden">刪除</button>
             </div>
         </div>
     </div>
 
-    <!-- 遮罩與通知 -->
-    <div id="overlay" onclick="closeAll()" class="fixed inset-0 bg-black/80 opacity-0 pointer-events-none transition-all z-[150] backdrop-blur-sm"></div>
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[10px] font-black rounded-full opacity-0 transition-all z-[600] tracking-widest pointer-events-none">系統提示</div>
+    <!-- 刪除確認 -->
+    <div id="confirmModal">
+        <div class="bg-zinc-950 border border-zinc-800 p-8 rounded-2xl max-w-sm w-full mx-6 text-center shadow-2xl relative">
+            <h4 class="serif-bold text-xl text-white mb-2 uppercase">確認刪除</h4>
+            <p class="text-zinc-600 text-[10px] mb-8 tracking-widest">此動作將不可逆，數據將永久消失</p>
+            <div class="grid grid-cols-2 gap-4">
+                <button type="button" onclick="closeConfirm()" class="bg-zinc-900 text-zinc-400 py-3 rounded-lg text-[11px] font-bold hover:bg-zinc-800 transition-colors">取消</button>
+                <button type="button" onclick="executeDelete()" class="bg-red-950 text-red-500 py-3 rounded-lg text-[11px] font-bold hover:bg-red-900 transition-colors">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全域遮罩 -->
+    <div id="overlay" onclick="closeAllDrawers()" class="fixed inset-0 bg-black/80 opacity-0 pointer-events-none transition-opacity duration-500 backdrop-blur-sm"></div>
+
+    <!-- 通知 UI -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[11px] font-black rounded-full opacity-0 transition-all z-[600] uppercase tracking-widest shadow-2xl pointer-events-none">系統初始化完成</div>
 
     <script>
-        // --- 解鎖邏輯 ---
-        const CORRECT_PATTERN = "0124678"; 
+        // --- 解鎖邏輯變數 ---
+        const CORRECT_PATTERN = "0124678"; // 預設解鎖路徑：Z 字型
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
-        let isDrawing = false, selectedNodes = [], mousePos = { x: 0, y: 0 };
+        const patternBox = document.getElementById('patternBox');
+        let isDrawing = false;
+        let selectedNodes = [];
+        let mousePos = { x: 0, y: 0 };
         const nodes = [];
-        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 60 + j * 100, y: 60 + i * 100 });
+        const nodeRadius = 12;
+        const hitRadius = 35;
 
-        function draw() {
+        // 初始化 3x3 點位
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                nodes.push({
+                    id: (i * 3 + j).toString(),
+                    x: 60 + j * 100,
+                    y: 60 + i * 100
+                });
+            }
+        }
+
+        function drawPattern() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (selectedNodes.length > 0) {
-                ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#c5a059'; ctx.moveTo(nodes[selectedNodes[0]].x, nodes[selectedNodes[0]].y);
-                selectedNodes.forEach(id => ctx.lineTo(nodes[id].x, nodes[id].y));
+                ctx.beginPath();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#c5a059';
+                ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+                ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(197, 160, 89, 0.5)';
+                const start = nodes.find(n => n.id === selectedNodes[0]);
+                ctx.moveTo(start.x, start.y);
+                for (let i = 1; i < selectedNodes.length; i++) {
+                    const node = nodes.find(n => n.id === selectedNodes[i]);
+                    ctx.lineTo(node.x, node.y);
+                }
                 if (isDrawing) ctx.lineTo(mousePos.x, mousePos.y);
                 ctx.stroke();
+                ctx.shadowBlur = 0;
             }
             nodes.forEach(node => {
                 const active = selectedNodes.includes(node.id);
-                ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
-                ctx.strokeStyle = active ? '#c5a059' : '#333'; ctx.stroke();
-                if(active) { ctx.beginPath(); ctx.arc(node.x, node.y, 4, 0, Math.PI * 2); ctx.fillStyle = '#c5a059'; ctx.fill(); }
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, nodeRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = active ? '#c5a059' : '#2a2a2a';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                if (active) {
+                    ctx.beginPath(); ctx.arc(node.x, node.y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#c5a059'; ctx.fill();
+                    ctx.beginPath(); ctx.arc(node.x, node.y, nodeRadius + 5, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(197, 160, 89, 0.1)'; ctx.fill();
+                }
             });
-            requestAnimationFrame(draw);
+            requestAnimationFrame(drawPattern);
         }
 
-        const getPos = e => {
-            const r = canvas.getBoundingClientRect();
+        function handleStart(e) { isDrawing = true; selectedNodes = []; updateMousePos(e); checkCollision(); }
+        function handleMove(e) { if (!isDrawing) return; updateMousePos(e); checkCollision(); }
+        function handleEnd() { if (!isDrawing) return; isDrawing = false; validatePattern(); }
+        function updateMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return { x: clientX - r.left, y: clientY - r.top };
-        };
-
-        const handleStart = e => { isDrawing = true; selectedNodes = []; mousePos = getPos(e); };
-        const handleMove = e => {
-            if (!isDrawing) return;
-            mousePos = getPos(e);
-            nodes.forEach(n => {
-                if (Math.hypot(mousePos.x - n.x, mousePos.y - n.y) < 25 && !selectedNodes.includes(n.id)) {
-                    selectedNodes.push(n.id);
+            mousePos = { x: clientX - rect.left, y: clientY - rect.top };
+        }
+        function checkCollision() {
+            nodes.forEach(node => {
+                const dist = Math.hypot(mousePos.x - node.x, mousePos.y - node.y);
+                if (dist < hitRadius && !selectedNodes.includes(node.id)) {
+                    selectedNodes.push(node.id);
                     if (navigator.vibrate) navigator.vibrate(10);
                 }
             });
-        };
-        const handleEnd = () => {
-            if (!isDrawing) return;
-            isDrawing = false;
-            if (selectedNodes.join('') === CORRECT_PATTERN) unlock();
-            else if(selectedNodes.length > 0) { 
-                document.getElementById('patternBox').classList.add('shake');
-                setTimeout(() => { document.getElementById('patternBox').classList.remove('shake'); selectedNodes = []; }, 500);
-            }
-        };
-
-        canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
-        canvas.addEventListener('touchstart', e => { e.preventDefault(); handleStart(e); }); window.addEventListener('touchmove', handleMove); window.addEventListener('touchend', handleEnd);
-        draw();
-
-        function unlock() {
-            sessionStorage.setItem('unlocked', 'true');
-            document.getElementById('authOverlay').style.display = 'none';
-            document.getElementById('mainNav').style.display = 'flex';
-            document.getElementById('appContent').style.display = 'block';
-            renderGallery();
         }
+        function validatePattern() {
+            const pattern = selectedNodes.join('');
+            if (pattern === CORRECT_PATTERN) {
+                unlockVault();
+            } else if (selectedNodes.length > 0) {
+                patternBox.classList.add('shake');
+                document.getElementById('authStatusText').innerText = "圖形錯誤，請重新嘗試";
+                document.getElementById('authStatusText').classList.replace('text-zinc-500', 'text-red-500');
+                setTimeout(() => {
+                    patternBox.classList.remove('shake');
+                    selectedNodes = [];
+                    document.getElementById('authStatusText').innerText = "請繪製解鎖圖形以進入存取檔案庫";
+                    document.getElementById('authStatusText').classList.replace('text-red-500', 'text-zinc-500');
+                }, 600);
+            }
+        }
+        function resetPattern() { selectedNodes = []; }
 
-        // --- 核心與搜尋 ---
-        let collections = JSON.parse(localStorage.getItem('VAULT_DATA')) || [];
-        let currentEditId = null;
+        canvas.addEventListener('mousedown', handleStart);
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); });
+        window.addEventListener('touchmove', (e) => { handleMove(e); });
+        window.addEventListener('touchend', handleEnd);
+        drawPattern();
+
+        // --- 應用程式邏輯 ---
+        const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
+        const SESSION_AUTH_FLAG = 'VAULT_UNLOCKED';
+        let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let currentId = null;
         let selectedFilterTags = new Set();
         let currentPage = 1;
         const pageSize = 12;
 
-        function debounce(func, delay = 400) {
-            let timer;
-            return (...args) => { clearTimeout(timer); timer = setTimeout(() => func(...args), delay); };
+        window.onload = function() {
+            if (sessionStorage.getItem(SESSION_AUTH_FLAG) === 'true') showAppDirectly();
+        };
+
+        function unlockVault() {
+            sessionStorage.setItem(SESSION_AUTH_FLAG, 'true');
+            const auth = document.getElementById('authOverlay');
+            auth.style.opacity = '0';
+            auth.style.transform = 'scale(1.1)';
+            auth.style.pointerEvents = 'none';
+            setTimeout(() => {
+                auth.style.display = 'none';
+                document.getElementById('mainNav').style.visibility = 'visible';
+                document.getElementById('appContent').style.visibility = 'visible';
+                renderGallery();
+            }, 800);
         }
-        const debouncedRender = debounce(() => { currentPage = 1; renderGallery(); });
 
-        function renderGallery() {
-            const query = document.getElementById('searchInput').value.trim().toLowerCase();
-            const normQuery = query.replace(/[^a-z0-9]/g, '');
+        function showAppDirectly() {
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('mainNav').style.visibility = 'visible';
+            document.getElementById('appContent').style.visibility = 'visible';
+            renderGallery();
+        }
 
-            const filtered = collections.filter(item => {
-                const matchesTags = selectedFilterTags.size === 0 || Array.from(selectedFilterTags).every(t => (item.tags || []).includes(t));
-                if (!matchesTags) return false;
-                if (!query) return true;
-                const nameMatch = item.name.toLowerCase().includes(query);
-                const code = (item.code || "").toLowerCase();
-                const codeMatch = code.includes(query) || (normQuery && code.replace(/[^a-z0-9]/g, '').includes(normQuery));
-                return nameMatch || codeMatch;
-            });
+        function logout() {
+            sessionStorage.removeItem(SESSION_AUTH_FLAG);
+            location.reload();
+        }
 
-            const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-            if(currentPage > totalPages) currentPage = totalPages;
-            const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-            document.getElementById('navStat').innerText = `已載入 ${filtered.length} 筆`;
+        function renderGallery(showSkeleton = true) {
             const gallery = document.getElementById('gallery');
-            gallery.innerHTML = paginated.length ? "" : `<div class="col-span-full py-40 text-center text-zinc-700 uppercase tracking-widest">無相符紀錄</div>`;
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = collections.filter(i => {
+                const matchSearch = i.name.toLowerCase().includes(query) || (i.code || "").toLowerCase().includes(query);
+                const matchTags = selectedFilterTags.size === 0 || (i.tags || []).some(t => selectedFilterTags.has(t));
+                return matchSearch && matchTags;
+            });
+            const totalItems = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+            if(currentPage > totalPages) currentPage = totalPages;
+            const startIndex = (currentPage - 1) * pageSize;
+            const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
 
-            paginated.forEach((item, i) => {
-                const div = document.createElement('div');
-                div.className = "entry-card fade-in";
-                div.style.animationDelay = `${i * 0.05}s`;
-                div.innerHTML = `
-                    <div class="aspect-video bg-black overflow-hidden rounded-t-xl">
-                        <img src="${item.img || 'https://via.placeholder.com/400x225/111/333?text=EMPTY'}" class="w-full h-full object-cover opacity-80" loading="lazy">
+            document.getElementById('navStat').innerText = `${totalItems} 筆`;
+            document.getElementById('pageIndicator').innerText = `/  ${currentPage} / ${totalPages}頁 `;
+            gallery.innerHTML = "";
+            if(totalItems === 0) {
+                gallery.className = "flex flex-col items-center justify-center col-span-full py-40 opacity-30";
+                gallery.innerHTML = `<h3 class="serif-bold text-2xl uppercase text-white">沒有紀錄</h3>`;
+                return;
+            } else {
+                gallery.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8";
+            }
+            paginatedItems.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = "entry-card group fade-in";
+                card.style.animationDelay = `${index * 0.05}s`;
+                card.innerHTML = `
+                    <div class="aspect-video overflow-hidden border-b border-zinc-900 bg-black">
+                        <img src="${item.img || 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'">
                     </div>
-                    <div class="p-5 flex-grow flex flex-col">
-                        <h4 class="serif-bold text-white truncate text-base">${item.name}</h4>
-                        <p class="text-[9px] text-[#c5a059] font-bold tracking-widest mt-1">${item.code || "---"}</p>
-                        <div class="mt-auto pt-6 flex gap-2">
-                            <button onclick="openDrawer('${item.id}')" class="flex-1 py-2 bg-zinc-900 text-zinc-500 text-[10px] font-bold rounded">編輯</button>
-                            ${item.url ? `<button onclick="window.open('${item.url}')" class="flex-1 py-2 bg-[#c5a059]/10 text-[#c5a059] text-[10px] font-bold rounded border border-[#c5a059]/20 hover:bg-[#c5a059] hover:text-black">連結</button>` : ''}
+                    <div class="p-5 flex flex-col flex-grow">
+                        <h3 class="serif-bold text-lg text-white truncate mb-1 group-hover:text-[#c5a059] transition-colors">${item.name}</h3>
+                        <p class="text-[9px] text-zinc-600 font-bold tracking-widest uppercase">${item.code || "未歸檔序列"}</p>
+                        <div class="mt-auto pt-8 flex gap-3">
+                            <!-- 加上引號，避免純數字或帶符號ID造成JS語法錯誤 -->
+                            <button type="button" onclick="openDrawer('${item.id}')" class="flex-1 py-3 text-[11px] font-bold bg-zinc-900/50 text-zinc-500 hover:text-white rounded-lg border border-zinc-900 transition-all">編輯</button>
+                            ${item.url ? `<button type="button" onclick="window.open('${item.url}', '_blank')" class="flex-1 py-3 text-[11px] font-bold bg-zinc-900/50 text-[#c5a059] hover:bg-[#c5a059] hover:text-black rounded-lg border border-zinc-900 transition-all">連結</button>` : ''}
                         </div>
                     </div>`;
-                gallery.appendChild(div);
+                gallery.appendChild(card);
             });
             renderPagination(totalPages);
-            renderFilterTags();
+            renderTags();
         }
 
-        function renderPagination(total) {
+        function renderPagination(totalPages) {
             const container = document.getElementById('paginationContainer');
-            container.innerHTML = "";
-            if (total <= 1) return;
-            for (let i = 1; i <= total; i++) {
-                const btn = document.createElement('button');
-                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-                btn.innerText = i;
-                btn.onclick = () => { currentPage = i; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); };
-                container.appendChild(btn);
+            if(totalPages <= 1) { container.innerHTML = ""; return; }
+            let html = `<button type="button" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="page-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="15 18 9 12 15 6"></polyline></svg></button>`;
+            for(let i = 1; i <= totalPages; i++) {
+                if(i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    html += `<button type="button" onclick="changePage(${i})" class="page-btn ${i === currentPage ? 'active' : ''}">${i}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    html += `<span class="text-zinc-800 font-bold px-1">...</span>`;
+                }
             }
+            html += `<button type="button" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="page-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"></polyline></svg></button>`;
+            container.innerHTML = html;
         }
 
-        function renderFilterTags() {
-            const counts = {};
-            collections.forEach(item => (item.tags || []).forEach(t => counts[t] = (counts[t] || 0) + 1));
+        function changePage(p) { currentPage = p; window.scrollTo({ top: 0, behavior: 'smooth' }); renderGallery(false); }
+
+        function renderTags() {
+            const tagCounts = {};
+            collections.forEach(i => (i.tags || []).forEach(t => tagCounts[t] = (tagCounts[t] || 0) + 1));
             const container = document.getElementById('filterTagsContainer');
+            if(!container) return;
             container.innerHTML = "";
-            Object.keys(counts).sort().forEach(tag => {
-                const active = selectedFilterTags.has(tag);
+            Object.keys(tagCounts).sort((a,b) => tagCounts[b] - tagCounts[a]).forEach(tag => {
                 const btn = document.createElement('button');
-                btn.className = `px-3 py-1.5 rounded text-[9px] font-bold border transition-all ${active ? 'bg-[#c5a059] border-[#c5a059] text-black' : 'bg-black border-zinc-800 text-zinc-500'}`;
-                btn.innerText = `${tag} (${counts[tag]})`;
-                btn.onclick = () => { active ? selectedFilterTags.delete(tag) : selectedFilterTags.add(tag); currentPage = 1; renderGallery(); };
+                const active = selectedFilterTags.has(tag);
+                btn.type = "button";
+                btn.className = `px-4 py-2 rounded-lg text-[10px] font-bold border transition-all ${active ? 'bg-[#c5a059] border-[#c5a059] text-black shadow-lg' : 'bg-black border-zinc-800 text-zinc-500 hover:border-zinc-700'}`;
+                btn.innerHTML = `${tag} <span class="ml-1 opacity-50">${tagCounts[tag]}</span>`;
+                btn.onclick = () => { if(selectedFilterTags.has(tag)) selectedFilterTags.delete(tag); else selectedFilterTags.add(tag); currentPage = 1; renderGallery(false); };
                 container.appendChild(btn);
             });
         }
 
-        // --- 功能操作 ---
         function openDrawer(id = null) {
-            currentEditId = id;
-            document.getElementById('deleteBtn').classList.toggle('hidden', !id);
-            if (id) {
-                const item = collections.find(i => i.id == id);
-                document.getElementById('nameInput').value = item.name;
-                document.getElementById('codeInput').value = item.code;
-                document.getElementById('tagsInput').value = (item.tags || []).join(' ');
-                document.getElementById('imgInput').value = item.img;
-                document.getElementById('urlInput').value = item.url;
-                previewImage(item.img);
-            } else {
-                ['nameInput', 'codeInput', 'tagsInput', 'imgInput', 'urlInput'].forEach(i => document.getElementById(i).value = "");
-                previewImage("");
-            }
+            currentId = id;
             document.getElementById('drawer').classList.add('open');
-            showOverlay(true);
+            document.getElementById('overlay').classList.replace('opacity-0', 'opacity-100');
+            document.getElementById('overlay').classList.remove('pointer-events-none');
+            
+            if(id !== null && id !== undefined) {
+                // 強制將兩者轉為字串比對，避免型別問題
+                const item = collections.find(i => String(i.id) === String(id));
+                if (item) {
+                    document.getElementById('nameInput').value = item.name || "";
+                    document.getElementById('codeInput').value = item.code || "";
+                    document.getElementById('tagsInput').value = (item.tags || []).join(' ');
+                    document.getElementById('imgInput').value = item.img || "";
+                    document.getElementById('urlInput').value = item.url || "";
+                    previewImage(item.img || "");
+                    document.getElementById('drawerDeleteBtn').classList.remove('hidden');
+                }
+            } else {
+                ['nameInput','codeInput','tagsInput','imgInput','urlInput'].forEach(k => document.getElementById(k).value = "");
+                previewImage("");
+                document.getElementById('drawerDeleteBtn').classList.add('hidden');
+            }
+        }
+
+        function closeDrawer() {
+            document.getElementById('drawer').classList.remove('open');
+            if(!document.getElementById('filterDrawer').classList.contains('open') && !document.getElementById('confirmModal').classList.contains('open')) {
+                document.getElementById('overlay').classList.replace('opacity-100', 'opacity-0');
+                document.getElementById('overlay').classList.add('pointer-events-none');
+            }
+        }
+        
+        function closeAllDrawers() { 
+            closeDrawer(); 
+            toggleFilterDrawer(false); 
+            closeConfirm(); 
+        }
+
+        function toggleFilterDrawer(open) {
+            const d = document.getElementById('filterDrawer');
+            const o = document.getElementById('overlay');
+            if(open) { d.classList.add('open'); o.classList.replace('opacity-0', 'opacity-100'); o.classList.remove('pointer-events-none'); }
+            else { d.classList.remove('open'); if(!document.getElementById('drawer').classList.contains('open')) { o.classList.replace('opacity-100', 'opacity-0'); o.classList.add('pointer-events-none'); } }
         }
 
         function saveItem() {
             const name = document.getElementById('nameInput').value.trim();
-            if (!name) return showToast("標題不能為空");
-            const data = {
-                id: currentEditId || Date.now().toString(),
-                name,
-                code: document.getElementById('codeInput').value.trim().toUpperCase(),
-                tags: document.getElementById('tagsInput').value.split(/\s+/).filter(t => t),
-                img: document.getElementById('imgInput').value.trim(),
-                url: document.getElementById('urlInput').value.trim()
+            if(!name) return showToast("名稱為必填項目");
+            const data = { 
+                id: currentId || Date.now().toString(), // 統一以字串形式儲存
+                name, 
+                code: document.getElementById('codeInput').value.trim().toUpperCase(), 
+                tags: document.getElementById('tagsInput').value.split(/\s+/).filter(t => t), 
+                img: document.getElementById('imgInput').value.trim(), 
+                url: document.getElementById('urlInput').value.trim(), 
+                updatedAt: Date.now() 
             };
-            if (currentEditId) {
-                const idx = collections.findIndex(i => i.id == currentEditId);
-                collections[idx] = data;
-            } else collections.unshift(data);
-            localStorage.setItem('VAULT_DATA', JSON.stringify(collections));
-            renderGallery(); closeAll(); showToast("數據已儲存");
-        }
-
-        function deleteItem() {
-            if (!confirm("確定永久刪除此紀錄？")) return;
-            collections = collections.filter(i => i.id != currentEditId);
-            localStorage.setItem('VAULT_DATA', JSON.stringify(collections));
-            renderGallery(); closeAll(); showToast("紀錄已刪除");
+            if(currentId) {
+                const index = collections.findIndex(i => String(i.id) === String(currentId));
+                if(index !== -1) collections[index] = data;
+                else collections.unshift(data);
+            }
+            else collections.unshift(data);
+            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
+            renderGallery(); closeDrawer(); showToast("紀錄已保存");
         }
 
         function exportData() {
-            if (collections.length === 0) return showToast("無數據可導出");
             const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `archive_backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            showToast("導出成功");
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `檔案庫導出數據.json`; a.click(); showToast("數據導出完成");
         }
 
         function importData(e) {
-            const file = e.target.files[0];
-            if (!file) return;
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = (ev) => {
                 try {
-                    const imported = JSON.parse(event.target.result);
-                    if (Array.isArray(imported)) {
-                        if (confirm(`即將導入 ${imported.length} 筆數據，這將覆蓋現有內容，確定嗎？`)) {
-                            collections = imported;
-                            localStorage.setItem('VAULT_DATA', JSON.stringify(collections));
-                            renderGallery();
-                            showToast("數據導入成功");
-                        }
-                    } else showToast("格式錯誤：必須是數組");
-                } catch(err) { showToast("無效的 JSON 檔案"); }
-                e.target.value = ''; // 清除 input 以利重複導入
+                    const data = JSON.parse(ev.target.result);
+                    if(Array.isArray(data)) { collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("數據同步完成"); }
+                } catch(e) { showToast("同步失敗：數據損毀"); }
             };
-            reader.readAsText(file);
+            reader.readAsText(e.target.files[0]);
         }
 
-        function clearFilters() {
-            document.getElementById('searchInput').value = "";
-            selectedFilterTags.clear();
-            currentPage = 1;
-            renderGallery();
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; setTimeout(() => t.style.opacity = "0", 3000); }
+        function previewImage(url) {
+            const container = document.getElementById('editPreview');
+            container.innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover">` : `<span class="text-zinc-800 text-[10px] font-bold tracking-widest">暫無預覽圖</span>`;
         }
+        function debouncedRender() { renderGallery(false); }
+        function requestDelete() { document.getElementById('confirmModal').classList.add('open'); }
+        function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); }
+        
+        function executeDelete() { 
+            if(!currentId) return;
 
-        function showOverlay(v) { 
-            const o = document.getElementById('overlay');
-            o.classList.toggle('opacity-0', !v); o.classList.toggle('pointer-events-none', !v); 
+            // 強制使用字串比對，避免 ID 型別不一造成的假相等問題
+            collections = collections.filter(i => String(i.id) !== String(currentId)); 
+            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); 
+            
+            closeConfirm(); 
+            closeDrawer(); 
+            
+            // 如果刪除後導致當前頁面無資料，往前推一頁
+            const totalPages = Math.max(1, Math.ceil(collections.length / pageSize));
+            if(currentPage > totalPages) currentPage = totalPages;
+            
+            renderGallery(); 
+            showToast("紀錄已永久抹除"); 
+            
+            // 執行完畢後重置狀態
+            currentId = null;
         }
-        function closeDrawer() { document.getElementById('drawer').classList.remove('open'); showOverlay(false); }
-        function toggleFilterDrawer(v) { document.getElementById('filterDrawer').classList.toggle('open', v); showOverlay(v); }
-        function closeAll() { closeDrawer(); toggleFilterDrawer(false); }
-        function previewImage(url) { document.getElementById('editPreview').innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover">` : `<span class="text-zinc-800 text-[10px]">PREVIEW</span>`; }
-        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = "1"; setTimeout(() => t.style.opacity = "0", 2500); }
-        function resetPattern() { selectedNodes = []; }
-
-        if (sessionStorage.getItem('unlocked') === 'true') unlock();
     </script>
 </body>
 </html>
-
