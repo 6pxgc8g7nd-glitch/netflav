@@ -16,7 +16,6 @@
             --nav-height: 60px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --icon-size: 20px;
-            --stroke-width: 2.5px;
         }
 
         body {
@@ -29,9 +28,18 @@
             user-select: none;
         }
 
+        /* 震動動畫 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-8px); }
+        }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+
         .page-overflow-wrapper { width: 100%; overflow: hidden; }
         .page-container { display: flex; width: 300%; transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1); min-height: 100vh; }
-        .page-content { width: 33.3333%; padding: calc(var(--nav-height) + 20px) 16px 120px 16px; box-sizing: border-box; }
+        .page-content { width: 33.3333%; padding: calc(var(--nav-height) + 20px) 16px 140px 16px; box-sizing: border-box; }
 
         .mobile-header {
             position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height);
@@ -39,7 +47,9 @@
             background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
             backdrop-filter: blur(10px);
         }
-        .brand-logo { color: var(--nf-red); font-size: 24px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; }
+        .brand-logo { color: var(--nf-red); font-size: 24px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; cursor: pointer; }
+        .brand-logo.paused { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; color: #ff5e5e; } }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0; height: calc(65px + var(--safe-bottom));
@@ -54,13 +64,24 @@
         .nav-item span { font-size: 10px; font-weight: 600; margin-top: 5px; line-height: 1; }
         .nav-item svg { width: var(--icon-size); height: var(--icon-size); }
 
-        /* Poster Card */
         .poster-card {
             position: relative; background: #111; border-radius: 8px; overflow: hidden;
             aspect-ratio: 16 / 9; width: 100%; margin-bottom: 8px;
-            touch-action: pan-y;
         }
         .poster-card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        
+        .action-circle-btn {
+            position: absolute; width: 36px; height: 36px;
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            z-index: 20; border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white; transition: transform 0.2s;
+        }
+        .action-circle-btn:active { transform: scale(0.9); }
+        .card-edit-btn { top: 10px; right: 10px; }
+        .card-play-btn { bottom: 10px; right: 10px; }
+        .card-play-btn svg { width: 18px; height: 18px; fill: white; margin-left: 2px; }
+
         .card-overlay {
             position: absolute; inset: 0;
             background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
@@ -68,17 +89,20 @@
             pointer-events: none;
         }
 
-        .card-play-btn {
-            position: absolute; bottom: 12px; right: 12px;
-            width: 38px; height: 38px;
-            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            z-index: 10; border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.2s;
+        .page-dot-container {
+            display: flex; gap: 12px; justify-content: center; align-items: center;
+            padding: 20px 0; overflow-x: auto; scrollbar-width: none;
         }
-        .card-play-btn svg { width: 18px; height: 18px; fill: white; margin-left: 2px; }
+        .page-dot-container::-webkit-scrollbar { display: none; }
+        .page-dot {
+            min-width: 36px; height: 36px; border-radius: 50%;
+            background-color: #1a1a1e; color: #71717a;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+        }
+        .page-dot.active { background-color: var(--nf-red); color: white; transform: scale(1.1); box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3); }
 
-        /* Drawer */
         .drawer {
             position: fixed; top: 0; right: 0; bottom: 0; left: 0;
             background-color: var(--nf-black); transform: translateY(100%);
@@ -87,47 +111,55 @@
         }
         .drawer.open { transform: translateY(0); }
 
-        .search-container {
-            position: relative; margin-bottom: 1.5rem;
-        }
-        .search-icon {
-            position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
-            width: var(--icon-size); height: var(--icon-size); color: #71717a;
-            pointer-events: none;
-        }
-        .search-input {
-            width: 100%; background-color: #18181b; border: none; border-radius: 8px;
-            padding: 0.85rem 1rem 0.85rem 3rem; font-size: 0.875rem; color: white;
-            outline: none; transition: ring 0.2s;
-        }
-        .search-input:focus { ring: 1px solid #3f3f46; }
+        .search-container { position: relative; margin-bottom: 1.5rem; }
+        .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: var(--icon-size); height: var(--icon-size); color: #71717a; pointer-events: none; }
+        .search-input { width: 100%; background-color: #18181b; border: none; border-radius: 8px; padding: 0.85rem 1rem 0.85rem 3rem; font-size: 0.875rem; color: white; outline: none; }
 
-        #authOverlay {
-            position: fixed; inset: 0; background-color: var(--nf-black);
-            z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+        #authOverlay { position: fixed; inset: 0; background-color: var(--nf-black); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .actor-badge { background: #222; border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 8px; border: 2px solid #333; }
+        .tag-pill { background: #1a1a1a; color: #ccc; padding: 10px 18px; border-radius: 4px; font-size: 13px; font-weight: 500; border: 1px solid #333; }
+        
+        .input-error { color: #ef4444 !important; }
+        .input-ring-error { ring: 1px solid #ef4444 !important; }
 
-        .actor-badge {
-            background: #222; border-radius: 50%; width: 80px; height: 80px;
-            margin: 0 auto 8px; border: 2px solid #333;
+        /* 隱形模式切換鈕樣式 */
+        .stealth-toggle {
+            margin-top: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10px;
+            color: #444;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
         }
-
-        .tag-pill {
-            background: #1a1a1a; color: #ccc; padding: 10px 18px; border-radius: 4px;
-            font-size: 13px; font-weight: 500; border: 1px solid #333;
-        }
+        .stealth-toggle input { display: none; }
+        .stealth-toggle .box { width: 12px; height: 12px; border: 1px solid #333; border-radius: 2px; position: relative; }
+        .stealth-toggle input:checked + .box::after { content: ''; position: absolute; inset: 2px; background: var(--nf-red); }
+        .stealth-toggle input:checked ~ span { color: #888; }
     </style>
 </head>
-<body>
+<body onmousedown="resetLogoutTimer()" ontouchstart="resetLogoutTimer()">
 
+    <!-- 登入畫面 -->
     <div id="authOverlay">
         <h1 class="brand-logo mb-10 tracking-widest">ARCHIVE</h1>
-        <div id="patternBox"><canvas id="patternCanvas" width="300" height="300"></canvas></div>
-        <p class="text-[10px] text-zinc-600 mt-12 uppercase tracking-[0.3em]">請繪製圖形解鎖</p>
+        <div id="patternContainer">
+            <div id="patternBox"><canvas id="patternCanvas" width="300" height="300"></canvas></div>
+        </div>
+        <p id="authHint" class="text-[10px] text-zinc-600 mt-12 uppercase tracking-[0.3em]">請繪製圖形解鎖</p>
+        
+        <label class="stealth-toggle">
+            <input type="checkbox" id="stealthMode">
+            <div class="box"></div>
+            <span>隱形繪製模式</span>
+        </label>
     </div>
 
+    <!-- 頂部標題 -->
     <header class="mobile-header" id="mainHeader" style="visibility: hidden;">
-        <div class="brand-logo">Archive</div>
+        <div class="brand-logo" id="logoTitle" onclick="switchTab(0)">Archive</div>
     </header>
 
     <div id="appContent" class="page-overflow-wrapper" style="visibility: hidden;">
@@ -147,7 +179,7 @@
                 </div>
 
                 <div id="gallery" class="grid grid-cols-1 gap-4"></div>
-                <div id="paginationContainer" class="mt-12 flex justify-center gap-2"></div>
+                <div id="paginationContainer" class="page-dot-container mt-8"></div>
             </div>
 
             <!-- 標籤頁 -->
@@ -198,7 +230,7 @@
         </div>
     </nav>
 
-    <!-- Drawer 結構 -->
+    <!-- 編輯彈窗、設定彈窗、確認刪除視窗保留原樣... -->
     <div id="drawer" class="drawer">
         <div class="flex items-center justify-between mb-8">
             <h3 class="text-xl font-bold">影片資訊</h3>
@@ -206,18 +238,18 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
         </div>
-        <div id="watchButtonArea" class="mb-8 hidden">
-             <button id="externalLinkBtn" onclick="goToLink()" class="w-full bg-white text-black py-4 rounded-lg font-black flex items-center justify-center gap-2">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>立即觀看
-             </button>
-        </div>
         <div class="space-y-6">
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2">名稱 / 演員</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2">番號</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2">連結 (URL)</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2">標籤</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2">海報連結</label><input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-            <div id="editPreview" class="aspect-[16/9] w-full bg-zinc-900 rounded flex items-center justify-center text-[10px] text-zinc-700">PREVIEW</div>
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">名稱 / 演員</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600"></div>
+            <div>
+                <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest flex justify-between">
+                    番號 (ID) <span id="codeError" class="text-red-500 hidden">此番號已存在</span>
+                </label>
+                <input type="text" id="codeInput" oninput="validateCode(this.value)" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600" placeholder="例如: ABC-123">
+            </div>
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">觀看連結 (URL)</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600"></div>
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤 (空格分隔)</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600"></div>
+            <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片路徑</label><input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none focus:ring-1 focus:ring-red-600"></div>
+            <div id="editPreview" class="aspect-[16/9] w-full bg-zinc-900 rounded-lg overflow-hidden flex items-center justify-center text-[10px] text-zinc-700">PREVIEW</div>
             <div class="pt-10 space-y-4">
                 <button onclick="saveItem()" class="w-full bg-red-600 py-4 font-bold rounded-lg shadow-lg">儲存內容</button>
                 <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full py-2 text-zinc-600 text-xs font-bold hidden">刪除此項目</button>
@@ -225,7 +257,6 @@
         </div>
     </div>
 
-    <!-- Filter Drawer -->
     <div id="filterDrawer" class="drawer">
         <div class="flex items-center justify-between mb-8">
             <h3 class="text-xl font-bold">帳戶設定</h3>
@@ -238,6 +269,7 @@
             <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">
                 匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)">
             </label>
+            <button onclick="lockApp()" class="w-full py-4 text-red-600 font-bold">立即登出鎖定</button>
         </div>
     </div>
 
@@ -257,9 +289,64 @@
         const CORRECT_PATTERN = "0124678";
         const STORAGE_KEY = 'NF_MOBILE_VAULT_FINAL';
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentId = null, currentPage = 1, pageSize = 12, pressTimer;
+        let currentId = null, currentPage = 1, pageSize = 12;
         let isDrawing = false, selectedNodes = [], mousePos = { x: 0, y: 0 };
+        let isErrorState = false;
         const nodes = [];
+
+        // 自動登出相關
+        let logoutTimer = null;
+        let isAutoLogoutPaused = false;
+        const AUTO_LOGOUT_SECONDS = 1800; 
+
+        function resetLogoutTimer() {
+            if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display === 'flex') return;
+            clearTimeout(logoutTimer);
+            logoutTimer = setTimeout(() => {
+                lockApp();
+                showToast("閒置過久，已自動登出");
+            }, AUTO_LOGOUT_SECONDS * 1000);
+        }
+
+        /**
+         * 登出並鎖定 App
+         * 修改：登出時重置圖形鎖狀態，要求重新輸入
+         */
+        function lockApp() {
+            sessionStorage.removeItem('VAULT_UNLOCKED');
+            
+            // 重置圖形鎖狀態
+            selectedNodes = [];
+            isErrorState = false;
+            isDrawing = false;
+            
+            // 重新繪製空白畫布
+            if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 切換介面顯示
+            document.getElementById('authOverlay').style.display = 'flex';
+            document.getElementById('authHint').innerText = "請繪製圖形解鎖";
+            document.getElementById('authHint').classList.remove('text-red-600');
+            
+            document.getElementById('mainHeader').style.visibility = 'hidden';
+            document.getElementById('appContent').style.visibility = 'hidden';
+            document.getElementById('bottomNav').style.visibility = 'hidden';
+            
+            clearTimeout(logoutTimer);
+            toggleFilterDrawer(false); // 關閉設定選單
+        }
+
+        const logo = document.getElementById('logoTitle');
+        let pressTimer;
+        logo.addEventListener('touchstart', () => {
+            pressTimer = setTimeout(() => {
+                isAutoLogoutPaused = !isAutoLogoutPaused;
+                logo.classList.toggle('paused', isAutoLogoutPaused);
+                showToast(isAutoLogoutPaused ? "自動登出已暫停" : "自動登出已啟用");
+                if (!isAutoLogoutPaused) resetLogoutTimer();
+            }, 500);
+        });
+        logo.addEventListener('touchend', () => clearTimeout(pressTimer));
 
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
@@ -269,6 +356,119 @@
             }
         }
 
+        // 繪製連線邏輯
+        function drawPattern() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const isStealth = document.getElementById('stealthMode').checked;
+
+            if (selectedNodes.length > 0 && (!isStealth || isErrorState)) {
+                ctx.beginPath();
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = isErrorState ? '#ff0000' : '#E50914';
+
+                const start = nodes.find(n => n.id === selectedNodes[0]);
+                ctx.moveTo(start.x, start.y);
+
+                for (let i = 1; i < selectedNodes.length; i++) {
+                    const nodeA = nodes.find(n => n.id === selectedNodes[i-1]);
+                    const nodeB = nodes.find(n => n.id === selectedNodes[i]);
+                    
+                    const xc = (nodeA.x + nodeB.x) / 2;
+                    const yc = (nodeA.y + nodeB.y) / 2;
+                    ctx.quadraticCurveTo(nodeA.x, nodeA.y, xc, yc);
+                    ctx.lineTo(nodeB.x, nodeB.y);
+                }
+
+                if (isDrawing && !isErrorState) {
+                    ctx.lineTo(mousePos.x, mousePos.y);
+                }
+                ctx.stroke();
+            }
+
+            // 繪製點
+            nodes.forEach(node => {
+                const active = selectedNodes.includes(node.id);
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222';
+                
+                if (active || !isStealth) {
+                    ctx.fill();
+                    if (active) {
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, 18, 0, Math.PI * 2);
+                        ctx.strokeStyle = isErrorState ? 'rgba(255,0,0,0.3)' : 'rgba(229,9,20,0.2)';
+                        ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(drawPattern);
+        }
+
+        canvas.addEventListener('touchstart', (e) => { 
+            if (isErrorState) return;
+            e.preventDefault(); 
+            isDrawing = true; 
+            selectedNodes = []; 
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isDrawing || isErrorState) return;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            mousePos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+            nodes.forEach(node => { 
+                if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) {
+                    selectedNodes.push(node.id);
+                    if (window.navigator.vibrate) window.navigator.vibrate(10);
+                } 
+            });
+        });
+
+        window.addEventListener('touchend', () => {
+            if (!isDrawing || isErrorState) return; 
+            isDrawing = false;
+            
+            if (selectedNodes.join('') === CORRECT_PATTERN) {
+                unlockVault();
+            } else if (selectedNodes.length > 0) {
+                handleWrongPattern();
+            }
+        });
+
+        function handleWrongPattern() {
+            isErrorState = true;
+            const container = document.getElementById('patternContainer');
+            const hint = document.getElementById('authHint');
+            
+            container.classList.add('shake');
+            hint.innerText = "圖形錯誤，請重試";
+            hint.classList.add('text-red-600');
+
+            setTimeout(() => {
+                container.classList.remove('shake');
+                selectedNodes = [];
+                isErrorState = false;
+                hint.innerText = "請繪製圖形解鎖";
+                hint.classList.remove('text-red-600');
+            }, 600);
+        }
+
+        drawPattern();
+
+        function unlockVault() {
+            sessionStorage.setItem('VAULT_UNLOCKED', 'true');
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('mainHeader').style.visibility = 'visible';
+            document.getElementById('appContent').style.visibility = 'visible';
+            document.getElementById('bottomNav').style.visibility = 'visible';
+            renderGallery();
+            resetLogoutTimer();
+        }
+
+        // 其他功能維持原樣...
         function switchTab(index) {
             const container = document.getElementById('pageContainer');
             container.style.transform = `translateX(-${index * (100/3)}%)`;
@@ -279,14 +479,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function handlePressStart(id) {
-            pressTimer = setTimeout(() => {
-                window.navigator.vibrate?.(40);
-                openDrawer(id);
-            }, 600);
-        }
-        function handlePressEnd() { clearTimeout(pressTimer); }
-
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.toLowerCase();
@@ -294,22 +486,31 @@
                 return i.name.toLowerCase().includes(query) || (i.code || "").toLowerCase().includes(query) || (i.tags || []).some(t => t.toLowerCase().includes(query));
             });
             document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
-            const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+            
             const total = Math.ceil(filtered.length / pageSize);
+            if (currentPage > total && total > 0) currentPage = total;
+            const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+            
             gallery.innerHTML = paginated.map(item => `
-                <div class="poster-card" ontouchstart="handlePressStart('${item.id}')" ontouchend="handlePressEnd()" onmousedown="handlePressStart('${item.id}')" onmouseup="handlePressEnd()">
+                <div class="poster-card">
                     <img src="${item.img || 'https://images.unsplash.com/photo-1616469829581-73993eb86b02?q=80&w=640'}" loading="lazy">
-                    ${item.url ? `<div class="card-play-btn" onclick="openExternalUrl('${item.url}', event)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
+                    <div class="action-circle-btn card-edit-btn" onclick="openDrawer('${item.id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </div>
+                    ${item.url ? `<div class="action-circle-btn card-play-btn" onclick="openExternalUrl('${item.url}', event)"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
                     <div class="card-overlay">
-                        <p class="text-[9px] font-black text-red-600 mb-0.5 tracking-wider">${item.code || 'SERIES'}</p>
-                        <p class="text-[13px] font-bold truncate pr-12">${item.name}</p>
+                        <p class="text-[9px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${item.code || 'SERIES'}</p>
+                        <p class="text-[13px] font-bold truncate pr-14">${item.name}</p>
                     </div>
                 </div>
             `).join('');
             renderPagination(total);
         }
 
-        function openExternalUrl(url, e) { if(e) e.stopPropagation(); window.open(url.startsWith('http') ? url : 'https://' + url, '_blank'); }
+        function openExternalUrl(url, e) { 
+            if(e) e.stopPropagation(); 
+            window.open(url.startsWith('http') ? url : 'https://' + url, '_blank'); 
+        }
 
         function renderTagCloud() {
             const container = document.getElementById('tagCloud');
@@ -339,51 +540,9 @@
 
         function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); renderGallery(); }
 
-        function drawPattern() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (selectedNodes.length > 0) {
-                ctx.beginPath(); ctx.lineWidth = 4; ctx.strokeStyle = '#E50914';
-                const start = nodes.find(n => n.id === selectedNodes[0]);
-                ctx.moveTo(start.x, start.y);
-                selectedNodes.forEach(id => { const node = nodes.find(n => n.id === id); ctx.lineTo(node.x, node.y); });
-                if (isDrawing) ctx.lineTo(mousePos.x, mousePos.y);
-                ctx.stroke();
-            }
-            nodes.forEach(node => {
-                const active = selectedNodes.includes(node.id);
-                ctx.beginPath(); ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
-                ctx.fillStyle = active ? '#E50914' : '#333'; ctx.fill();
-            });
-            requestAnimationFrame(drawPattern);
-        }
-
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); isDrawing = true; selectedNodes = []; });
-        window.addEventListener('touchmove', (e) => {
-            if (!isDrawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            mousePos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-            nodes.forEach(node => { if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 25 && !selectedNodes.includes(node.id)) selectedNodes.push(node.id); });
-        });
-        window.addEventListener('touchend', () => {
-            if (!isDrawing) return; isDrawing = false;
-            if (selectedNodes.join('') === CORRECT_PATTERN) unlockVault();
-            else selectedNodes = [];
-        });
-        drawPattern();
-
-        function unlockVault() {
-            sessionStorage.setItem('VAULT_UNLOCKED', 'true');
-            document.getElementById('authOverlay').style.display = 'none';
-            document.getElementById('mainHeader').style.visibility = 'visible';
-            document.getElementById('appContent').style.visibility = 'visible';
-            document.getElementById('bottomNav').style.visibility = 'visible';
-            renderGallery();
-        }
-
         function openDrawer(id = null) {
             currentId = id; document.getElementById('drawer').classList.add('open');
-            const watchArea = document.getElementById('watchButtonArea');
+            validateCode(""); 
             if(id) {
                 const item = collections.find(i => String(i.id) === String(id));
                 document.getElementById('nameInput').value = item.name;
@@ -392,61 +551,86 @@
                 document.getElementById('tagsInput').value = (item.tags || []).join(' ');
                 document.getElementById('imgInput').value = item.img || "";
                 document.getElementById('drawerDeleteBtn').classList.remove('hidden');
-                watchArea.classList.toggle('hidden', !item.url);
                 previewImage(item.img);
             } else {
                 ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = "");
                 document.getElementById('drawerDeleteBtn').classList.add('hidden');
-                watchArea.classList.add('hidden');
                 previewImage("");
             }
         }
 
-        function goToLink() { 
-            const item = collections.find(i => String(i.id) === String(currentId));
-            if(item?.url) openExternalUrl(item.url);
+        function validateCode(val) {
+            const code = val.trim().toUpperCase();
+            const errorText = document.getElementById('codeError');
+            const inputField = document.getElementById('codeInput');
+            if (!code) { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); return; }
+            const isDuplicate = collections.some(item => item.code === code && String(item.id) !== String(currentId));
+            if (isDuplicate) { errorText.classList.remove('hidden'); inputField.classList.add('input-error', 'input-ring-error'); }
+            else { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); }
         }
+
         function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
         function toggleFilterDrawer(open) { document.getElementById('filterDrawer').classList.toggle('open', open); }
+
         function saveItem() {
             const name = document.getElementById('nameInput').value.trim();
-            if(!name) return;
-            const data = { id: currentId || Date.now().toString(), name, code: document.getElementById('codeInput').value.trim().toUpperCase(), url: document.getElementById('urlInput').value.trim(), tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), img: document.getElementById('imgInput').value.trim() };
+            const code = document.getElementById('codeInput').value.trim().toUpperCase();
+            if(!name) { showToast("請輸入名稱"); return; }
+            const isDuplicate = collections.some(item => item.code === code && code !== "" && String(item.id) !== String(currentId));
+            if (isDuplicate) { showToast(`番號 ${code} 已存在`); return; }
+
+            const data = { 
+                id: currentId || Date.now().toString(), 
+                name, code, 
+                url: document.getElementById('urlInput').value.trim(), 
+                tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), 
+                img: document.getElementById('imgInput').value.trim() 
+            };
+
             if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data;
             else collections.unshift(data);
+            
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
             renderGallery(); closeDrawer(); showToast("已儲存");
         }
+
         function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); showToast("已刪除"); }
         function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
+
         function renderPagination(total) {
             const container = document.getElementById('paginationContainer');
             if(total <= 1) { container.innerHTML = ""; return; }
             let html = "";
-            for(let i = 1; i <= total; i++) html += `<button onclick="changePage(${i})" class="w-8 h-8 rounded-full text-[10px] font-bold ${i === currentPage ? 'bg-red-600' : 'bg-zinc-900 text-zinc-500'}">${i}</button>`;
+            for(let i = 1; i <= total; i++) html += `<div onclick="changePage(${i})" class="page-dot ${i === currentPage ? 'active' : ''}">${i}</div>`;
             container.innerHTML = html;
         }
+
         function changePage(p) { currentPage = p; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); }
         function previewImage(url) { document.getElementById('editPreview').innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover rounded">` : "PREVIEW"; }
+        
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg; t.style.opacity = "1"; t.style.transform = "translate(-50%, -10px)";
             setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translate(-50%, 0)"; }, 2000);
         }
+
         function exportData() {
             const blob = new Blob([JSON.stringify(collections)], {type: 'application/json'});
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'archive.json'; a.click();
         }
+
         function importData(e) {
             const reader = new FileReader();
             reader.onload = (ev) => {
-                collections = JSON.parse(ev.target.result);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
-                renderGallery(); showToast("匯入成功");
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (Array.isArray(data)) { collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入成功"); }
+                } catch(err) { showToast("匯入失敗"); }
             };
             reader.readAsText(e.target.files[0]);
         }
+
         function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
         window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); };
     </script>
