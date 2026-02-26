@@ -295,7 +295,7 @@
         // --- 自動登出優化邏輯 ---
         let logoutTimer = null;
         let isAutoLogoutPaused = false;
-        const AUTO_LOGOUT_SECONDS = 300; // 設定為 300 秒 (5分鐘)
+        const AUTO_LOGOUT_SECONDS = 5; // 設定為 300 秒 (5分鐘)
 
         function resetLogoutTimer() {
             // 如果暫停中、或是 App 仍處於鎖定狀態，則不啟動/重置計時器
@@ -624,7 +624,7 @@
 
         function exportData() {
             const blob = new Blob([JSON.stringify(collections)], {type: 'application/json'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'archive.json'; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'netflav.json'; a.click();
         }
 
         function importData(e) {
