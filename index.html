@@ -252,6 +252,7 @@
     <script>
         // --- 解鎖與圖形 ---
         const CORRECT_PATTERN = "0124678";
+        const INFINITE_PATTERN = "03678"; // 秘密指令：L型
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
         const patternBox = document.getElementById('patternBox');
@@ -262,9 +263,9 @@
         const nodeRadius = 12;
         const hitRadius = 35;
         
-        // --- 重點：5秒鎖定恢復 ---
         let idleTimer;
-        const IDLE_TIME_LIMIT = 5000; 
+        let IDLE_TIME_LIMIT = 5000; 
+        let isInfiniteMode = false;
 
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
@@ -273,6 +274,9 @@
         }
 
         function resetIdleTimer() {
+            // 如果是不限時模式，直接跳過計時器邏輯
+            if (isInfiniteMode) return;
+            
             if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
                 clearTimeout(idleTimer);
                 idleTimer = setTimeout(() => { logout(); }, IDLE_TIME_LIMIT);
@@ -328,8 +332,12 @@
             });
         }
         function validatePattern() {
-            if (selectedNodes.join('') === CORRECT_PATTERN) { unlockVault(); }
-            else if (selectedNodes.length > 0) {
+            const input = selectedNodes.join('');
+            if (input === CORRECT_PATTERN) { 
+                unlockVault(false); 
+            } else if (input === INFINITE_PATTERN) {
+                unlockVault(true);
+            } else if (selectedNodes.length > 0) {
                 patternBox.classList.add('shake');
                 setTimeout(() => { patternBox.classList.remove('shake'); selectedNodes = []; }, 600);
             }
@@ -359,11 +367,17 @@
             renderGallery(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
             showToast("已重置並返回主頁");
-            resetIdleTimer(); // 點擊主頁也視為互動
+            resetIdleTimer();
         }
 
-        function unlockVault() {
+        function unlockVault(infinite) {
             sessionStorage.setItem('VAULT_UNLOCKED', 'true');
+            if (infinite) {
+                isInfiniteMode = true;
+                sessionStorage.setItem('VAULT_INFINITE', 'true');
+                showToast("不限時模式已啟用");
+            }
+            
             resetIdleTimer();
             const auth = document.getElementById('authOverlay');
             auth.style.opacity = '0'; auth.style.transform = 'scale(1.1)'; auth.style.pointerEvents = 'none';
@@ -371,22 +385,42 @@
                 auth.style.display = 'none';
                 document.getElementById('mainNav').style.visibility = 'visible';
                 document.getElementById('appContent').style.visibility = 'visible';
+                
+                // 根據模式更新 UI 狀態
+                if (isInfiniteMode) {
+                    const navStat = document.getElementById('navStat');
+                    navStat.innerText = "不限時模式";
+                    navStat.classList.replace('text-zinc-600', 'text-[#c5a059]');
+                }
+                
                 renderGallery();
             }, 800);
         }
 
         function showAppDirectly() {
+            // 若為手動重新整理且之前是解鎖狀態，檢查是否帶有不限時標記
+            isInfiniteMode = sessionStorage.getItem('VAULT_INFINITE') === 'true';
+            
             document.getElementById('authOverlay').style.display = 'none';
             document.getElementById('mainNav').style.visibility = 'visible';
             document.getElementById('appContent').style.visibility = 'visible';
+            
+            if (isInfiniteMode) {
+                const navStat = document.getElementById('navStat');
+                navStat.innerText = "不限時模式";
+                navStat.classList.replace('text-zinc-600', 'text-[#c5a059]');
+            }
+            
             renderGallery();
         }
 
         function logout() {
             sessionStorage.removeItem('VAULT_UNLOCKED');
+            sessionStorage.removeItem('VAULT_INFINITE');
             location.reload();
         }
 
+        // ... [其餘功能代碼如 renderGallery, saveItem 等維持原樣，節省空間略過] ...
         function renderGallery(showSkeleton = true) {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.toLowerCase();
@@ -401,7 +435,10 @@
             const startIndex = (currentPage - 1) * pageSize;
             const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
 
-            document.getElementById('navStat').innerText = `${totalItems} 筆`;
+            // 如果不是不限時模式，才顯示筆數
+            if (!isInfiniteMode) {
+                document.getElementById('navStat').innerText = `${totalItems} 筆`;
+            }
             document.getElementById('pageIndicator').innerText = `/  ${currentPage} / ${totalPages}頁 `;
             gallery.innerHTML = "";
             
@@ -504,9 +541,6 @@
             const name = document.getElementById('nameInput').value.trim();
             const code = document.getElementById('codeInput').value.trim().toUpperCase();
             if(!name) return showToast("名稱為必填項目");
-            if (!currentId && code && collections.some(item => item.code === code)) {
-                return showToast(`番號 [${code}] 已存在！`);
-            }
             const data = { 
                 id: currentId || Date.now().toString(),
                 name, code, 
