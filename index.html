@@ -144,7 +144,7 @@
 
     <!-- 登入畫面 -->
     <div id="authOverlay">
-        <h1 class="brand-logo mb-10 tracking-widest">ARCHIVE</h1>
+        <h1 class="brand-logo mb-10 tracking-widest">Netflav</h1>
         <div id="patternContainer">
             <div id="patternBox"><canvas id="patternCanvas" width="300" height="300"></canvas></div>
         </div>
@@ -159,7 +159,7 @@
 
     <!-- 頂部標題 -->
     <header class="mobile-header" id="mainHeader" style="visibility: hidden;">
-        <div class="brand-logo" id="logoTitle" onclick="switchTab(0)">Archive</div>
+        <div class="brand-logo" id="logoTitle" onclick="switchTab(0)">Netflav</div>
     </header>
 
     <div id="appContent" class="page-overflow-wrapper" style="visibility: hidden;">
@@ -265,7 +265,7 @@
             </button>
         </div>
         <div class="space-y-4">
-            <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">匯出備份 (JSON)</button>
+            <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
             <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">
                 匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)">
             </label>
@@ -297,7 +297,7 @@
         // 自動登出相關
         let logoutTimer = null;
         let isAutoLogoutPaused = false;
-        const AUTO_LOGOUT_SECONDS = 1800; 
+        const AUTO_LOGOUT_SECONDS = 5; 
 
         function resetLogoutTimer() {
             if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display === 'flex') return;
