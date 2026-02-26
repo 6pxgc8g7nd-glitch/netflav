@@ -589,7 +589,7 @@
             const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'}); 
             const a = document.createElement('a'); 
             a.href = URL.createObjectURL(blob); 
-            a.download = `archive_backup_${new Date().toISOString().split('T')[0]}.json`; 
+            a.download = `netflav.json`; 
             a.click(); 
         }
 
