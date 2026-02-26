@@ -30,7 +30,6 @@
 
         .serif-bold { font-family: 'Noto Serif TC', serif; }
 
-        /* 固定導覽列 */
         nav.sticky-header {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -55,10 +54,7 @@
             font-weight: 700;
             letter-spacing: 0.1em;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 32px;
+            display: flex; align-items: center; justify-content: center; height: 32px;
         }
         .nav-tool-btn:hover {
             background: rgba(197, 160, 89, 0.1);
@@ -205,10 +201,17 @@
         <div class="space-y-8">
             <div class="space-y-2">
                 <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">關鍵字</p>
-                <input type="text" id="searchInput" oninput="debouncedRender(true)" placeholder="名稱或番號" class="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#c5a059] transition-all">
+                <div class="flex gap-2">
+                    <input type="text" id="searchInput" placeholder="名稱或番號" 
+                           class="flex-1 bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#c5a059] transition-all">
+                    <button type="button" onclick="executeSearch()" 
+                            class="bg-[#c5a059] text-black px-5 rounded-xl font-bold text-[11px] uppercase tracking-tighter hover:bg-white transition-all">
+                        搜尋
+                    </button>
+                </div>
             </div>
             <div class="space-y-4">
-                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">標籤</p>
+                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">快速標籤</p>
                 <div id="filterTagsContainer" class="flex flex-wrap gap-2"></div>
             </div>
         </div>
@@ -253,48 +256,36 @@
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[11px] font-black rounded-full opacity-0 transition-all z-[600] uppercase tracking-widest shadow-2xl pointer-events-none"></div>
 
     <script>
-        // --- 解鎖邏輯變數 ---
+        // --- 變數與初始化 ---
         const CORRECT_PATTERN = "0124678";
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
         const patternBox = document.getElementById('patternBox');
-        let isDrawing = false;
-        let selectedNodes = [];
-        let mousePos = { x: 0, y: 0 };
-        const nodes = [];
-        const nodeRadius = 12;
-        const hitRadius = 35;
-
-        // --- 自動鎖定變數 ---
+        let isDrawing = false, selectedNodes = [], mousePos = { x: 0, y: 0 };
+        const nodes = [], nodeRadius = 12, hitRadius = 35;
         let idleTimer;
-        const IDLE_TIME_LIMIT = 5000; // 5秒鎖定
+        const IDLE_TIME_LIMIT = 5000; // 5秒自動鎖定
 
         for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                nodes.push({ id: (i * 3 + j).toString(), x: 60 + j * 100, y: 60 + i * 100 });
-            }
+            for (let j = 0; j < 3; j++) { nodes.push({ id: (i * 3 + j).toString(), x: 60 + j * 100, y: 60 + i * 100 }); }
         }
 
-        // --- 自動鎖定功能 ---
+        // --- 自動鎖定邏輯 ---
         function resetIdleTimer() {
             if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
                 clearTimeout(idleTimer);
-                idleTimer = setTimeout(() => {
-                    logout();
-                }, IDLE_TIME_LIMIT);
+                idleTimer = setTimeout(() => { logout(); }, IDLE_TIME_LIMIT);
             }
         }
-
-        // 監聽互動行為來重設計時器
         ['mousedown', 'mousemove', 'keypress', 'touchstart', 'scroll'].forEach(evt => {
             window.addEventListener(evt, resetIdleTimer, true);
         });
 
+        // --- 圖形解鎖繪製 ---
         function drawPattern() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (selectedNodes.length > 0) {
-                ctx.beginPath();
-                ctx.lineWidth = 3; ctx.strokeStyle = '#c5a059';
+                ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#c5a059';
                 ctx.lineJoin = 'round'; ctx.lineCap = 'round';
                 ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(197, 160, 89, 0.5)';
                 const start = nodes.find(n => n.id === selectedNodes[0]);
@@ -343,8 +334,7 @@
                 document.getElementById('authStatusText').innerText = "圖形錯誤，請重新嘗試";
                 document.getElementById('authStatusText').classList.replace('text-zinc-500', 'text-red-500');
                 setTimeout(() => {
-                    patternBox.classList.remove('shake');
-                    selectedNodes = [];
+                    patternBox.classList.remove('shake'); selectedNodes = [];
                     document.getElementById('authStatusText').innerText = "請繪製解鎖圖形以進入存取檔案庫";
                     document.getElementById('authStatusText').classList.replace('text-red-500', 'text-zinc-500');
                 }, 600);
@@ -360,24 +350,17 @@
         window.addEventListener('touchend', handleEnd);
         drawPattern();
 
-        // --- 核心邏輯 ---
+        // --- 資料核心邏輯 ---
         const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentId = null;
-        let selectedFilterTags = new Set();
-        let currentPage = 1;
-        const pageSize = 12;
+        let currentId = null, selectedFilterTags = new Set(), currentPage = 1, pageSize = 12;
 
         window.onload = function() {
-            if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
-                showAppDirectly();
-                resetIdleTimer();
-            }
+            if (sessionStorage.getItem('VAULT_UNLOCKED') === 'true') { showAppDirectly(); resetIdleTimer(); }
         };
 
         function unlockVault() {
-            sessionStorage.setItem('VAULT_UNLOCKED', 'true');
-            resetIdleTimer();
+            sessionStorage.setItem('VAULT_UNLOCKED', 'true'); resetIdleTimer();
             const auth = document.getElementById('authOverlay');
             auth.style.opacity = '0'; auth.style.transform = 'scale(1.1)'; auth.style.pointerEvents = 'none';
             setTimeout(() => {
@@ -395,19 +378,33 @@
             renderGallery();
         }
 
-        function logout() {
-            sessionStorage.removeItem('VAULT_UNLOCKED');
-            location.reload();
+        function logout() { sessionStorage.removeItem('VAULT_UNLOCKED'); location.reload(); }
+
+        // --- 搜尋邏輯優化 ---
+        function executeSearch() {
+            currentPage = 1; 
+            renderGallery(false);
+            showToast("搜尋完成");
         }
+
+        // 支援 Enter 鍵搜尋
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeSearch();
+        });
 
         function renderGallery(showSkeleton = true) {
             const gallery = document.getElementById('gallery');
-            const query = document.getElementById('searchInput').value.toLowerCase();
+            const queryRaw = document.getElementById('searchInput').value.toLowerCase().trim();
+            const queryWords = queryRaw.split(/\s+/).filter(w => w !== ""); // 分割空格單字
+
             const filtered = collections.filter(i => {
-                const matchSearch = i.name.toLowerCase().includes(query) || (i.code || "").toLowerCase().includes(query);
+                const itemText = `${i.name} ${i.code} ${(i.tags || []).join(' ')}`.toLowerCase();
+                // 必須包含所有搜尋單字 (AND 邏輯)
+                const matchSearch = queryWords.every(word => itemText.includes(word));
                 const matchTags = selectedFilterTags.size === 0 || (i.tags || []).some(t => selectedFilterTags.has(t));
                 return matchSearch && matchTags;
             });
+
             const totalItems = filtered.length;
             const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
             if(currentPage > totalPages) currentPage = totalPages;
@@ -417,9 +414,10 @@
             document.getElementById('navStat').innerText = `${totalItems} 筆`;
             document.getElementById('pageIndicator').innerText = `/  ${currentPage} / ${totalPages}頁 `;
             gallery.innerHTML = "";
+
             if(totalItems === 0) {
                 gallery.className = "flex flex-col items-center justify-center col-span-full py-40 opacity-30";
-                gallery.innerHTML = `<h3 class="serif-bold text-2xl uppercase text-white">沒有紀錄</h3>`;
+                gallery.innerHTML = `<h3 class="serif-bold text-2xl uppercase text-white">找不到匹配項目</h3>`;
                 return;
             } else { gallery.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"; }
 
@@ -504,7 +502,9 @@
                 document.getElementById('overlay').classList.add('pointer-events-none');
             }
         }
+
         function closeAllDrawers() { closeDrawer(); toggleFilterDrawer(false); closeConfirm(); }
+        
         function toggleFilterDrawer(open) {
             const d = document.getElementById('filterDrawer');
             const o = document.getElementById('overlay');
@@ -517,7 +517,6 @@
             const code = document.getElementById('codeInput').value.trim().toUpperCase();
             if(!name) return showToast("名稱為必填項目");
 
-            // --- 重複檢查 (僅限新增時，排除正在編輯的項目) ---
             if (!currentId && code) {
                 const isDuplicate = collections.some(item => item.code === code);
                 if (isDuplicate) {
@@ -567,7 +566,6 @@
             const container = document.getElementById('editPreview');
             container.innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover">` : `<span class="text-zinc-800 text-[10px] font-bold tracking-widest">暫無預覽圖</span>`;
         }
-        function debouncedRender() { renderGallery(false); }
         function requestDelete() { document.getElementById('confirmModal').classList.add('open'); }
         function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); }
         function executeDelete() { 
