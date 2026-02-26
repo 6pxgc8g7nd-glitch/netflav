@@ -1,18 +1,291 @@
-    <script>
-        // --- 核心變數與配置 ---
-        const CORRECT_PATTERN = "0124678"; // 預設解鎖路徑
-        const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
-        const SESSION_AUTH_FLAG = 'VAULT_UNLOCKED';
-        const IDLE_TIMEOUT = 5000; // 5秒自動鎖定 (可改為 30000 代表 30秒)
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THE ARCHIVE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,900;1,900&family=Noto+Serif+TC:wght@900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
-        let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentId = null;
-        let selectedFilterTags = new Set();
-        let currentPage = 1;
-        const pageSize = 12;
-        let idleTimer; // 閒置計時器
+        :root {
+            --mag-black: #0a0a0a;
+            --mag-dark: #151515;
+            --mag-white: #f0f0f0;
+            --mag-accent: #c5a059;
+            --mag-gray: #2a2a2a;
+            --nav-height: 80px;
+        }
 
-        // --- 解鎖畫布邏輯 ---
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--mag-black);
+            color: var(--mag-white);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        .serif-bold { font-family: 'Noto Serif TC', serif; }
+
+        /* 固定導覽列 */
+        nav.sticky-header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: var(--nav-height);
+            z-index: 100;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(25px);
+            border-bottom: 1px solid rgba(197, 160, 89, 0.15);
+            display: flex;
+            align-items: center;
+        }
+
+        #appContent { padding-top: var(--nav-height); }
+
+        /* 統一導覽按鈕風格 */
+        .nav-tool-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(197, 160, 89, 0.3);
+            color: var(--mag-accent);
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 32px;
+        }
+        .nav-tool-btn:hover {
+            background: rgba(197, 160, 89, 0.1);
+            border-color: var(--mag-accent);
+            box-shadow: 0 0 15px rgba(197, 160, 89, 0.2);
+            color: white;
+        }
+
+        .nav-btn-primary { background: var(--mag-accent); color: black; border: 1px solid var(--mag-accent); }
+        .nav-btn-primary:hover { background: white; border-color: white; color: black; box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
+
+        /* 登入介面 */
+        #authOverlay {
+            position: fixed;
+            inset: 0;
+            background-color: var(--mag-black);
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.8s cubic-bezier(0.8, 0, 0.2, 1);
+        }
+        
+        .pattern-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin-top: 2rem;
+        }
+
+        #patternCanvas {
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        /* 抽屜樣式 */
+        .drawer {
+            position: fixed;
+            top: 0; right: 0; height: 100%;
+            background-color: #161616;
+            border-left: 1px solid var(--mag-gray);
+            box-shadow: -20px 0 50px rgba(0,0,0,0.5);
+            transform: translateX(100%);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 200;
+            overflow-y: auto;
+        }
+        .drawer.open { transform: translateX(0); }
+
+        /* 修復全域遮罩 Z-index */
+        #overlay {
+            z-index: 150;
+        }
+
+        .entry-card {
+            background: var(--mag-dark);
+            border: 1px solid var(--mag-gray);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.4s;
+            display: flex; flex-direction: column; height: 100%;
+        }
+        .entry-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--mag-accent);
+            box-shadow: 0 15px 35px rgba(197, 160, 89, 0.15);
+        }
+
+        .page-btn {
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: 1px solid var(--mag-gray);
+            font-weight: 700; font-size: 12px; transition: all 0.3s;
+            background: #000; color: #666;
+        }
+        .page-btn.active { background: var(--mag-accent); border-color: var(--mag-accent); color: #000; box-shadow: 0 0 15px rgba(197, 160, 89, 0.3); }
+
+        #confirmModal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 600; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease; backdrop-filter: blur(8px);
+        }
+        #confirmModal.open { opacity: 1; pointer-events: auto; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--mag-accent); border-radius: 10px; }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+        
+        .fade-in { animation: fadeIn 0.6s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- 圖形解鎖登入介面 -->
+    <div id="authOverlay">
+        <div class="text-center mb-6 px-6">
+            <div class="text-[#c5a059] mb-4 flex justify-center scale-125">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h2 class="serif-bold text-2xl text-white tracking-[0.2em] uppercase">ビデオを見る</h2>
+            <p id="authStatusText" class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] mt-3">パスワードを入力してください。</p>
+        </div>
+
+        <div class="pattern-container" id="patternBox">
+            <canvas id="patternCanvas" width="320" height="320"></canvas>
+        </div>
+
+        <div class="mt-12 text-center">
+            <p class="text-[8px] text-zinc-700 uppercase tracking-[0.4em]">由 OBSIDIAN 協議加密保護</p>
+            <button type="button" onclick="resetPattern()" class="mt-4 text-[10px] text-zinc-500 font-bold hover:text-white transition-colors tracking-widest">重置繪製</button>
+        </div>
+    </div>
+
+    <!-- 固定導航欄 -->
+    <nav class="sticky-header" id="mainNav" style="visibility: hidden;">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center gap-4 md:gap-8">
+                <button type="button" onclick="toggleFilterDrawer(true)" class="text-[#c5a059] hover:text-white transition-all transform hover:scale-110 active:scale-95">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="flex flex-col">
+                    <h2 onclick="logout()" title="點擊鎖定/切換使用者" class="serif-bold text-xl md:text-2xl text-white tracking-tighter cursor-pointer hover:text-[#c5a059] transition-colors duration-300 group">
+                        ムービー<span class="text-[#c5a059] group-hover:text-white transition-colors duration-300">.</span>
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span id="navStat" class="text-[9px] font-black text-zinc-600 tracking-[0.1em] uppercase">就緒</span>
+                        <span id="pageIndicator" class="text-[9px] font-black text-[#c5a059] tracking-[0.1em] uppercase"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2 md:gap-3">
+                <button type="button" onclick="exportData()" class="nav-tool-btn">匯出</button>
+                <label class="nav-tool-btn cursor-pointer">
+                    匯入 <input type="file" class="hidden" accept=".json" onchange="importData(event)">
+                </label>
+                <div class="h-4 w-px bg-zinc-800 mx-1 hidden md:block"></div>
+                <button type="button" onclick="openDrawer()" class="nav-tool-btn nav-btn-primary px-6">新增</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主內容區 -->
+    <div id="appContent" style="visibility: hidden;">
+        <div class="container mx-auto px-6 mt-10">
+            <main id="gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 min-h-[50vh]"></main>
+            <div id="paginationContainer" class="my-16 flex justify-center items-center gap-3"></div>
+        </div>
+    </div>
+
+    <!-- 篩選抽屜 -->
+    <div id="filterDrawer" class="drawer p-8 w-[380px]">
+        <div class="flex justify-between items-center mb-10">
+            <h3 class="serif-bold text-xl text-white uppercase tracking-widest">篩選</h3>
+            <button type="button" onclick="toggleFilterDrawer(false)" class="text-zinc-500 hover:text-white">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="space-y-8">
+            <div class="space-y-2">
+                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">關鍵字</p>
+                <input type="text" id="searchInput" oninput="debouncedRender(true)" placeholder="名稱或番號" class="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#c5a059] transition-all">
+            </div>
+            <div class="space-y-4">
+                <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">標籤</p>
+                <div id="filterTagsContainer" class="flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 編輯抽屜 -->
+    <div id="drawer" class="drawer p-10 w-full max-w-[550px]">
+        <div class="flex justify-between items-center mb-10">
+            <h3 class="serif-bold text-2xl text-white uppercase tracking-wider">紀錄編輯器</h3>
+            <button type="button" onclick="closeDrawer()" class="text-zinc-500 hover:text-white">
+                <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="space-y-6">
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">女優名稱</label><input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl text-white outline-none focus:border-[#c5a059]" placeholder="請輸入名稱"></div>
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">番號</label><input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="如：SNIS-001"></div>
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">標籤 (以空格分隔)</label><input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="例如：標籤1 標籤2"></div>
+            <div class="space-y-4 pt-4">
+                <label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">預覽圖</label>
+                <input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-transparent border-b border-zinc-800 py-2 text-zinc-500 text-[10px] outline-none" placeholder="輸入圖片 URL 地址">
+                <div id="editPreview" class="w-full aspect-video bg-zinc-900/50 flex items-center justify-center rounded-xl border border-dashed border-zinc-800 overflow-hidden"></div>
+            </div>
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">外部連結</label><input type="text" id="urlInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-[#c5a059] text-[10px] outline-none" placeholder="https://..."></div>
+            <div class="pt-10 flex flex-col gap-4">
+                <button type="button" onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-4 font-black uppercase tracking-[0.2em] text-[12px] hover:bg-white transition-all shadow-xl">儲存</button>
+                <button type="button" id="drawerDeleteBtn" onclick="requestDelete()" class="w-full text-zinc-700 text-[10px] uppercase font-bold hover:text-red-500 transition-colors hidden">刪除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 刪除確認 -->
+    <div id="confirmModal">
+        <div class="bg-zinc-950 border border-zinc-800 p-8 rounded-2xl max-w-sm w-full mx-6 text-center shadow-2xl relative">
+            <h4 class="serif-bold text-xl text-white mb-2 uppercase">確認刪除</h4>
+            <p class="text-zinc-600 text-[10px] mb-8 tracking-widest">此動作將不可逆，數據將永久消失</p>
+            <div class="grid grid-cols-2 gap-4">
+                <button type="button" onclick="closeConfirm()" class="bg-zinc-900 text-zinc-400 py-3 rounded-lg text-[11px] font-bold hover:bg-zinc-800 transition-colors">取消</button>
+                <button type="button" onclick="executeDelete()" class="bg-red-950 text-red-500 py-3 rounded-lg text-[11px] font-bold hover:bg-red-900 transition-colors">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全域遮罩 -->
+    <div id="overlay" onclick="closeAllDrawers()" class="fixed inset-0 bg-black/80 opacity-0 pointer-events-none transition-opacity duration-500 backdrop-blur-sm"></div>
+
+    <!-- 通知 UI -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[11px] font-black rounded-full opacity-0 transition-all z-[600] uppercase tracking-widest shadow-2xl pointer-events-none">系統初始化完成</div>
+
+    <script>
+        // --- 解鎖邏輯變數 ---
+        const CORRECT_PATTERN = "0124678"; // 預設解鎖路徑：Z 字型
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
         const patternBox = document.getElementById('patternBox');
@@ -23,30 +296,17 @@
         const nodeRadius = 12;
         const hitRadius = 35;
 
+        // 初始化 3x3 點位
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
-                nodes.push({ id: (i * 3 + j).toString(), x: 60 + j * 100, y: 60 + i * 100 });
+                nodes.push({
+                    id: (i * 3 + j).toString(),
+                    x: 60 + j * 100,
+                    y: 60 + i * 100
+                });
             }
         }
 
-        // --- 自動鎖定監聽器 (全域) ---
-        function resetIdleTimer() {
-            if (sessionStorage.getItem(SESSION_AUTH_FLAG) === 'true') {
-                clearTimeout(idleTimer);
-                idleTimer = setTimeout(() => {
-                    if (sessionStorage.getItem(SESSION_AUTH_FLAG) === 'true') {
-                        logout(); 
-                    }
-                }, IDLE_TIMEOUT);
-            }
-        }
-
-        // 監聽各種互動行為來重設計時器
-        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
-            window.addEventListener(evt, resetIdleTimer, true);
-        });
-
-        // --- 繪圖與解鎖功能 ---
         function drawPattern() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (selectedNodes.length > 0) {
@@ -116,10 +376,31 @@
                 }, 600);
             }
         }
+        function resetPattern() { selectedNodes = []; }
+
+        canvas.addEventListener('mousedown', handleStart);
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); });
+        window.addEventListener('touchmove', (e) => { handleMove(e); });
+        window.addEventListener('touchend', handleEnd);
+        drawPattern();
+
+        // --- 應用程式邏輯 ---
+        const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
+        const SESSION_AUTH_FLAG = 'VAULT_UNLOCKED';
+        let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let currentId = null;
+        let selectedFilterTags = new Set();
+        let currentPage = 1;
+        const pageSize = 12;
+
+        window.onload = function() {
+            if (sessionStorage.getItem(SESSION_AUTH_FLAG) === 'true') showAppDirectly();
+        };
 
         function unlockVault() {
             sessionStorage.setItem(SESSION_AUTH_FLAG, 'true');
-            resetIdleTimer(); // 解鎖後啟動計時
             const auth = document.getElementById('authOverlay');
             auth.style.opacity = '0';
             auth.style.transform = 'scale(1.1)';
@@ -136,7 +417,6 @@
             document.getElementById('authOverlay').style.display = 'none';
             document.getElementById('mainNav').style.visibility = 'visible';
             document.getElementById('appContent').style.visibility = 'visible';
-            resetIdleTimer();
             renderGallery();
         }
 
@@ -144,20 +424,6 @@
             sessionStorage.removeItem(SESSION_AUTH_FLAG);
             location.reload();
         }
-
-        // --- 畫布事件監聽 ---
-        canvas.addEventListener('mousedown', handleStart);
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleEnd);
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); }, {passive: false});
-        window.addEventListener('touchmove', (e) => { handleMove(e); }, {passive: false});
-        window.addEventListener('touchend', handleEnd);
-        drawPattern();
-
-        // --- 應用程式邏輯 ---
-        window.onload = function() {
-            if (sessionStorage.getItem(SESSION_AUTH_FLAG) === 'true') showAppDirectly();
-        };
 
         function renderGallery(showSkeleton = true) {
             const gallery = document.getElementById('gallery');
@@ -195,6 +461,7 @@
                         <h3 class="serif-bold text-lg text-white truncate mb-1 group-hover:text-[#c5a059] transition-colors">${item.name}</h3>
                         <p class="text-[9px] text-zinc-600 font-bold tracking-widest uppercase">${item.code || "未歸檔序列"}</p>
                         <div class="mt-auto pt-8 flex gap-3">
+                            <!-- 加上引號，避免純數字或帶符號ID造成JS語法錯誤 -->
                             <button type="button" onclick="openDrawer('${item.id}')" class="flex-1 py-3 text-[11px] font-bold bg-zinc-900/50 text-zinc-500 hover:text-white rounded-lg border border-zinc-900 transition-all">編輯</button>
                             ${item.url ? `<button type="button" onclick="window.open('${item.url}', '_blank')" class="flex-1 py-3 text-[11px] font-bold bg-zinc-900/50 text-[#c5a059] hover:bg-[#c5a059] hover:text-black rounded-lg border border-zinc-900 transition-all">連結</button>` : ''}
                         </div>
@@ -245,7 +512,8 @@
             document.getElementById('overlay').classList.replace('opacity-0', 'opacity-100');
             document.getElementById('overlay').classList.remove('pointer-events-none');
             
-            if(id !== null) {
+            if(id !== null && id !== undefined) {
+                // 強制將兩者轉為字串比對，避免型別問題
                 const item = collections.find(i => String(i.id) === String(id));
                 if (item) {
                     document.getElementById('nameInput').value = item.name || "";
@@ -271,7 +539,11 @@
             }
         }
         
-        function closeAllDrawers() { closeDrawer(); toggleFilterDrawer(false); closeConfirm(); }
+        function closeAllDrawers() { 
+            closeDrawer(); 
+            toggleFilterDrawer(false); 
+            closeConfirm(); 
+        }
 
         function toggleFilterDrawer(open) {
             const d = document.getElementById('filterDrawer');
@@ -282,30 +554,16 @@
 
         function saveItem() {
             const name = document.getElementById('nameInput').value.trim();
-            const code = document.getElementById('codeInput').value.trim().toUpperCase();
-            
             if(!name) return showToast("名稱為必填項目");
-
-            // --- 重複檢查 ---
-            if (!currentId && code !== "") {
-                const isDuplicate = collections.some(item => item.code === code);
-                if (isDuplicate) {
-                    document.getElementById('codeInput').classList.add('shake');
-                    setTimeout(() => document.getElementById('codeInput').classList.remove('shake'), 500);
-                    return showToast(`番號 ${code} 已存在`);
-                }
-            }
-
             const data = { 
-                id: currentId || Date.now().toString(),
+                id: currentId || Date.now().toString(), // 統一以字串形式儲存
                 name, 
-                code: code, 
+                code: document.getElementById('codeInput').value.trim().toUpperCase(), 
                 tags: document.getElementById('tagsInput').value.split(/\s+/).filter(t => t), 
                 img: document.getElementById('imgInput').value.trim(), 
                 url: document.getElementById('urlInput').value.trim(), 
                 updatedAt: Date.now() 
             };
-            
             if(currentId) {
                 const index = collections.findIndex(i => String(i.id) === String(currentId));
                 if(index !== -1) collections[index] = data;
@@ -322,7 +580,7 @@
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `檔案庫導出數據.json`; a.click(); showToast("數據導出完成");
         }
 
-        function importData(event) {
+        function importData(e) {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
@@ -330,7 +588,7 @@
                     if(Array.isArray(data)) { collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("數據同步完成"); }
                 } catch(e) { showToast("同步失敗：數據損毀"); }
             };
-            reader.readAsText(event.target.files[0]);
+            reader.readAsText(e.target.files[0]);
         }
 
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; setTimeout(() => t.style.opacity = "0", 3000); }
@@ -344,10 +602,27 @@
         
         function executeDelete() { 
             if(!currentId) return;
+
+            // 強制使用字串比對，避免 ID 型別不一造成的假相等問題
             collections = collections.filter(i => String(i.id) !== String(currentId)); 
+            
             localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); 
-            closeConfirm(); closeDrawer(); 
-            renderGallery(); showToast("紀錄已永久抹除"); 
+            
+            closeConfirm(); 
+            closeDrawer(); 
+            
+            // 如果刪除後導致當前頁面無資料，往前推一頁
+            const totalPages = Math.max(1, Math.ceil(collections.length / pageSize));
+            if(currentPage > totalPages) currentPage = totalPages;
+            
+            renderGallery(); 
+            showToast("紀錄已永久抹除"); 
+            
+            // 執行完畢後重置狀態
             currentId = null;
         }
     </script>
+</body>
+</html>
+
+我想新增一些功能給我一些建議
