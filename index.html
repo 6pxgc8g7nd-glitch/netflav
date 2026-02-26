@@ -1,131 +1,432 @@
-<!-- 替換原有的 script 內容或更新相關 function -->
-<script>
-    // 1. 新增防抖函數 (Debounce)
-    function debounce(func, delay = 300) {
-        let timer;
-        return function(...args) {
-            clearTimeout(timer);
-            timer = setTimeout(() => func.apply(this, args), delay);
-        };
-    }
-
-    // 2. 強化搜尋邏輯 (處理橫槓、權重、大小寫)
-    function getFilteredItems() {
-        const rawQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THE ARCHIVE | 檔案庫</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,900;1,900&family=Noto+Serif+TC:wght@900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
-        // 正規化：移除所有非字母數字的字元，方便番號比對 (例如 SNIS-001 -> snis001)
-        const normalizedQuery = rawQuery.replace(/[^a-z0-9]/g, '');
-
-        return collections.filter(item => {
-            if (!rawQuery && selectedFilterTags.size === 0) return true;
-
-            // 標籤篩選 (必須符合所有選中的標籤)
-            const matchesTags = selectedFilterTags.size === 0 || 
-                               Array.from(selectedFilterTags).every(t => (item.tags || []).includes(t));
-            
-            if (!matchesTags) return false;
-            if (!rawQuery) return true;
-
-            // 名稱比對
-            const nameMatch = item.name.toLowerCase().includes(rawQuery);
-            
-            // 番號比對 (包含原始比對與正規化比對)
-            const itemCode = (item.code || "").toLowerCase();
-            const normalizedCode = itemCode.replace(/[^a-z0-9]/g, '');
-            const codeMatch = itemCode.includes(rawQuery) || (normalizedQuery && normalizedCode.includes(normalizedQuery));
-
-            // 標籤模糊比對 (選填)
-            const tagsMatch = (item.tags || []).some(t => t.toLowerCase().includes(rawQuery));
-
-            return nameMatch || codeMatch || tagsMatch;
-        });
-    }
-
-    // 3. 更新渲染函數，加入搜尋結果提示
-    function renderGallery(showSkeleton = true) {
-        const gallery = document.getElementById('gallery');
-        const filtered = getFilteredItems();
-        
-        const totalItems = filtered.length;
-        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-        
-        if(currentPage > totalPages) currentPage = totalPages;
-        const startIndex = (currentPage - 1) * pageSize;
-        const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
-
-        // 更新導覽列統計
-        document.getElementById('navStat').innerText = `找到 ${totalItems} 筆`;
-        document.getElementById('pageIndicator').innerText = `/  ${currentPage} / ${totalPages}頁 `;
-
-        gallery.innerHTML = "";
-
-        if(totalItems === 0) {
-            renderEmptyState();
-            return;
+        :root {
+            --mag-black: #0a0a0a;
+            --mag-dark: #151515;
+            --mag-white: #f0f0f0;
+            --mag-accent: #c5a059;
+            --mag-gray: #2a2a2a;
+            --nav-height: 80px;
         }
 
-        gallery.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8";
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--mag-black);
+            color: var(--mag-white);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .serif-bold { font-family: 'Noto Serif TC', serif; }
+
+        /* 固定導覽列 */
+        nav.sticky-header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: var(--nav-height);
+            z-index: 100;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(25px);
+            border-bottom: 1px solid rgba(197, 160, 89, 0.15);
+            display: flex;
+            align-items: center;
+        }
+
+        #appContent { padding-top: var(--nav-height); }
+
+        .nav-tool-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(197, 160, 89, 0.3);
+            color: var(--mag-accent);
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 32px;
+            display: flex; align-items: center;
+        }
+        .nav-tool-btn:hover {
+            background: rgba(197, 160, 89, 0.1);
+            border-color: var(--mag-accent);
+            color: white;
+        }
+
+        .nav-btn-primary { background: var(--mag-accent); color: black; border: 1px solid var(--mag-accent); }
+
+        /* 登入介面 */
+        #authOverlay {
+            position: fixed; inset: 0;
+            background-color: var(--mag-black);
+            z-index: 500;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
         
-        paginatedItems.forEach((item, index) => {
-            const card = document.createElement('div');
-            card.className = "entry-card group fade-in";
-            card.style.animationDelay = `${index * 0.03}s`; // 加快動畫速度
-            card.innerHTML = `
-                <div class="aspect-video overflow-hidden border-b border-zinc-900 bg-black">
-                    <img src="${item.img || 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'}" 
-                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                         loading="lazy"
-                         onerror="this.src='https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800'">
+        #patternCanvas { cursor: crosshair; touch-action: none; }
+
+        /* 抽屜樣式 */
+        .drawer {
+            position: fixed; top: 0; right: 0; height: 100%;
+            background-color: #161616;
+            border-left: 1px solid var(--mag-gray);
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 200;
+            overflow-y: auto;
+        }
+        .drawer.open { transform: translateX(0); }
+
+        .entry-card {
+            background: var(--mag-dark);
+            border: 1px solid var(--mag-gray);
+            border-radius: 12px;
+            transition: all 0.4s;
+            display: flex; flex-direction: column; height: 100%;
+        }
+        .entry-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--mag-accent);
+            box-shadow: 0 15px 35px rgba(197, 160, 89, 0.15);
+        }
+
+        .page-btn {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: 1px solid var(--mag-gray);
+            font-weight: 700; font-size: 11px; transition: all 0.3s;
+            background: #000; color: #666;
+        }
+        .page-btn.active { background: var(--mag-accent); border-color: var(--mag-accent); color: #000; }
+
+        .shake { animation: shake 0.5s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .fade-in { animation: fadeIn 0.5s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- 解鎖介面 -->
+    <div id="authOverlay">
+        <div class="text-center mb-6">
+            <h2 class="serif-bold text-2xl text-white tracking-[0.2em] uppercase">檔案存取控制</h2>
+            <p id="authStatusText" class="text-[10px] text-zinc-500 uppercase tracking-[0.3em] mt-3">請輸入圖形密碼</p>
+        </div>
+        <div id="patternBox">
+            <canvas id="patternCanvas" width="320" height="320"></canvas>
+        </div>
+        <button onclick="resetPattern()" class="mt-8 text-[10px] text-zinc-600 hover:text-white tracking-widest uppercase">重置路徑</button>
+    </div>
+
+    <!-- 導航欄 -->
+    <nav class="sticky-header" id="mainNav" style="display: none;">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center gap-6">
+                <button onclick="toggleFilterDrawer(true)" class="text-[#c5a059]">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="flex flex-col">
+                    <h2 class="serif-bold text-xl text-white tracking-tighter">THE ARCHIVE<span class="text-[#c5a059]">.</span></h2>
+                    <span id="navStat" class="text-[9px] font-black text-zinc-600 tracking-widest">系統就緒</span>
                 </div>
-                <div class="p-5 flex flex-col flex-grow">
-                    <div class="flex justify-between items-start mb-1">
-                        <h3 class="serif-bold text-lg text-white truncate group-hover:text-[#c5a059] transition-colors">${item.name}</h3>
-                    </div>
-                    <p class="text-[9px] text-[#c5a059] font-bold tracking-widest uppercase mb-4">${item.code || "N/A"}</p>
-                    
-                    <!-- 顯示標籤預覽 -->
-                    <div class="flex flex-wrap gap-1 mb-6">
-                        ${(item.tags || []).slice(0, 3).map(t => `<span class="text-[8px] bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-500">#${t}</span>`).join('')}
-                    </div>
-
-                    <div class="mt-auto flex gap-3">
-                        <button type="button" onclick="openDrawer('${item.id}')" class="flex-1 py-2.5 text-[10px] font-bold bg-zinc-900/50 text-zinc-500 hover:text-white rounded-lg border border-zinc-900 transition-all">EDIT</button>
-                        ${item.url ? `<button type="button" onclick="window.open('${item.url}', '_blank')" class="flex-1 py-2.5 text-[10px] font-bold bg-[#c5a059]/10 text-[#c5a059] hover:bg-[#c5a059] hover:text-black rounded-lg border border-[#c5a059]/20 transition-all">LINK</button>` : ''}
-                    </div>
-                </div>`;
-            gallery.appendChild(card);
-        });
-        
-        renderPagination(totalPages);
-        renderTags();
-    }
-
-    // 當搜尋結果為空時的 UI
-    function renderEmptyState() {
-        const gallery = document.getElementById('gallery');
-        gallery.className = "flex flex-col items-center justify-center col-span-full py-40";
-        gallery.innerHTML = `
-            <div class="text-zinc-800 mb-4">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </div>
-            <h3 class="serif-bold text-xl uppercase text-zinc-500 tracking-widest">未尋獲匹配檔案</h3>
-            <button onclick="clearFilters()" class="mt-6 text-[10px] text-[#c5a059] border border-[#c5a059]/30 px-6 py-2 rounded-full hover:bg-[#c5a059] hover:text-black transition-all font-bold">清除所有篩選</button>
-        `;
-        document.getElementById('paginationContainer').innerHTML = "";
-    }
+            <div class="flex items-center gap-3">
+                <button onclick="exportData()" class="nav-tool-btn hidden md:flex">導出</button>
+                <button onclick="openDrawer()" class="nav-tool-btn nav-btn-primary px-6">新增記錄</button>
+            </div>
+        </div>
+    </nav>
 
-    function clearFilters() {
-        document.getElementById('searchInput').value = "";
-        selectedFilterTags.clear();
-        currentPage = 1;
-        renderGallery();
-    }
+    <!-- 主內容 -->
+    <div id="appContent" style="display: none;">
+        <div class="container mx-auto px-6 mt-10">
+            <div id="gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
+            <div id="paginationContainer" class="my-16 flex justify-center items-center gap-2"></div>
+        </div>
+    </div>
 
-    // 將 debouncedRender 定義為防抖版本
-    const debouncedRender = debounce(() => {
-        currentPage = 1; // 搜尋時回到第一頁
-        renderGallery(false);
-    }, 400);
+    <!-- 篩選抽屜 (強化搜尋) -->
+    <div id="filterDrawer" class="drawer p-8 w-[350px]">
+        <div class="flex justify-between items-center mb-10">
+            <h3 class="serif-bold text-xl text-white uppercase tracking-widest">進階搜尋</h3>
+            <button onclick="toggleFilterDrawer(false)" class="text-zinc-500 hover:text-white">✕</button>
+        </div>
+        <div class="space-y-8">
+            <div class="space-y-2">
+                <label class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">關鍵字 (名稱或番號)</label>
+                <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="例如: SNIS-001" class="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white focus:border-[#c5a059] outline-none transition-all">
+            </div>
+            <div class="space-y-4">
+                <label class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">標籤篩選</label>
+                <div id="filterTagsContainer" class="flex flex-wrap gap-2"></div>
+            </div>
+            <button onclick="clearFilters()" class="w-full py-3 text-[10px] text-zinc-500 border border-zinc-800 rounded-lg hover:bg-zinc-900 transition-all uppercase font-bold">重置所有篩選</button>
+        </div>
+    </div>
 
-</script>
+    <!-- 編輯抽屜 -->
+    <div id="drawer" class="drawer p-10 w-full max-w-[500px]">
+        <div class="flex justify-between items-center mb-10">
+            <h3 class="serif-bold text-2xl text-white uppercase tracking-wider">編輯記錄</h3>
+            <button onclick="closeDrawer()" class="text-zinc-500 hover:text-white">✕</button>
+        </div>
+        <div class="space-y-6">
+            <input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl text-white outline-none focus:border-[#c5a059]" placeholder="女優名稱 / 標題">
+            <input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="番號 (如: ABC-123)">
+            <input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="標籤 (以空格分隔)">
+            <input type="text" id="imgInput" oninput="previewImage(this.value)" class="w-full bg-transparent border-b border-zinc-800 py-3 text-zinc-500 text-xs outline-none" placeholder="圖片連結 URL">
+            <div id="editPreview" class="w-full aspect-video bg-zinc-900 flex items-center justify-center rounded-xl overflow-hidden border border-zinc-800"></div>
+            <input type="text" id="urlInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-[#c5a059] text-xs outline-none" placeholder="跳轉連結 https://...">
+            <div class="pt-8 space-y-4">
+                <button onclick="saveItem()" class="w-full bg-[#c5a059] text-black py-4 font-black uppercase text-xs tracking-widest hover:bg-white transition-all">儲存檔案</button>
+                <button id="deleteBtn" onclick="deleteItem()" class="w-full text-red-900 text-[10px] font-bold uppercase hover:text-red-500 transition-colors hidden">刪除此紀錄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遮罩與通知 -->
+    <div id="overlay" onclick="closeAll()" class="fixed inset-0 bg-black/80 opacity-0 pointer-events-none transition-all z-[150] backdrop-blur-sm"></div>
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[10px] font-black rounded-full opacity-0 transition-all z-[600] uppercase tracking-widest pointer-events-none">系統提示</div>
+
+    <script>
+        // --- 1. 解鎖系統邏輯 ---
+        const CORRECT_PATTERN = "0124678"; // Z 字型路徑
+        const canvas = document.getElementById('patternCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false, selectedNodes = [], mousePos = { x: 0, y: 0 };
+        const nodes = [];
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 60 + j * 100, y: 60 + i * 100 });
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (selectedNodes.length > 0) {
+                ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#c5a059'; ctx.moveTo(nodes[selectedNodes[0]].x, nodes[selectedNodes[0]].y);
+                selectedNodes.forEach(id => ctx.lineTo(nodes[id].x, nodes[id].y));
+                if (isDrawing) ctx.lineTo(mousePos.x, mousePos.y);
+                ctx.stroke();
+            }
+            nodes.forEach(node => {
+                const active = selectedNodes.includes(node.id);
+                ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+                ctx.strokeStyle = active ? '#c5a059' : '#333'; ctx.stroke();
+                if(active) { ctx.beginPath(); ctx.arc(node.x, node.y, 4, 0, Math.PI * 2); ctx.fillStyle = '#c5a059'; ctx.fill(); }
+            });
+            requestAnimationFrame(draw);
+        }
+
+        const getPos = e => {
+            const r = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - r.left, y: clientY - r.top };
+        };
+
+        const handleStart = e => { isDrawing = true; selectedNodes = []; mousePos = getPos(e); };
+        const handleMove = e => {
+            if (!isDrawing) return;
+            mousePos = getPos(e);
+            nodes.forEach(n => {
+                if (Math.hypot(mousePos.x - n.x, mousePos.y - n.y) < 25 && !selectedNodes.includes(n.id)) selectedNodes.push(n.id);
+            });
+        };
+        const handleEnd = () => {
+            if (!isDrawing) return;
+            isDrawing = false;
+            if (selectedNodes.join('') === CORRECT_PATTERN) unlock();
+            else { 
+                document.getElementById('patternBox').classList.add('shake');
+                setTimeout(() => { document.getElementById('patternBox').classList.remove('shake'); selectedNodes = []; }, 500);
+            }
+        };
+
+        canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); handleStart(e); }); window.addEventListener('touchmove', handleMove); window.addEventListener('touchend', handleEnd);
+        draw();
+
+        function unlock() {
+            sessionStorage.setItem('unlocked', 'true');
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('mainNav').style.display = 'flex';
+            document.getElementById('appContent').style.display = 'block';
+            renderGallery();
+        }
+
+        // --- 2. 核心數據與搜尋邏輯 ---
+        let collections = JSON.parse(localStorage.getItem('VAULT_DATA')) || [];
+        let currentEditId = null;
+        let selectedFilterTags = new Set();
+        let currentPage = 1;
+        const pageSize = 12;
+
+        // 防抖函數
+        function debounce(func, delay = 400) {
+            let timer;
+            return (...args) => { clearTimeout(timer); timer = setTimeout(() => func(...args), delay); };
+        }
+
+        const debouncedRender = debounce(() => { currentPage = 1; renderGallery(); });
+
+        function renderGallery() {
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const normQuery = query.replace(/[^a-z0-9]/g, '');
+
+            const filtered = collections.filter(item => {
+                const matchesTags = selectedFilterTags.size === 0 || Array.from(selectedFilterTags).every(t => (item.tags || []).includes(t));
+                if (!matchesTags) return false;
+                if (!query) return true;
+
+                const nameMatch = item.name.toLowerCase().includes(query);
+                const code = (item.code || "").toLowerCase();
+                const codeMatch = code.includes(query) || (normQuery && code.replace(/[^a-z0-9]/g, '').includes(normQuery));
+                return nameMatch || codeMatch;
+            });
+
+            const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+            const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+            document.getElementById('navStat').innerText = `找到 ${filtered.length} 筆資料`;
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = paginated.length ? "" : `<div class="col-span-full py-40 text-center text-zinc-700 uppercase tracking-widest">查無相符結果</div>`;
+
+            paginated.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = "entry-card fade-in";
+                div.style.animationDelay = `${i * 0.05}s`;
+                div.innerHTML = `
+                    <div class="aspect-video bg-black overflow-hidden rounded-t-xl">
+                        <img src="${item.img || 'https://via.placeholder.com/400x225/111/333?text=NO+IMAGE'}" class="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" loading="lazy">
+                    </div>
+                    <div class="p-5 flex-grow flex flex-col">
+                        <h4 class="serif-bold text-white truncate">${item.name}</h4>
+                        <p class="text-[9px] text-[#c5a059] font-bold tracking-widest mt-1">${item.code || "N/A"}</p>
+                        <div class="mt-auto pt-6 flex gap-2">
+                            <button onclick="openDrawer('${item.id}')" class="flex-1 py-2 bg-zinc-900 text-zinc-500 text-[10px] font-bold rounded hover:text-white transition-all">編輯</button>
+                            ${item.url ? `<button onclick="window.open('${item.url}')" class="flex-1 py-2 bg-[#c5a059]/10 text-[#c5a059] text-[10px] font-bold rounded border border-[#c5a059]/20 hover:bg-[#c5a059] hover:text-black transition-all">存取</button>` : ''}
+                        </div>
+                    </div>`;
+                gallery.appendChild(div);
+            });
+
+            renderPagination(totalPages);
+            renderFilterTags();
+        }
+
+        function renderPagination(total) {
+            const container = document.getElementById('paginationContainer');
+            container.innerHTML = "";
+            if (total <= 1) return;
+            for (let i = 1; i <= total; i++) {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                btn.innerText = i;
+                btn.onclick = () => { currentPage = i; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); };
+                container.appendChild(btn);
+            }
+        }
+
+        function renderFilterTags() {
+            const counts = {};
+            collections.forEach(item => (item.tags || []).forEach(t => counts[t] = (counts[t] || 0) + 1));
+            const container = document.getElementById('filterTagsContainer');
+            container.innerHTML = "";
+            Object.keys(counts).sort().forEach(tag => {
+                const active = selectedFilterTags.has(tag);
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded text-[9px] font-bold border transition-all ${active ? 'bg-[#c5a059] border-[#c5a059] text-black' : 'bg-black border-zinc-800 text-zinc-500'}`;
+                btn.innerText = `${tag} (${counts[tag]})`;
+                btn.onclick = () => { active ? selectedFilterTags.delete(tag) : selectedFilterTags.add(tag); currentPage = 1; renderGallery(); };
+                container.appendChild(btn);
+            });
+        }
+
+        // --- 3. UI 操作函數 ---
+        function openDrawer(id = null) {
+            currentEditId = id;
+            document.getElementById('deleteBtn').classList.toggle('hidden', !id);
+            if (id) {
+                const item = collections.find(i => i.id == id);
+                document.getElementById('nameInput').value = item.name;
+                document.getElementById('codeInput').value = item.code;
+                document.getElementById('tagsInput').value = (item.tags || []).join(' ');
+                document.getElementById('imgInput').value = item.img;
+                document.getElementById('urlInput').value = item.url;
+                previewImage(item.img);
+            } else {
+                ['nameInput', 'codeInput', 'tagsInput', 'imgInput', 'urlInput'].forEach(i => document.getElementById(i).value = "");
+                previewImage("");
+            }
+            document.getElementById('drawer').classList.add('open');
+            showOverlay(true);
+        }
+
+        function saveItem() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) return showToast("請輸入名稱");
+            const data = {
+                id: currentEditId || Date.now(),
+                name,
+                code: document.getElementById('codeInput').value.trim().toUpperCase(),
+                tags: document.getElementById('tagsInput').value.split(/\s+/).filter(t => t),
+                img: document.getElementById('imgInput').value.trim(),
+                url: document.getElementById('urlInput').value.trim()
+            };
+            if (currentEditId) {
+                const idx = collections.findIndex(i => i.id == currentEditId);
+                collections[idx] = data;
+            } else collections.unshift(data);
+            
+            localStorage.setItem('VAULT_DATA', JSON.stringify(collections));
+            renderGallery(); closeAll(); showToast("存檔成功");
+        }
+
+        function deleteItem() {
+            if (!confirm("確定刪除此紀錄？")) return;
+            collections = collections.filter(i => i.id != currentEditId);
+            localStorage.setItem('VAULT_DATA', JSON.stringify(collections));
+            renderGallery(); closeAll(); showToast("已移除紀錄");
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify(collections)], {type: 'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'archive_backup.json'; a.click();
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = "";
+            selectedFilterTags.clear();
+            currentPage = 1;
+            renderGallery();
+        }
+
+        function showOverlay(v) { 
+            const o = document.getElementById('overlay');
+            o.classList.toggle('opacity-0', !v); o.classList.toggle('pointer-events-none', !v); 
+        }
+        function closeDrawer() { document.getElementById('drawer').classList.remove('open'); showOverlay(false); }
+        function toggleFilterDrawer(v) { document.getElementById('filterDrawer').classList.toggle('open', v); showOverlay(v); }
+        function closeAll() { closeDrawer(); toggleFilterDrawer(false); }
+        function previewImage(url) { document.getElementById('editPreview').innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover">` : `<span class="text-zinc-800 text-[10px]">無預覽</span>`; }
+        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = "1"; setTimeout(() => t.style.opacity = "0", 2500); }
+        function resetPattern() { selectedNodes = []; }
+
+        if (sessionStorage.getItem('unlocked') === 'true') unlock();
+    </script>
+</body>
+</html>
 
