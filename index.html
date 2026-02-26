@@ -129,10 +129,7 @@
         .search-input { width: 100%; background-color: #18181b; border: none; border-radius: 8px; padding: 0.85rem 1rem 0.85rem 3rem; font-size: 0.875rem; color: white; outline: none; }
 
         #authOverlay { position: fixed; inset: 0; background-color: var(--nf-black); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        
-        /* 演員頭像樣式 */
         .actor-badge { background: #1a1a1a; border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 8px; border: 1px solid #2a2a2a; }
-        
         .tag-pill { background: #1a1a1a; color: #ccc; padding: 10px 18px; border-radius: 4px; font-size: 13px; font-weight: 500; border: 1px solid #333; }
         
         .input-error { color: #ef4444 !important; }
@@ -165,7 +162,7 @@
 
     <header class="mobile-header" id="mainHeader" style="visibility: hidden;">
         <div class="header-center-box">
-            <div class="brand-logo" id="logoTitle" onclick="switchTab(0)">Netflav</div>
+            <div class="brand-logo" id="logoTitle" onclick="refreshAndHome()">Netflav</div>
             <div class="led-trigger" onclick="toggleAutoLogout()">
                 <span id="statusLed" class="status-led led-active"></span>
             </div>
@@ -298,6 +295,20 @@
         let isDrawing = false, selectedNodes = [], mousePos = { x: 0, y: 0 };
         let isErrorState = false;
         const nodes = [];
+
+        // --- 功能模組：首頁刷新 ---
+        function refreshAndHome() {
+            // 1. 清空搜尋內容
+            document.getElementById('searchInput').value = "";
+            // 2. 重置頁碼
+            currentPage = 1;
+            // 3. 切換至首頁 Tab
+            switchTab(0);
+            // 4. 重新渲染藝廊 (清空過濾)
+            renderGallery();
+            // 5. 滾動回頂部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
         // --- 自動登出計時邏輯 ---
         let logoutTimer = null;
@@ -461,7 +472,7 @@
             closeDrawer();
         }
 
-        // --- 功能模組 ---
+        // --- 藝廊渲染 ---
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.toLowerCase();
@@ -615,25 +626,20 @@
             `).join(''); 
         }
 
-        // --- 整合後的演員列表渲染功能 ---
         function renderActorList() { 
             const list = document.getElementById('actorList'); 
             const map = {}; 
             collections.forEach(i => { 
-                // 優化切分邏輯，加入常見分隔符
                 const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1); 
                 names.forEach(n => map[n] = (map[n] || 0) + 1); 
             }); 
             const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); 
 
             list.innerHTML = sorted.map(([name, count]) => {
-                // 決定顯示的字 (displayName)
                 let displayName = "";
                 if (name.match(/^[A-Za-z]/)) {
-                    // 英文名字取前 2 個字母並大寫
                     displayName = name.substring(0, 2).toUpperCase();
                 } else {
-                    // 日本名或中文長名取前 2 個字，短名取 1 個字
                     displayName = name.length > 3 ? name.substring(0, 2) : name.substring(0, 1);
                 }
 
