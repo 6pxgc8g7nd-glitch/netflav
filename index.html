@@ -24,7 +24,7 @@
             margin: 0; padding: 0;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-            touch-action: pan-y; /* 允許垂直滾動，水平留給手勢 */
+            touch-action: pan-y;
         }
 
         .serif-bold { font-family: 'Noto Serif TC', serif; }
@@ -42,10 +42,9 @@
 
         #appContent { padding-top: var(--nav-height); }
 
-        /* 分頁切換動畫 */
         .page-container {
             display: flex;
-            width: 200%; /* 兩個分頁 */
+            width: 200%;
             transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
         }
         .page-content { width: 50%; padding-bottom: 100px; }
@@ -99,7 +98,6 @@
             box-shadow: 0 15px 35px rgba(197, 160, 89, 0.15);
         }
 
-        /* 女優清單樣式 */
         .actor-item {
             background: #111; border: 1px solid #222;
             padding: 1.5rem; border-radius: 12px;
@@ -198,8 +196,7 @@
                         <h3 class="serif-bold text-3xl text-white uppercase tracking-widest">Cast List</h3>
                         <p id="actorCount" class="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em]"></p>
                     </div>
-                    <div id="actorList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        </div>
+                    <div id="actorList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                 </div>
             </div>
         </div>
@@ -215,7 +212,7 @@
         <div class="space-y-8">
             <div class="space-y-2">
                 <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">關鍵字</p>
-                <input type="text" id="searchInput" oninput="debouncedRender(true)" placeholder="名稱或番號" class="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#c5a059] transition-all">
+                <input type="text" id="searchInput" oninput="debouncedRender()" placeholder="名稱或番號" class="w-full bg-black border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#c5a059] transition-all">
             </div>
             <div class="space-y-4">
                 <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">標籤</p>
@@ -232,7 +229,7 @@
             </button>
         </div>
         <div class="space-y-6">
-            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">女優名稱</label><input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl text-white outline-none focus:border-[#c5a059]" placeholder="請輸入名稱"></div>
+            <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">女優名稱</label><input type="text" id="nameInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-xl text-white outline-none focus:border-[#c5a059]" placeholder="請輸入名稱 (多個請用空格區分)"></div>
             <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">番號</label><input type="text" id="codeInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="如：SNIS-001"></div>
             <div class="space-y-1"><label class="text-[10px] uppercase text-zinc-600 font-bold ml-1">標籤 (以空格分隔)</label><input type="text" id="tagsInput" class="w-full bg-transparent border-b border-zinc-800 py-3 text-white outline-none focus:border-[#c5a059]" placeholder="例如：標籤1 標籤2"></div>
             <div class="space-y-4 pt-4">
@@ -263,7 +260,6 @@
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#c5a059] text-black px-8 py-3 text-[11px] font-black rounded-full opacity-0 transition-all z-[600] uppercase tracking-widest shadow-2xl pointer-events-none"></div>
 
     <script>
-        // --- 解鎖與圖形計時 (沿用前次修改) ---
         const CORRECT_PATTERN = "0124678";
         const canvas = document.getElementById('patternCanvas');
         const ctx = canvas.getContext('2d');
@@ -272,7 +268,7 @@
         const nodes = [];
         
         let idleTimer;
-        const IDLE_TIME_LIMIT = 30000; // 修改為 30 秒
+        const IDLE_TIME_LIMIT = 30000; 
         let isTimerSuspended = false, longPressTimer;
 
         for (let i = 0; i < 3; i++) {
@@ -316,7 +312,6 @@
         titleEl.addEventListener('touchstart', () => { longPressTimer = setTimeout(() => toggleTimerSuspension(!isTimerSuspended), 800); });
         titleEl.addEventListener('touchend', () => clearTimeout(longPressTimer));
 
-        // --- 滑動分頁邏輯 ---
         let currentTabIndex = 0;
         let touchStartX = 0;
         const pageContainer = document.getElementById('pageContainer');
@@ -334,14 +329,12 @@
         document.addEventListener('touchend', e => {
             let touchEndX = e.changedTouches[0].screenX;
             let diff = touchStartX - touchEndX;
-            // 左右滑動超過 100px 才觸發
             if (Math.abs(diff) > 100) {
-                if (diff > 0 && currentTabIndex === 0) switchTab(1); // 向左滑 -> 下一頁
-                if (diff < 0 && currentTabIndex === 1) switchTab(0); // 向右滑 -> 上一頁
+                if (diff > 0 && currentTabIndex === 0) switchTab(1);
+                if (diff < 0 && currentTabIndex === 1) switchTab(0);
             }
         }, false);
 
-        // --- 核心邏輯 ---
         const STORAGE_KEY = 'VAULT_OFFLINE_DATA_V1';
         let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentId = null, selectedFilterTags = new Set(), currentPage = 1, pageSize = 12;
@@ -388,30 +381,35 @@
             renderPagination(totalPages); renderTags();
         }
 
-        // --- 女優名單生成 ---
         function renderActorList() {
             const listContainer = document.getElementById('actorList');
             const actorCountEl = document.getElementById('actorCount');
-            
-            // 統計各個女優的作品數量
             const actorMap = {};
+            
             collections.forEach(item => {
-                const name = item.name.trim();
-                if(name) {
+                const rawName = item.name || "";
+                // 核心修改：利用空格拆分名字並去重
+                const individualActors = [...new Set(rawName.split(/\s+/).filter(name => name.trim() !== ""))];
+                individualActors.forEach(name => {
                     actorMap[name] = (actorMap[name] || 0) + 1;
-                }
+                });
             });
 
             const sortedActors = Object.entries(actorMap).sort((a, b) => b[1] - a[1]);
             actorCountEl.innerText = `${sortedActors.length} 位女優`;
             
+            if (sortedActors.length === 0) {
+                listContainer.innerHTML = `<div class="col-span-full py-20 text-center opacity-30 text-xs uppercase tracking-widest">目前暫無資料</div>`;
+                return;
+            }
+
             listContainer.innerHTML = sortedActors.map(([name, count]) => `
-                <div class="actor-item cursor-pointer" onclick="filterByActor('${name}')">
+                <div class="actor-item cursor-pointer group" onclick="filterByActor('${name}')">
                     <div>
-                        <p class="text-white font-bold text-lg">${name}</p>
+                        <p class="text-white font-bold text-lg group-hover:text-[#c5a059] transition-colors">${name}</p>
                         <p class="text-zinc-600 text-[10px] uppercase tracking-widest font-black mt-1">${count} 部作品</p>
                     </div>
-                    <div class="text-[#c5a059]">
+                    <div class="text-[#c5a059] transform translate-x-0 group-hover:translate-x-2 transition-transform">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </div>
                 </div>
@@ -425,15 +423,10 @@
             showToast(`已篩選：${name}`);
         }
 
-        // --- 其他工具函式 (解鎖/Canvas/CRUD 保持不變) ---
-        // ... (省略部分重複的代碼如 drawPattern, validatePattern, openDrawer, saveItem 等，請保留原有的邏輯) ...
-
-        // 確保核心功能可用
         function drawPattern() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (selectedNodes.length > 0) {
-                ctx.beginPath();
-                ctx.lineWidth = 3; ctx.strokeStyle = '#c5a059';
+                ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#c5a059';
                 ctx.lineJoin = 'round'; ctx.lineCap = 'round';
                 const start = nodes.find(n => n.id === selectedNodes[0]);
                 ctx.moveTo(start.x, start.y);
@@ -454,6 +447,7 @@
             });
             requestAnimationFrame(drawPattern);
         }
+
         function handleStart(e) { isDrawing = true; selectedNodes = []; updateMousePos(e); checkCollision(); }
         function handleMove(e) { if (!isDrawing) return; updateMousePos(e); checkCollision(); }
         function handleEnd() { if (!isDrawing) return; isDrawing = false; validatePattern(); }
@@ -503,11 +497,7 @@
         function logout() { sessionStorage.removeItem('VAULT_UNLOCKED'); location.reload(); }
         function goHome() { 
             document.getElementById('searchInput').value = ""; 
-            selectedFilterTags.clear(); 
-            currentPage = 1; 
-            switchTab(0);
-            renderGallery(); 
-            showToast("已返回主頁");
+            selectedFilterTags.clear(); currentPage = 1; switchTab(0); renderGallery(); showToast("已返回主頁");
         }
         function renderPagination(totalPages) {
             const container = document.getElementById('paginationContainer');
