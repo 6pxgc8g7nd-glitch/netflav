@@ -290,7 +290,7 @@
         // --- 核心：自動登出邏輯修正 ---
         let logoutTimer = null; 
         let isAutoLogoutPaused = false; 
-        const AUTO_LOGOUT_SECONDS = 180; // 修改為合理的時間：3分鐘
+        const AUTO_LOGOUT_SECONDS = 5; // 修改為合理的時間：3分鐘
 
         function resetLogoutTimer() {
             const isLocked = document.getElementById('authOverlay').style.display !== 'none';
