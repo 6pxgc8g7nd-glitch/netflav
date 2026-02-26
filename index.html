@@ -26,6 +26,8 @@
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            /* 預設隱藏滾動條，直到解鎖 */
+            overflow: hidden; 
         }
 
         /* 震動動畫 */
@@ -347,6 +349,10 @@
         function unlockVault() {
             sessionStorage.setItem('VAULT_UNLOCKED', 'true');
             document.getElementById('authOverlay').style.display = 'none';
+            
+            // 解鎖後恢復頁面滾動
+            document.body.style.overflow = 'auto';
+
             document.getElementById('mainHeader').style.visibility = 'visible';
             document.getElementById('appContent').style.visibility = 'visible';
             document.getElementById('bottomNav').style.visibility = 'visible';
@@ -407,7 +413,22 @@
         
         drawPattern();
         
-        function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); selectedNodes = []; isErrorState = false; isDrawing = false; document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('mainHeader').style.visibility = 'hidden'; document.getElementById('appContent').style.visibility = 'hidden'; document.getElementById('bottomNav').style.visibility = 'hidden'; if (logoutTimer) clearTimeout(logoutTimer); toggleFilterDrawer(false); closeDrawer(); }
+        function lockApp() { 
+            sessionStorage.removeItem('VAULT_UNLOCKED'); 
+            selectedNodes = []; isErrorState = false; isDrawing = false; 
+            
+            // 鎖定時禁止頁面滾動
+            document.body.style.overflow = 'hidden';
+
+            document.getElementById('authOverlay').style.display = 'flex'; 
+            document.getElementById('mainHeader').style.visibility = 'hidden'; 
+            document.getElementById('appContent').style.visibility = 'hidden'; 
+            document.getElementById('bottomNav').style.visibility = 'hidden'; 
+            if (logoutTimer) clearTimeout(logoutTimer); 
+            toggleFilterDrawer(false); 
+            closeDrawer(); 
+        }
+
         function renderPagination(total) { const container = document.getElementById('paginationContainer'); if (total <= 1) { container.innerHTML = ""; return; } let pages = [1]; for (let i = Math.max(2, currentPage - 1); i <= Math.min(total - 1, currentPage + 1); i++) pages.push(i); if (total > 1) pages.push(total); const finalPages = [...new Set(pages)]; container.innerHTML = finalPages.map(p => `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`).join(''); }
         function switchTab(index) { const container = document.getElementById('pageContainer'); const pages = document.querySelectorAll('.page-content'); container.style.transform = `translateX(-${index * (100/3)}%)`; document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index)); pages.forEach((page, i) => { if (i === index) page.classList.add('active-page'); else page.classList.remove('active-page'); }); window.scrollTo(0, 0); if(index === 1) renderTagCloud(); if(index === 2) renderActorList(); }
         function changePage(p) { currentPage = p; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); }
@@ -428,7 +449,15 @@
         function renderTagCloud() { const container = document.getElementById('tagCloud'); const map = {}; collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1)); const sortedTags = Object.entries(map).sort((a,b) => b[1] - a[1]); container.innerHTML = sortedTags.map(([tag, count]) => `<div onclick="filterBySearch('${tag}')" class="tag-pill active:scale-95 transition-transform">${tag} <span class="ml-1 text-[10px] opacity-40">${count}</span></div>`).join(''); }
         function renderActorList() { const list = document.getElementById('actorList'); const map = {}; collections.forEach(i => { const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1); names.forEach(n => map[n] = (map[n] || 0) + 1); }); const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); list.innerHTML = sorted.map(([name, count]) => { let displayName = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : (name.length > 3 ? name.substring(0, 2) : name.substring(0, 1)); return `<div onclick="filterBySearch('${name}')" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500 tracking-tighter">${displayName}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${name}</span><span class="block text-[9px] text-zinc-600 mt-0.5">${count} 作品</span></div>`; }).join(''); }
         function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); renderGallery(); }
-        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); };
+        
+        window.onload = () => { 
+            if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
+                unlockVault(); 
+            } else {
+                // 確保初始載入若未解鎖，也是禁止滾動
+                document.body.style.overflow = 'hidden';
+            }
+        };
     </script>
 </body>
 </html>
