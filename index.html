@@ -287,12 +287,25 @@
                 (i.tags || []).some(t => t.toLowerCase().includes(query.toLowerCase()))
             );
             document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
+            
             if (filtered.length === 0) {
                 gallery.className = "flex flex-col items-center justify-center py-20 text-center";
-                gallery.innerHTML = `<div class="empty-state-icon mb-6"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11" opacity="0.5"></line></svg></div><p class="text-zinc-500 font-bold text-lg mb-1">找不到相關內容</p><p class="text-zinc-700 text-[10px] mb-8 uppercase tracking-[0.2em]">請嘗試其他關鍵字</p>`;
+                gallery.innerHTML = `
+                    <div class="empty-state-icon mb-6">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            <line x1="8" y1="11" x2="14" y2="11" opacity="0.5"></line>
+                        </svg>
+                    </div>
+                    <p class="text-zinc-500 font-bold text-lg mb-1">找不到相關內容</p>
+                    <p class="text-zinc-700 text-[10px] mb-8 uppercase tracking-[0.2em]">請嘗試其他關鍵字</p>
+                    ${query ? `<button onclick="clearSearch()" class="px-8 py-3 bg-zinc-900 text-zinc-400 text-[10px] font-black rounded-full border border-zinc-800 active:scale-95 transition-transform tracking-widest">清除搜尋條件</button>` : ''}
+                `;
                 document.getElementById('paginationContainer').innerHTML = "";
                 return;
             }
+            
             gallery.className = `grid gap-4 ${currentLayout === 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
             const total = Math.ceil(filtered.length / pageSize);
             if (currentPage > total && total > 0) currentPage = total;
@@ -306,6 +319,14 @@
                 </div>
             `).join('');
             renderPagination(total);
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('searchInput');
+            input.value = "";
+            currentPage = 1;
+            renderGallery();
+            input.focus();
         }
 
         function updateLayout(cols) {
@@ -336,7 +357,7 @@
         }
 
         function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 3; 
+        let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 30; 
         function resetLogoutTimer() { const isLocked = document.getElementById('authOverlay').style.display !== 'none'; if (isAutoLogoutPaused || isLocked) { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
         function toggleAutoLogout() { isAutoLogoutPaused = !isAutoLogoutPaused; const led = document.getElementById('statusLed'); if (isAutoLogoutPaused) { clearTimeout(logoutTimer); led.className = "status-led led-paused"; showToast("自動登出已暫停"); } else { led.className = "status-led led-active"; showToast("自動登出已恢復"); resetLogoutTimer(); } }
         ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, () => { if (document.getElementById('authOverlay').style.display === 'none') resetLogoutTimer(); }, { passive: true }));
@@ -346,8 +367,6 @@
         
         function drawPattern() { 
             ctx.clearRect(0, 0, canvas.width, canvas.height); 
-            
-            // 繪製線條
             if (selectedNodes.length > 0) { 
                 ctx.beginPath(); 
                 ctx.lineWidth = 6; 
@@ -363,8 +382,6 @@
                 if (isDrawing && !isErrorState) ctx.lineTo(mousePos.x, mousePos.y); 
                 ctx.stroke(); 
             } 
-            
-            // 繪製節點
             nodes.forEach(node => { 
                 const active = selectedNodes.includes(node.id); 
                 ctx.beginPath(); 
