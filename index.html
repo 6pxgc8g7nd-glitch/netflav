@@ -138,14 +138,15 @@
         }
         .page-dot.active { background-color: var(--nf-red); color: white; transform: scale(1.1); box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3); }
 
+        /* --- 縮小後的跳轉輸入框樣式 --- */
         .jump-box {
-            display: flex; align-items: center; background: #1a1a1e; 
-            border-radius: 12px; padding: 0 12px; height: 36px; 
-            border: 1px solid #27272a;
+            display: flex; align-items: center; background: #151518; 
+            border-radius: 20px; padding: 0 10px; height: 30px; 
+            border: 1px solid #27272a; margin-top: 4px;
         }
         .jump-input {
-            background: transparent; width: 35px; text-align: center;
-            font-size: 14px; font-weight: 900; color: var(--nf-red); outline: none;
+            background: transparent; width: 28px; text-align: center;
+            font-size: 12px; font-weight: 900; color: var(--nf-red); outline: none; border: none;
         }
         .jump-input::-webkit-inner-spin-button, .jump-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
@@ -298,7 +299,7 @@
         const nodes = [];
         let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 1;
 
-        // --- 核心渲染：加入清除按鈕 ---
+        // --- 核心渲染 ---
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.trim();
@@ -360,7 +361,7 @@
                 return `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`;
             }).join('');
             dotsHtml += `</div>`;
-            const jumpHtml = `<div class="jump-box"><span class="text-[10px] text-zinc-600 font-bold mr-2 uppercase tracking-tighter"></span><input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" onkeydown="if(event.key==='Enter') jumpToPage(${total})"><span class="text-[10px] text-zinc-700 font-black ml-2">/ ${total}</span></div>`;
+            const jumpHtml = `<div class="jump-box"><input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" onkeydown="if(event.key==='Enter') jumpToPage(${total})"><span class="text-[10px] text-zinc-700 font-black ml-1">/ ${total}</span></div>`;
             container.innerHTML = dotsHtml + jumpHtml;
         }
 
@@ -373,7 +374,7 @@
 
         function changePage(p) { currentPage = p; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); }
 
-        // --- Drawer 開啟：移除預覽邏輯 ---
+        // --- Drawer 開啟 ---
         function openDrawer(id = null) {
             currentId = id;
             document.getElementById('drawer').classList.add('open');
@@ -391,29 +392,37 @@
             }
         }
 
-        // --- 剩餘系統邏輯 (同前，不變) ---
+        // --- 核心系統邏輯 ---
         function unlockVault() { sessionStorage.setItem('VAULT_UNLOCKED', 'true'); document.getElementById('authOverlay').style.display = 'none'; document.body.style.overflow = 'auto'; document.getElementById('mainHeader').style.visibility = 'visible'; document.getElementById('appContent').style.visibility = 'visible'; document.getElementById('bottomNav').style.visibility = 'visible'; isAutoLogoutPaused = false; document.getElementById('statusLed').className = "status-led led-active"; updateLayout(currentLayout); resetLogoutTimer(); }
         function switchTab(index) { const container = document.getElementById('pageContainer'); const pages = document.querySelectorAll('.page-content'); container.style.transform = `translateX(-${index * (100/3)}%)`; document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index)); pages.forEach((page, i) => { i === index ? page.classList.add('active-page') : page.classList.remove('active-page'); }); window.scrollTo(0, 0); if(index === 1) renderTagCloud(); if(index === 2) renderActorList(); }
         function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); renderGallery(); }
         function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); selectedNodes = []; isErrorState = false; isDrawing = false; document.body.style.overflow = 'hidden'; document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('mainHeader').style.visibility = 'hidden'; document.getElementById('appContent').style.visibility = 'hidden'; document.getElementById('bottomNav').style.visibility = 'hidden'; if (logoutTimer) clearTimeout(logoutTimer); toggleFilterDrawer(false); closeDrawer(); }
+        
         let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 3;
         function resetLogoutTimer() { if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display !== 'none') { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
         function toggleAutoLogout() { isAutoLogoutPaused = !isAutoLogoutPaused; const led = document.getElementById('statusLed'); if (isAutoLogoutPaused) { clearTimeout(logoutTimer); led.className = "status-led led-paused"; showToast("自動登出已暫停"); } else { led.className = "status-led led-active"; showToast("自動登出已恢復"); resetLogoutTimer(); } }
+        
         ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, () => { if (document.getElementById('authOverlay').style.display === 'none') resetLogoutTimer(); }, { passive: true }));
+        
         const canvas = document.getElementById('patternCanvas'); const ctx = canvas.getContext('2d');
         for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
         function drawPattern() { ctx.clearRect(0, 0, canvas.width, canvas.height); if (selectedNodes.length > 0 && isErrorState) { ctx.beginPath(); ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = '#ff0000'; const start = nodes.find(n => n.id === selectedNodes[0]); ctx.moveTo(start.x, start.y); for (let i = 1; i < selectedNodes.length; i++) { const n = nodes.find(node => node.id === selectedNodes[i]); ctx.lineTo(n.x, n.y); } ctx.stroke(); } nodes.forEach(node => { const active = selectedNodes.includes(node.id); ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2); ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222'; if (active && !isErrorState) ctx.fillStyle = '#111'; ctx.fill(); }); requestAnimationFrame(drawPattern); }
+        
         const handleStart = (e) => { if (isErrorState) return; e.preventDefault(); isDrawing = true; selectedNodes = []; };
         const handleMove = (e) => { if (!isDrawing || isErrorState) return; const rect = canvas.getBoundingClientRect(); const touch = e.touches ? e.touches[0] : e; mousePos = { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) }; nodes.forEach(node => { if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) { selectedNodes.push(node.id); if (window.navigator.vibrate) window.navigator.vibrate(10); } }); };
         const handleEnd = () => { if (!isDrawing || isErrorState) return; isDrawing = false; if (selectedNodes.join('') === CORRECT_PATTERN) unlockVault(); else if (selectedNodes.length > 0) handleWrongPattern(); };
+        
         canvas.addEventListener('touchstart', handleStart); canvas.addEventListener('touchmove', handleMove); canvas.addEventListener('touchend', handleEnd);
         canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
+        
         function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; }, 600); }
         drawPattern();
+        
         function updateLayout(cols) { currentLayout = cols; localStorage.setItem('NF_LAYOUT_SETTING', cols); const b1 = document.getElementById('layoutBtn1'), b2 = document.getElementById('layoutBtn2'); b1.className = cols===1 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; b2.className = cols===2 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; renderGallery(); }
         function openExternalUrl(url, e) { if(e) e.stopPropagation(); window.open(url.startsWith('http') ? url : 'https://' + url, '_blank'); }
         function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; t.style.transform = "translate(-50%, -10px)"; setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translate(-50%, 0)"; }, 2000); }
+        
         function saveItem() { const name = document.getElementById('nameInput').value.trim(); const code = document.getElementById('codeInput').value.trim().toUpperCase(); if(!name) { showToast("請輸入名稱"); return; } const data = { id: currentId || Date.now().toString(), name, code, url: document.getElementById('urlInput').value.trim(), tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), img: document.getElementById('imgInput').value.trim() }; if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data; else collections.unshift(data); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); closeDrawer(); showToast("已儲存"); }
         function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); }
         function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
@@ -422,9 +431,11 @@
         function toggleFilterDrawer(open) { document.getElementById('filterDrawer').classList.toggle('open', open); }
         function exportData() { const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `netflav.json`; a.click(); }
         function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入成功"); } catch(err) { showToast("格式錯誤"); } }; reader.readAsText(e.target.files[0]); }
+        
         function renderTagCloud() { const container = document.getElementById('tagCloud'); const map = {}; collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1)); const sortedTags = Object.entries(map).sort((a,b) => b[1] - a[1]); const counts = Object.values(map); const avgCount = counts.length > 0 ? counts.reduce((a, b) => a + b, 0) / counts.length : 0; container.innerHTML = sortedTags.map(([tag, count]) => { const isHot = count > avgCount && count > 1; return `<div onclick="filterBySearch('${tag}')" class="tag-pill ${isHot ? 'hot-tag' : ''}"><span>${tag}</span><span class="tag-count-badge">${count}</span></div>`; }).join(''); }
         function renderActorList() { const list = document.getElementById('actorList'); const map = {}; collections.forEach(i => { const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1); names.forEach(n => map[n] = (map[n] || 0) + 1); }); const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); list.innerHTML = sorted.map(([name, count]) => { let disp = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : name.substring(0, 1); return `<div onclick="filterBySearch('${name}')" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500">${disp}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${name}</span><span class="block text-[9px] text-zinc-600">${count} 作品</span></div>`; }).join(''); }
         function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        
         window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); else document.body.style.overflow = 'hidden'; };
     </script>
 </body>
