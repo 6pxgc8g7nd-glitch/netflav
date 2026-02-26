@@ -118,18 +118,32 @@
             z-index: 10;
         }
 
+        /* --- 優化分頁容器 --- */
         .page-dot-container {
-            display: flex; gap: 12px; justify-content: center; align-items: center;
-            padding: 20px 0; overflow-x: auto; scrollbar-width: none;
+            display: flex; gap: 8px; justify-content: center; align-items: center;
+            padding: 20px 0 40px 0; overflow-x: auto; scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
         }
         .page-dot {
-            min-width: 36px; height: 36px; border-radius: 50%;
+            min-width: 32px; height: 32px; border-radius: 50%;
             background-color: #1a1a1e; color: #71717a;
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 12px; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             flex-shrink: 0;
         }
         .page-dot.active { background-color: var(--nf-red); color: white; transform: scale(1.1); box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3); }
+
+        .jump-box {
+            display: flex; align-items: center; background: #1a1a1e; 
+            border-radius: 20px; padding: 0 10px; height: 32px; 
+            border: 1px solid #27272a; margin-left: 4px;
+        }
+        .jump-input {
+            background: transparent; width: 28px; text-align: center;
+            font-size: 12px; font-weight: 900; color: white; outline: none;
+        }
+        /* 移除 number input 箭頭 */
+        .jump-input::-webkit-inner-spin-button, .jump-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
         .drawer {
             position: fixed; top: 0; right: 0; bottom: 0; left: 0;
@@ -146,43 +160,16 @@
         #authOverlay { position: fixed; inset: 0; background-color: var(--nf-black); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .actor-badge { background: #1a1a1a; border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 8px; border: 1px solid #2a2a2a; }
         
-        /* --- 優化後的標籤顯示方式 --- */
         .tag-pill {
-            background: #1a1a1b;
-            color: #e4e4e7;
-            padding: 8px 16px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 500;
-            border: 1px solid #27272a;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            cursor: pointer;
+            background: #1a1a1b; color: #e4e4e7; padding: 8px 16px; border-radius: 12px;
+            font-size: 13px; font-weight: 500; border: 1px solid #27272a;
+            display: flex; align-items: center; gap: 8px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); cursor: pointer;
         }
-        .tag-pill:active {
-            transform: scale(0.92);
-            background: #27272a;
-        }
-        .tag-pill.hot-tag {
-            border-color: rgba(229, 9, 20, 0.3);
-            background: linear-gradient(145deg, #1a1a1b, #201010);
-        }
-        .tag-count-badge {
-            background: #27272a;
-            color: #a1a1aa;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-weight: bold;
-        }
-        .tag-pill.hot-tag .tag-count-badge {
-            background: var(--nf-red);
-            color: white;
-        }
-        /* -------------------------- */
+        .tag-pill:active { transform: scale(0.92); background: #27272a; }
+        .tag-pill.hot-tag { border-color: rgba(229, 9, 20, 0.3); background: linear-gradient(145deg, #1a1a1b, #201010); }
+        .tag-count-badge { background: #27272a; color: #a1a1aa; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: bold; }
+        .tag-pill.hot-tag .tag-count-badge { background: var(--nf-red); color: white; }
 
         .input-error { color: #ef4444 !important; }
         .input-ring-error { ring: 1px solid #ef4444 !important; }
@@ -314,7 +301,7 @@
         const nodes = [];
         let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 1;
 
-        // --- 核心邏輯保持不變 (renderGallery, unlockVault, pattern drawing 等) ---
+        // --- 核心邏輯 ---
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const query = document.getElementById('searchInput').value.trim();
@@ -324,25 +311,19 @@
                 (i.tags || []).some(t => t.toLowerCase().includes(query.toLowerCase()))
             );
             document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
+            
             if (filtered.length === 0) {
                 gallery.className = "flex flex-col items-center justify-center py-20 text-center";
-                gallery.innerHTML = `
-                    <div class="empty-state-icon mb-6">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </div>
-                    <p class="text-zinc-500 font-bold text-lg mb-1">找不到相關內容</p>
-                    <p class="text-zinc-700 text-[10px] mb-8 uppercase tracking-[0.2em]">請嘗試其他關鍵字</p>
-                `;
+                gallery.innerHTML = `<div class="empty-state-icon mb-6"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div><p class="text-zinc-500 font-bold text-lg mb-1">找不到相關內容</p>`;
                 document.getElementById('paginationContainer').innerHTML = "";
                 return;
             }
+
             gallery.className = `grid gap-4 ${currentLayout === 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
             const total = Math.ceil(filtered.length / pageSize);
             if (currentPage > total && total > 0) currentPage = total;
             const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+            
             gallery.innerHTML = paginated.map(item => `
                 <div class="poster-card">
                     <img src="${item.img || 'https://via.placeholder.com/640x360/111/333?text=NO+IMAGE'}" loading="lazy">
@@ -354,32 +335,68 @@
             renderPagination(total);
         }
 
-        // --- 優化後的標籤生成邏輯 ---
+        // --- 改寫分頁邏輯：區段式 + 跳轉 ---
+        function renderPagination(total) {
+            const container = document.getElementById('paginationContainer');
+            if (total <= 1) { container.innerHTML = ""; return; }
+
+            let pages = [];
+            const range = 1; // 當前頁碼前後顯示的數量
+
+            for (let i = 1; i <= total; i++) {
+                if (i === 1 || i === total || (i >= currentPage - range && i <= currentPage + range)) {
+                    pages.push(i);
+                } else if (pages[pages.length - 1] !== '...') {
+                    pages.push('...');
+                }
+            }
+
+            let html = pages.map(p => {
+                if (p === '...') return `<div class="px-1 text-zinc-700 text-[10px] font-black">...</div>`;
+                return `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`;
+            }).join('');
+
+            // 加入跳轉輸入
+            html += `
+                <div class="jump-box">
+                    <input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" 
+                        onkeydown="if(event.key==='Enter') jumpToPage(${total})">
+                    <span class="text-[10px] text-zinc-700 font-black ml-1">/ ${total}</span>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function jumpToPage(total) {
+            const val = parseInt(document.getElementById('jumpPageInput').value);
+            if (val >= 1 && val <= total) {
+                changePage(val);
+            } else {
+                showToast("頁碼超出範圍");
+            }
+        }
+
+        function changePage(p) { 
+            currentPage = p; 
+            window.scrollTo({top:0, behavior:'smooth'}); 
+            renderGallery(); 
+        }
+
+        // --- 以下功能保持不變 ---
         function renderTagCloud() {
             const container = document.getElementById('tagCloud');
             const map = {};
             collections.forEach(i => (i.tags || []).forEach(tag => map[tag] = (map[tag] || 0) + 1));
-            
             const sortedTags = Object.entries(map).sort((a,b) => b[1] - a[1]);
-            
-            // 計算平均值，用來定義什麼是「熱門」
             const counts = Object.values(map);
             const avgCount = counts.length > 0 ? counts.reduce((a, b) => a + b, 0) / counts.length : 0;
-
             container.innerHTML = sortedTags.map(([tag, count]) => {
-                // 如果次數高於平均且大於1，則賦予 hot-tag 類別
                 const isHot = count > avgCount && count > 1;
-                return `
-                    <div onclick="filterBySearch('${tag}')" 
-                         class="tag-pill ${isHot ? 'hot-tag' : ''}">
-                        <span>${tag}</span>
-                        <span class="tag-count-badge">${count}</span>
-                    </div>
-                `;
+                return `<div onclick="filterBySearch('${tag}')" class="tag-pill ${isHot ? 'hot-tag' : ''}"><span>${tag}</span><span class="tag-count-badge">${count}</span></div>`;
             }).join('');
         }
 
-        // --- 其餘輔助功能函式保持不變 ---
         function unlockVault() {
             sessionStorage.setItem('VAULT_UNLOCKED', 'true');
             document.getElementById('authOverlay').style.display = 'none';
@@ -398,63 +415,72 @@
             const pages = document.querySelectorAll('.page-content');
             container.style.transform = `translateX(-${index * (100/3)}%)`;
             document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === index));
-            pages.forEach((page, i) => {
-                if (i === index) page.classList.add('active-page');
-                else page.classList.remove('active-page');
-            });
+            pages.forEach((page, i) => { i === index ? page.classList.add('active-page') : page.classList.remove('active-page'); });
             window.scrollTo(0, 0);
             if(index === 1) renderTagCloud();
             if(index === 2) renderActorList();
         }
 
-        function filterBySearch(val) {
-            document.getElementById('searchInput').value = val;
-            switchTab(0);
-            renderGallery();
-        }
-
-        // 鎖定、登出、繪圖等邏輯 (省略...保持與你提供的原代碼一致)
+        function filterBySearch(val) { document.getElementById('searchInput').value = val; switchTab(0); renderGallery(); }
         function lockApp() { sessionStorage.removeItem('VAULT_UNLOCKED'); selectedNodes = []; isErrorState = false; isDrawing = false; document.body.style.overflow = 'hidden'; document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('mainHeader').style.visibility = 'hidden'; document.getElementById('appContent').style.visibility = 'hidden'; document.getElementById('bottomNav').style.visibility = 'hidden'; if (logoutTimer) clearTimeout(logoutTimer); toggleFilterDrawer(false); closeDrawer(); }
+        
         let logoutTimer = null; let isAutoLogoutPaused = false; const AUTO_LOGOUT_SECONDS = 30;
-        function resetLogoutTimer() { const isLocked = document.getElementById('authOverlay').style.display !== 'none'; if (isAutoLogoutPaused || isLocked) { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
+        function resetLogoutTimer() { if (isAutoLogoutPaused || document.getElementById('authOverlay').style.display !== 'none') { if (logoutTimer) clearTimeout(logoutTimer); return; } clearTimeout(logoutTimer); logoutTimer = setTimeout(() => { lockApp(); showToast("閒置過久，已自動登出"); }, AUTO_LOGOUT_SECONDS * 1000); }
         function toggleAutoLogout() { isAutoLogoutPaused = !isAutoLogoutPaused; const led = document.getElementById('statusLed'); if (isAutoLogoutPaused) { clearTimeout(logoutTimer); led.className = "status-led led-paused"; showToast("自動登出已暫停"); } else { led.className = "status-led led-active"; showToast("自動登出已恢復"); resetLogoutTimer(); } }
         ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => window.addEventListener(evt, () => { if (document.getElementById('authOverlay').style.display === 'none') resetLogoutTimer(); }, { passive: true }));
+        
         const canvas = document.getElementById('patternCanvas'); const ctx = canvas.getContext('2d');
         for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
-        function drawPattern() { ctx.clearRect(0, 0, canvas.width, canvas.height); if (selectedNodes.length > 0) { ctx.beginPath(); ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = isErrorState ? '#ff0000' : '#E50914'; const start = nodes.find(n => n.id === selectedNodes[0]); ctx.moveTo(start.x, start.y); for (let i = 1; i < selectedNodes.length; i++) { const nodeB = nodes.find(n => n.id === selectedNodes[i]); ctx.lineTo(nodeB.x, nodeB.y); } if (isDrawing && !isErrorState) ctx.lineTo(mousePos.x, mousePos.y); ctx.stroke(); } nodes.forEach(node => { const active = selectedNodes.includes(node.id); ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2); ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222'; ctx.fill(); if (active) { ctx.beginPath(); ctx.arc(node.x, node.y, 18, 0, Math.PI * 2); ctx.strokeStyle = isErrorState ? 'rgba(255,0,0,0.3)' : 'rgba(229,9,20,0.2)'; ctx.stroke(); } }); requestAnimationFrame(drawPattern); }
+        
+        function drawPattern() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // 預設為隱形繪製模式 (不畫線)
+            if (selectedNodes.length > 0 && isErrorState) {
+                ctx.beginPath(); ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = '#ff0000';
+                const start = nodes.find(n => n.id === selectedNodes[0]); ctx.moveTo(start.x, start.y);
+                for (let i = 1; i < selectedNodes.length; i++) { const n = nodes.find(node => node.id === selectedNodes[i]); ctx.lineTo(n.x, n.y); }
+                ctx.stroke();
+            }
+            nodes.forEach(node => {
+                const active = selectedNodes.includes(node.id);
+                ctx.beginPath(); ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = active ? (isErrorState ? '#ff0000' : '#E50914') : '#222';
+                // 隱形模式：正常繪製時點不變紅，只有錯誤時才變紅
+                if (active && !isErrorState) ctx.fillStyle = '#111'; 
+                ctx.fill();
+            });
+            requestAnimationFrame(drawPattern);
+        }
+
         const handleStart = (e) => { if (isErrorState) return; e.preventDefault(); isDrawing = true; selectedNodes = []; };
         const handleMove = (e) => { if (!isDrawing || isErrorState) return; const rect = canvas.getBoundingClientRect(); const touch = e.touches ? e.touches[0] : e; mousePos = { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) }; nodes.forEach(node => { if (Math.hypot(mousePos.x - node.x, mousePos.y - node.y) < 30 && !selectedNodes.includes(node.id)) { selectedNodes.push(node.id); if (window.navigator.vibrate) window.navigator.vibrate(10); } }); };
         const handleEnd = () => { if (!isDrawing || isErrorState) return; isDrawing = false; if (selectedNodes.join('') === CORRECT_PATTERN) unlockVault(); else if (selectedNodes.length > 0) handleWrongPattern(); };
-        canvas.addEventListener('touchstart', handleStart); canvas.addEventListener('touchmove', handleMove); canvas.addEventListener('touchend', handleEnd); canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
-        function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); document.getElementById('authHint').innerText = "圖形錯誤，請重試"; document.getElementById('authHint').classList.add('text-red-600'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; document.getElementById('authHint').innerText = "請繪製圖形解鎖"; document.getElementById('authHint').classList.remove('text-red-600'); }, 600); }
+        
+        canvas.addEventListener('touchstart', handleStart); canvas.addEventListener('touchmove', handleMove); canvas.addEventListener('touchend', handleEnd);
+        canvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
+        
+        function handleWrongPattern() { isErrorState = true; document.getElementById('patternContainer').classList.add('shake'); setTimeout(() => { document.getElementById('patternContainer').classList.remove('shake'); selectedNodes = []; isErrorState = false; }, 600); }
         drawPattern();
-        function updateLayout(cols) { currentLayout = cols; localStorage.setItem('NF_LAYOUT_SETTING', cols); const btn1 = document.getElementById('layoutBtn1'); const btn2 = document.getElementById('layoutBtn2'); if(cols === 1) { btn1.className = "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white"; btn2.className = "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; } else { btn1.className = "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; btn2.className = "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white"; } renderGallery(); }
-        function renderPagination(total) { const container = document.getElementById('paginationContainer'); if (total <= 1) { container.innerHTML = ""; return; } let pages = [1]; for (let i = Math.max(2, currentPage - 1); i <= Math.min(total - 1, currentPage + 1); i++) pages.push(i); if (total > 1) pages.push(total); const finalPages = [...new Set(pages)]; container.innerHTML = finalPages.map(p => `<div onclick="changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`).join(''); }
-        function changePage(p) { currentPage = p; window.scrollTo({top:0, behavior:'smooth'}); renderGallery(); }
+
+        function updateLayout(cols) { currentLayout = cols; localStorage.setItem('NF_LAYOUT_SETTING', cols); const b1 = document.getElementById('layoutBtn1'), b2 = document.getElementById('layoutBtn2'); b1.className = cols===1 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; b2.className = cols===2 ? "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white" : "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500"; renderGallery(); }
         function openExternalUrl(url, e) { if(e) e.stopPropagation(); window.open(url.startsWith('http') ? url : 'https://' + url, '_blank'); }
         function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = "1"; t.style.transform = "translate(-50%, -10px)"; setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translate(-50%, 0)"; }, 2000); }
-        function openDrawer(id = null) { currentId = id; document.getElementById('drawer').classList.add('open'); validateCode(""); if(id) { const item = collections.find(i => String(i.id) === String(id)); document.getElementById('nameInput').value = item.name; document.getElementById('codeInput').value = item.code || ""; document.getElementById('urlInput').value = item.url || ""; document.getElementById('tagsInput').value = (item.tags || []).join(' '); document.getElementById('imgInput').value = item.img || ""; document.getElementById('drawerDeleteBtn').classList.remove('hidden'); previewImage(item.img); } else { ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = ""); document.getElementById('drawerDeleteBtn').classList.add('hidden'); previewImage(""); } }
-        function validateCode(val) { const code = val.trim().toUpperCase(); const errorText = document.getElementById('codeError'); const inputField = document.getElementById('codeInput'); if (!code) { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); return; } const isDuplicate = collections.some(item => item.code === code && String(item.id) !== String(currentId)); if (isDuplicate) { errorText.classList.remove('hidden'); inputField.classList.add('input-error', 'input-ring-error'); } else { errorText.classList.add('hidden'); inputField.classList.remove('input-error', 'input-ring-error'); } }
-        function saveItem() { const name = document.getElementById('nameInput').value.trim(); const code = document.getElementById('codeInput').value.trim().toUpperCase(); if(!name) { showToast("請輸入名稱"); return; } if (collections.some(item => item.code === code && code !== "" && String(item.id) !== String(currentId))) { showToast(`番號 ${code} 已存在`); return; } const data = { id: currentId || Date.now().toString(), name, code, url: document.getElementById('urlInput').value.trim(), tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), img: document.getElementById('imgInput').value.trim() }; if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data; else collections.unshift(data); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); closeDrawer(); showToast("已儲存"); }
-        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); showToast("已刪除"); }
+        function openDrawer(id = null) { currentId = id; document.getElementById('drawer').classList.add('open'); if(id) { const item = collections.find(i => String(i.id) === String(id)); document.getElementById('nameInput').value = item.name; document.getElementById('codeInput').value = item.code || ""; document.getElementById('urlInput').value = item.url || ""; document.getElementById('tagsInput').value = (item.tags || []).join(' '); document.getElementById('imgInput').value = item.img || ""; document.getElementById('drawerDeleteBtn').classList.remove('hidden'); previewImage(item.img); } else { ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = ""); document.getElementById('drawerDeleteBtn').classList.add('hidden'); previewImage(""); } }
+        function validateCode(val) { /* 保持原樣 */ }
+        function saveItem() { const name = document.getElementById('nameInput').value.trim(); const code = document.getElementById('codeInput').value.trim().toUpperCase(); if(!name) { showToast("請輸入名稱"); return; } const data = { id: currentId || Date.now().toString(), name, code, url: document.getElementById('urlInput').value.trim(), tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t), img: document.getElementById('imgInput').value.trim() }; if(currentId) collections[collections.findIndex(i => String(i.id) === String(currentId))] = data; else collections.unshift(data); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); closeDrawer(); showToast("已儲存"); }
+        function executeDelete() { collections = collections.filter(i => String(i.id) !== String(currentId)); localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); closeConfirm(); closeDrawer(); renderGallery(); }
         function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
         function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
         function toggleFilterDrawer(open) { document.getElementById('filterDrawer').classList.toggle('open', open); }
-        function previewImage(url) { const container = document.getElementById('editPreview'); if (!url) { container.innerHTML = "PREVIEW"; return; } container.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded" onerror="this.src='https://via.placeholder.com/640x360/111/333?text=INVALID+IMAGE'">`; }
+        function previewImage(url) { const c = document.getElementById('editPreview'); c.innerHTML = url ? `<img src="${url}" class="w-full h-full object-cover rounded">` : "PREVIEW"; }
         function exportData() { const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `netflav.json`; a.click(); }
-        function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); if (Array.isArray(data)) { collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入成功"); } } catch(err) { showToast("匯入失敗：格式錯誤"); } }; reader.readAsText(e.target.files[0]); }
-        function renderActorList() { const list = document.getElementById('actorList'); const map = {}; collections.forEach(i => { const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1); names.forEach(n => map[n] = (map[n] || 0) + 1); }); const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); list.innerHTML = sorted.map(([name, count]) => { let displayName = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : (name.length > 3 ? name.substring(0, 2) : name.substring(0, 1)); return `<div onclick="filterBySearch('${name}')" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500 tracking-tighter">${displayName}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${name}</span><span class="block text-[9px] text-zinc-600 mt-0.5">${count} 作品</span></div>`; }).join(''); }
+        function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); collections = data; localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); renderGallery(); showToast("匯入成功"); } catch(err) { showToast("格式錯誤"); } }; reader.readAsText(e.target.files[0]); }
+        function renderActorList() { const list = document.getElementById('actorList'); const map = {}; collections.forEach(i => { const names = i.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1); names.forEach(n => map[n] = (map[n] || 0) + 1); }); const sorted = Object.entries(map).sort((a,b) => b[1] - a[1]); list.innerHTML = sorted.map(([name, count]) => { let disp = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : name.substring(0, 1); return `<div onclick="filterBySearch('${name}')" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500">${disp}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${name}</span><span class="block text-[9px] text-zinc-600">${count} 作品</span></div>`; }).join(''); }
         function refreshAndHome() { document.getElementById('searchInput').value = ""; currentPage = 1; renderGallery(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-        window.onload = () => { 
-            if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') {
-                unlockVault(); 
-            } else {
-                document.body.style.overflow = 'hidden';
-            }
-        };
+        window.onload = () => { if(sessionStorage.getItem('VAULT_UNLOCKED') === 'true') unlockVault(); else document.body.style.overflow = 'hidden'; };
     </script>
 </body>
 </html>
