@@ -60,13 +60,24 @@
             transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1);
             min-height: 100vh; align-items: flex-start;
         }
+        
+        /* 核心修正：非活動分頁高度設為 0，避免撐開容器 */
         .page-content {
             width: 33.3333%;
             padding: calc(var(--nav-height) + 20px) 16px calc(70px + var(--safe-bottom) + 20px) 16px;
             box-sizing: border-box;
-            height: auto; max-height: 100vh; overflow: hidden;
+            height: 0; 
+            overflow: hidden;
+            visibility: hidden;
         }
-        .page-content.active-page { max-height: none; overflow: visible; }
+        
+        /* 僅在當前頁面展開高度 */
+        .page-content.active-page {
+            height: auto;
+            min-height: 100vh;
+            overflow: visible;
+            visibility: visible;
+        }
 
         /* --- Header & Nav --- */
         .mobile-header {
@@ -323,22 +334,18 @@
     <script>
         // --- 全局狀態與配置 ---
         const CONFIG = {
-            CORRECT_PATTERN: "0124678", // 解鎖圖形
+            CORRECT_PATTERN: "0124678", 
             STORAGE_KEY: 'NF_MOBILE_VAULT_FINAL',
             LAYOUT_KEY: 'NF_LAYOUT_SETTING',
-            AUTO_LOGOUT_SECONDS: 30, // 閒置登出時間
+            AUTO_LOGOUT_SECONDS: 30, 
             PAGE_SIZE: 12
         };
 
-        // 資料狀態
         let collections = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-        
-        // UI 狀態
         let currentEditingId = null;
         let currentPage = 1;
         let currentLayout = parseInt(localStorage.getItem(CONFIG.LAYOUT_KEY)) || 1;
 
-        // --- 通用工具函數 ---
         const Utils = {
             showToast(msg) {
                 const t = document.getElementById('toast');
@@ -368,50 +375,36 @@
             let logoutTimer = null;
             let isAutoLogoutPaused = false;
 
-            // 初始化節點
             for (let i = 0; i < 3; i++) {
                 for (let j = 0; j < 3; j++) {
                     nodes.push({ id: (i * 3 + j).toString(), x: 50 + j * 100, y: 50 + i * 100 });
                 }
             }
 
-            // --- 繪製邏輯 (保留原始視覺) ---
             function drawPattern() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // 繪製連線
                 if (selectedNodes.length > 0) {
                     ctx.beginPath();
-                    ctx.lineWidth = 6;
-                    ctx.lineCap = 'round';
-                    // 錯誤時顯示紅色，平時顯示 Netflix 紅
+                    ctx.lineWidth = 6; ctx.lineCap = 'round';
                     ctx.strokeStyle = isErrorState ? '#ff0000' : '#E50914';
-                    
                     const startNode = nodes.find(n => n.id === selectedNodes[0]);
                     ctx.moveTo(startNode.x, startNode.y);
-                    
                     for (let i = 1; i < selectedNodes.length; i++) {
                         const node = nodes.find(n => n.id === selectedNodes[i]);
                         ctx.lineTo(node.x, node.y);
                     }
                     ctx.stroke();
                 }
-
-                // 繪製節點
                 nodes.forEach(node => {
                     const isActive = selectedNodes.includes(node.id);
                     ctx.beginPath();
-                    // 激活的節點變大
                     ctx.arc(node.x, node.y, isActive ? 15 : 10, 0, Math.PI * 2);
-                    
                     if (isActive) {
                         ctx.fillStyle = isErrorState ? '#ff0000' : '#E50914';
                     } else {
-                        ctx.fillStyle = '#222'; // 未激活顏色
+                        ctx.fillStyle = '#222';
                     }
                     ctx.fill();
-                    
-                    // 激活時增加內圈，強化視覺
                     if (isActive && !isErrorState) {
                         ctx.beginPath();
                         ctx.arc(node.x, node.y, 6, 0, Math.PI * 2);
@@ -422,7 +415,6 @@
                 requestAnimationFrame(drawPattern);
             }
 
-            // 事件處理
             const getMousePos = (e) => {
                 const rect = canvas.getBoundingClientRect();
                 const touch = e.touches ? e.touches[0] : e;
@@ -434,9 +426,7 @@
 
             const handleStart = (e) => {
                 if (isErrorState) return;
-                e.preventDefault();
-                isDrawing = true;
-                selectedNodes = [];
+                e.preventDefault(); isDrawing = true; selectedNodes = [];
             };
 
             const handleMove = (e) => {
@@ -466,24 +456,19 @@
                 if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
                 setTimeout(() => {
                     document.getElementById('patternContainer').classList.remove('shake');
-                    selectedNodes = [];
-                    isErrorState = false;
+                    selectedNodes = []; isErrorState = false;
                 }, 600);
             }
 
-            // --- 鎖定與登出邏輯 ---
             function unlockVault() {
                 sessionStorage.setItem('VAULT_UNLOCKED', 'true');
                 document.getElementById('authOverlay').style.display = 'none';
-                document.body.style.overflow = 'auto'; // 允許捲動
-                
-                // 顯示 UI
+                document.body.style.overflow = 'auto';
                 ['mainHeader', 'appContent', 'bottomNav'].forEach(id => {
                     document.getElementById(id).style.visibility = 'visible';
                 });
-                
-                HomeModule.updateLayout(currentLayout); // 應用佈局
-                HomeModule.render(); // 渲染首頁
+                HomeModule.updateLayout(currentLayout);
+                HomeModule.render();
                 resetLogoutTimer();
                 isAutoLogoutPaused = false;
                 document.getElementById('statusLed').className = "status-led led-active";
@@ -491,15 +476,12 @@
 
             function lockApp() {
                 sessionStorage.removeItem('VAULT_UNLOCKED');
-                selectedNodes = [];
-                isDrawing = false;
+                selectedNodes = []; isDrawing = false;
                 document.body.style.overflow = 'hidden';
                 document.getElementById('authOverlay').style.display = 'flex';
-                
                 ['mainHeader', 'appContent', 'bottomNav'].forEach(id => {
                     document.getElementById(id).style.visibility = 'hidden';
                 });
-                
                 clearTimeout(logoutTimer);
                 DrawerController.closeAllDrawers();
             }
@@ -527,16 +509,12 @@
                 }
             }
 
-            function isUnlocked() {
-                return sessionStorage.getItem('VAULT_UNLOCKED') === 'true';
-            }
+            function isUnlocked() { return sessionStorage.getItem('VAULT_UNLOCKED') === 'true'; }
 
-            // 監聽使用者活動
             ['mousedown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => {
                 window.addEventListener(evt, resetLogoutTimer, { passive: true });
             });
 
-            // 啟動畫布
             canvas.addEventListener('touchstart', handleStart);
             canvas.addEventListener('touchmove', handleMove);
             canvas.addEventListener('touchend', handleEnd);
@@ -551,8 +529,10 @@
         // --- 2. 路由與分頁切換 (Router) ---
         const Router = (() => {
             function switchTab(index) {
-                // 1. 處理頁面位移動畫
                 const container = document.getElementById('pageContainer');
+                const pages = document.querySelectorAll('.page-content');
+                
+                // 1. 處理頁面位移動畫
                 container.style.transform = `translateX(-${index * (100/3)}%)`;
 
                 // 2. 更新導航欄狀態
@@ -560,8 +540,7 @@
                     el.classList.toggle('active', i === index);
                 });
 
-                // 3. 處理 active-page class (優化捲動效能)
-                const pages = document.querySelectorAll('.page-content');
+                // 3. 核心修正：僅讓目前頁面擁有高度，解決標籤頁多餘捲動
                 pages.forEach((page, i) => {
                     if (i === index) {
                         page.classList.add('active-page');
@@ -597,31 +576,19 @@
             function render() {
                 const gallery = document.getElementById('gallery');
                 const query = document.getElementById('searchInput').value.trim().toLowerCase();
-                
-                // 搜尋過濾
                 const filtered = collections.filter(i => 
                     i.name.toLowerCase().includes(query) || 
                     (i.code || "").toLowerCase().includes(query) || 
                     (i.tags || []).some(t => t.toLowerCase().includes(query))
                 );
-
                 document.getElementById('itemCount').innerText = `${filtered.length} ITEMS`;
-                
-                // 空狀態
-                if (filtered.length === 0) {
-                    renderEmptyState(gallery);
-                    return;
-                }
+                if (filtered.length === 0) { renderEmptyState(gallery); return; }
 
-                // 套用佈局
                 gallery.className = `grid gap-4 ${currentLayout === 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
-
-                // 分頁計算
                 const totalPages = Math.ceil(filtered.length / CONFIG.PAGE_SIZE);
                 if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
                 const paginatedItem = filtered.slice((currentPage - 1) * CONFIG.PAGE_SIZE, currentPage * CONFIG.PAGE_SIZE);
                 
-                // 生成 HTML
                 gallery.innerHTML = paginatedItem.map(item => `
                     <div class="poster-card shadow-lg">
                         <img src="${item.img || 'https://via.placeholder.com/640x360/111/333?text=NO+IMAGE'}" loading="lazy">
@@ -635,7 +602,6 @@
                         </div>
                     </div>
                 `).join('');
-
                 renderPagination(totalPages);
             }
 
@@ -649,40 +615,25 @@
                 document.getElementById('paginationContainer').innerHTML = "";
             }
 
-            // 分頁邏輯
             function renderPagination(total) {
                 const container = document.getElementById('paginationContainer');
                 if (total <= 1) { container.innerHTML = ""; return; }
-
-                let pages = [];
-                const range = 1;
-
+                let pages = []; const range = 1;
                 for (let i = 1; i <= total; i++) {
                     if (i === 1 || i === total || (i >= currentPage - range && i <= currentPage + range)) {
                         pages.push(i);
-                    } else if (pages[pages.length - 1] !== '...') {
-                        pages.push('...');
-                    }
+                    } else if (pages[pages.length - 1] !== '...') { pages.push('...'); }
                 }
-
                 let html = `<div class="pagination-dots-row">`;
                 html += pages.map(p => {
                     if (p === '...') return `<div class="px-1 text-zinc-700 text-[10px] font-black">...</div>`;
                     return `<div onclick="HomeModule.changePage(${p})" class="page-dot ${p === currentPage ? 'active' : ''}">${p}</div>`;
                 }).join('');
-                html += `</div>`;
-
-                html += `
-                    <div class="jump-box">
-                        <input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" onkeydown="if(event.key==='Enter') HomeModule.jumpToPage(${total})">
-                        <span class="text-[10px] text-zinc-700 font-black ml-1">/ ${total}</span>
-                    </div>`;
-                
+                html += `</div><div class="jump-box"><input type="number" id="jumpPageInput" class="jump-input" placeholder="${currentPage}" onkeydown="if(event.key==='Enter') HomeModule.jumpToPage(${total})"><span class="text-[10px] text-zinc-700 font-black ml-1">/ ${total}</span></div>`;
                 container.innerHTML = html;
             }
 
             function changePage(p) { currentPage = p; window.scrollTo({top:0}); render(); }
-            
             function jumpToPage(total) {
                 const input = document.getElementById('jumpPageInput');
                 const val = parseInt(input.value);
@@ -690,72 +641,47 @@
                 else { Utils.showToast("頁碼超出範圍"); input.value = ""; }
             }
 
-            // 資料操作
             function saveItem() {
                 const nameInput = document.getElementById('nameInput');
                 const name = nameInput.value.trim();
-                const code = document.getElementById('codeInput').value.trim().toUpperCase();
-
-                if(!name) {
-                    Utils.showToast("請輸入名稱");
-                    nameInput.focus();
-                    return;
-                }
-
+                if(!name) { Utils.showToast("請輸入名稱"); nameInput.focus(); return; }
                 const data = {
                     id: currentEditingId || Date.now().toString(),
-                    name,
-                    code,
+                    name, code: document.getElementById('codeInput').value.trim().toUpperCase(),
                     url: document.getElementById('urlInput').value.trim(),
                     tags: document.getElementById('tagsInput').value.trim().split(/\s+/).filter(t => t),
                     img: document.getElementById('imgInput').value.trim()
                 };
-
                 if(currentEditingId) {
                     const index = collections.findIndex(i => String(i.id) === String(currentEditingId));
                     collections[index] = data;
-                } else {
-                    collections.unshift(data); // 新增到最前
-                }
-
-                DataManager.persist();
-                render();
-                DrawerController.closeEditDrawer();
+                } else { collections.unshift(data); }
+                DataManager.persist(); render(); DrawerController.closeEditDrawer();
                 Utils.showToast(currentEditingId ? "已更新" : "已新增");
             }
 
             function executeDelete() {
                 if(!currentEditingId) return;
                 collections = collections.filter(i => String(i.id) !== String(currentEditingId));
-                DataManager.persist();
-                DrawerController.closeConfirm();
-                DrawerController.closeEditDrawer();
-                render();
-                Utils.showToast("已刪除");
+                DataManager.persist(); DrawerController.closeConfirm(); DrawerController.closeEditDrawer();
+                render(); Utils.showToast("已刪除");
             }
 
             function updateLayout(cols) {
                 currentLayout = cols;
                 localStorage.setItem(CONFIG.LAYOUT_KEY, cols);
-                
-                // 更新按鈕樣式
                 const b1 = document.getElementById('layoutBtn1');
                 const b2 = document.getElementById('layoutBtn2');
                 const activeClass = "flex-1 py-3 rounded font-bold text-xs bg-red-600 text-white shadow-md";
                 const inactiveClass = "flex-1 py-3 rounded font-bold text-xs bg-zinc-900 text-zinc-500 active:bg-zinc-800";
-                
                 b1.className = cols === 1 ? activeClass : inactiveClass;
                 b2.className = cols === 2 ? activeClass : inactiveClass;
-                
-                if (Router) render(); // 如果已解鎖則渲染
+                if (sessionStorage.getItem('VAULT_UNLOCKED')) render();
             }
 
             return {
                 render, changePage, jumpToPage, saveItem, executeDelete, updateLayout,
-                debouncedRender: () => {
-                    clearTimeout(searchTimer);
-                    searchTimer = setTimeout(render, 300);
-                }
+                debouncedRender: () => { clearTimeout(searchTimer); searchTimer = setTimeout(render, 300); }
             };
         })();
 
@@ -764,41 +690,17 @@
             function render() {
                 const container = document.getElementById('tagCloud');
                 const tagMap = {};
-                
-                // 統計頻次
-                collections.forEach(item => {
-                    (item.tags || []).forEach(tag => {
-                        tagMap[tag] = (tagMap[tag] || 0) + 1;
-                    });
-                });
-                
-                // 排序與計算平均熱度
+                collections.forEach(item => { (item.tags || []).forEach(tag => { tagMap[tag] = (tagMap[tag] || 0) + 1; }); });
                 const sortedTags = Object.entries(tagMap).sort((a,b) => b[1] - a[1]);
                 const counts = Object.values(tagMap);
                 const avgCount = counts.length > 0 ? counts.reduce((a, b) => a + b, 0) / counts.length : 0;
-                
-                if (sortedTags.length === 0) {
-                    container.innerHTML = `<p class="text-zinc-600 text-sm pl-2 py-10">尚未新增任何標籤...</p>`;
-                    return;
-                }
-
+                if (sortedTags.length === 0) { container.innerHTML = `<p class="text-zinc-600 text-sm pl-2 py-10">尚未新增任何標籤...</p>`; return; }
                 container.innerHTML = sortedTags.map(([tag, count]) => {
                     const isHot = count > avgCount && count > 1;
-                    return `
-                        <div onclick="TagModule.quickSearch('${tag}')" class="tag-pill ${isHot ? 'hot-tag' : ''}">
-                            <span>${tag}</span>
-                            <span class="tag-count-badge">${count}</span>
-                        </div>
-                    `;
+                    return `<div onclick="TagModule.quickSearch('${tag}')" class="tag-pill ${isHot ? 'hot-tag' : ''}"><span>${tag}</span><span class="tag-count-badge">${count}</span></div>`;
                 }).join('');
             }
-
-            function quickSearch(tag) {
-                document.getElementById('searchInput').value = tag;
-                currentPage = 1;
-                Router.switchTab(0); // 跳轉回首頁
-            }
-
+            function quickSearch(tag) { document.getElementById('searchInput').value = tag; currentPage = 1; Router.switchTab(0); }
             return { render, quickSearch };
         })();
 
@@ -807,107 +709,53 @@
             function render() {
                 const list = document.getElementById('actorList');
                 const actorMap = {};
-                
-                // 自動提取演員 (簡單切分邏輯)
                 collections.forEach(item => {
-                    // 切分符號：空格、逗號、頓號、斜線
                     const names = item.name.split(/[\s,，、/]+/).filter(n => n.trim() && n.length > 1);
-                    // 排除番號格式 (簡單判定：包含連字號與數字)
                     const filteredNames = names.filter(n => !/[A-Z]+-\d+/.test(n));
-                    
-                    filteredNames.forEach(n => {
-                        actorMap[n] = (actorMap[n] || 0) + 1;
-                    });
+                    filteredNames.forEach(n => { actorMap[n] = (actorMap[n] || 0) + 1; });
                 });
-                
                 const sortedActors = Object.entries(actorMap).sort((a,b) => b[1] - a[1]);
-                
-                if (sortedActors.length === 0) {
-                    list.className = "pl-2 py-10";
-                    list.innerHTML = `<p class="text-zinc-600 text-sm">尚未編制演員名單...</p>`;
-                    return;
-                }
-
+                if (sortedActors.length === 0) { list.className = "pl-2 py-10"; list.innerHTML = `<p class="text-zinc-600 text-sm">尚未編制演員名單...</p>`; return; }
                 list.className = "grid grid-cols-3 gap-y-10 gap-x-2 text-center";
                 list.innerHTML = sortedActors.map(([name, count]) => {
-                    // 生成頭像縮寫
-                    let displayInitials = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : name.substring(0, 1);
-                    
-                    return `
-                        <div onclick="ActorModule.quickSearch('${name}')" class="active:opacity-70 flex flex-col items-center">
-                            <div class="actor-badge shadow-inner">
-                                <span class="text-xl font-black text-zinc-600">${displayInitials}</span>
-                            </div>
-                            <span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center text-zinc-200">${name}</span>
-                            <span class="block text-[9px] text-zinc-600 font-medium tracking-tighter">${count} 作品</span>
-                        </div>
-                    `;
+                    let initials = name.match(/^[A-Za-z]/) ? name.substring(0, 2).toUpperCase() : name.substring(0, 1);
+                    return `<div onclick="ActorModule.quickSearch('${name}')" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge shadow-inner"><span class="text-xl font-black text-zinc-600">${initials}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center text-zinc-200">${name}</span><span class="block text-[9px] text-zinc-600 font-medium tracking-tighter">${count} 作品</span></div>`;
                 }).join('');
             }
-
-            function quickSearch(name) {
-                document.getElementById('searchInput').value = name;
-                currentPage = 1;
-                Router.switchTab(0);
-            }
-
+            function quickSearch(name) { document.getElementById('searchInput').value = name; currentPage = 1; Router.switchTab(0); }
             return { render, quickSearch };
         })();
 
-        // --- 6. 資料管理模組 (DataManager) ---
+        // --- 6. 資料管理與介面控制 (DataManager & DrawerController) ---
         const DataManager = (() => {
-            function persist() {
-                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(collections));
-            }
-
+            function persist() { localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(collections)); }
             function exportData() {
                 if (collections.length === 0) { Utils.showToast("沒有資料可匯出"); return; }
                 const blob = new Blob([JSON.stringify(collections, null, 2)], {type: 'application/json'});
-                const a = document.createElement('a');
-                const date = new Date().toISOString().slice(0, 10);
-                a.href = URL.createObjectURL(blob);
-                a.download = `netflav_vault_backup_${date}.json`;
-                a.click();
-                Utils.showToast("備份已下載");
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `netflav_vault_backup_${new Date().toISOString().slice(0, 10)}.json`; a.click();
             }
-
             function importData(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                
+                const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     try {
                         const data = JSON.parse(ev.target.result);
                         if (Array.isArray(data)) {
-                            collections = data;
-                            persist();
-                            HomeModule.render();
-                            Utils.showToast(`成功匯入 ${data.length} 筆資料`);
-                            DrawerController.toggleSettingsDrawer(false);
-                        } else {
-                            throw new Error("格式錯誤");
+                            collections = data; persist(); HomeModule.render();
+                            Utils.showToast(`成功匯入 ${data.length} 筆資料`); DrawerController.toggleSettingsDrawer(false);
                         }
-                    } catch(err) {
-                        Utils.showToast("匯入失敗：JSON 格式錯誤");
-                    }
-                    e.target.value = ""; // 清除 input
-                };
-                reader.readAsText(file);
+                    } catch(err) { Utils.showToast("匯入失敗"); }
+                    e.target.value = "";
+                }; reader.readAsText(file);
             }
-
             return { persist, exportData, importData };
         })();
 
-        // --- 7. 介面控制模組 (DrawerController) ---
         const DrawerController = (() => {
-            // 影片編輯抽屜
             function openEditDrawer(id = null) {
-                currentEditingId = id;
-                document.getElementById('drawer').classList.add('open');
-                
-                const deleteBtn = document.getElementById('drawerDeleteBtn');
-                
+                currentEditingId = id; document.getElementById('drawer').classList.add('open');
+                const btn = document.getElementById('drawerDeleteBtn');
                 if(id) {
                     const item = collections.find(i => String(i.id) === String(id));
                     document.getElementById('nameInput').value = item.name;
@@ -915,51 +763,21 @@
                     document.getElementById('urlInput').value = item.url || "";
                     document.getElementById('tagsInput').value = (item.tags || []).join(' ');
                     document.getElementById('imgInput').value = item.img || "";
-                    deleteBtn.classList.remove('hidden');
+                    btn.classList.remove('hidden');
                 } else {
-                    // 新增模式，清空欄位
                     ['nameInput','codeInput','urlInput','tagsInput','imgInput'].forEach(k => document.getElementById(k).value = "");
-                    deleteBtn.classList.add('hidden');
+                    btn.classList.add('hidden');
                 }
             }
-
-            function closeEditDrawer() {
-                document.getElementById('drawer').classList.remove('open');
-                document.activeElement.blur(); // 收起鍵盤
-            }
-
-            // 設定抽屜
-            function toggleSettingsDrawer(open) {
-                document.getElementById('filterDrawer').classList.toggle('open', open);
-            }
-
-            // 刪除確認
+            function closeEditDrawer() { document.getElementById('drawer').classList.remove('open'); document.activeElement.blur(); }
+            function toggleSettingsDrawer(open) { document.getElementById('filterDrawer').classList.toggle('open', open); }
             function requestDelete() { document.getElementById('confirmModal').classList.remove('hidden'); }
             function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
-
-            function closeAllDrawers() {
-                closeEditDrawer();
-                toggleSettingsDrawer(false);
-                closeConfirm();
-            }
-
-            return {
-                openEditDrawer, closeEditDrawer,
-                toggleSettingsDrawer,
-                requestDelete, closeConfirm,
-                closeAllDrawers
-            };
+            function closeAllDrawers() { closeEditDrawer(); toggleSettingsDrawer(false); closeConfirm(); }
+            return { openEditDrawer, closeEditDrawer, toggleSettingsDrawer, requestDelete, closeConfirm, closeAllDrawers };
         })();
 
-        // --- 初始化啟動 ---
-        window.onload = () => {
-            // 檢查安全狀態
-            if(VaultManager.isUnlocked()) {
-                VaultManager.unlockVault(); // 直接進入
-            } else {
-                document.body.style.overflow = 'hidden'; // 鎖定捲動
-            }
-        };
+        window.onload = () => { if(VaultManager.isUnlocked()) VaultManager.unlockVault(); };
     </script>
 </body>
 </html>
