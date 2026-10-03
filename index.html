@@ -4,6 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>netflav</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Netflav">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%23000'/%3E%3Cpath d='M160 400V112h56l80 168V112h56v288h-56l-80-168v168z' fill='%23E50914'/%3E%3C/svg%3E">
+<script>
+/* 產生 app 圖示（180x180 PNG），供 iOS「加入主畫面」使用 */
+(function () {
+  try {
+    var c = document.createElement('canvas'); c.width = c.height = 180;
+    var x = c.getContext('2d');
+    x.fillStyle = '#000'; x.fillRect(0, 0, 180, 180);
+    var g = x.createRadialGradient(90, 90, 10, 90, 90, 100);
+    g.addColorStop(0, 'rgba(229,9,20,.25)'); g.addColorStop(1, 'rgba(229,9,20,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 180, 180);
+    x.fillStyle = '#E50914';
+    x.beginPath();
+    x.moveTo(56, 140); x.lineTo(56, 40); x.lineTo(76, 40); x.lineTo(104, 98);
+    x.lineTo(104, 40); x.lineTo(124, 40); x.lineTo(124, 140); x.lineTo(104, 140);
+    x.lineTo(76, 82); x.lineTo(76, 140); x.closePath(); x.fill();
+    var l = document.createElement('link');
+    l.rel = 'apple-touch-icon'; l.sizes = '180x180'; l.href = c.toDataURL('image/png');
+    document.head.appendChild(l);
+  } catch (e) {}
+})();
+</script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
