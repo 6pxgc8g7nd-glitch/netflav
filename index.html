@@ -1,522 +1,1059 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>netflav</title>
-<meta name="theme-color" content="#000000">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="Netflav">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%23000'/%3E%3Cpath d='M160 400V112h56l80 168V112h56v288h-56l-80-168v168z' fill='%23E50914'/%3E%3C/svg%3E">
-<script>
-/* 產生 app 圖示（180x180 PNG），供 iOS「加入主畫面」使用 */
-(function () {
-  try {
-    var c = document.createElement('canvas'); c.width = c.height = 180;
-    var x = c.getContext('2d');
-    x.fillStyle = '#000'; x.fillRect(0, 0, 180, 180);
-    var g = x.createRadialGradient(90, 90, 10, 90, 90, 100);
-    g.addColorStop(0, 'rgba(229,9,20,.25)'); g.addColorStop(1, 'rgba(229,9,20,0)');
-    x.fillStyle = g; x.fillRect(0, 0, 180, 180);
-    x.fillStyle = '#E50914';
-    x.beginPath();
-    x.moveTo(56, 140); x.lineTo(56, 40); x.lineTo(76, 40); x.lineTo(104, 98);
-    x.lineTo(104, 40); x.lineTo(124, 40); x.lineTo(124, 140); x.lineTo(104, 140);
-    x.lineTo(76, 82); x.lineTo(76, 140); x.closePath(); x.fill();
-    var l = document.createElement('link');
-    l.rel = 'apple-touch-icon'; l.sizes = '180x180'; l.href = c.toDataURL('image/png');
-    document.head.appendChild(l);
-  } catch (e) {}
-})();
-</script>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-:root{--nf-black:#000;--nf-dark:#141414;--nf-red:#E50914;--nf-white:#fff;--nav-height:70px;--safe-bottom:env(safe-area-inset-bottom,0px);--icon-size:20px}
-body{font-family:'Noto Sans TC',sans-serif;background:var(--nf-black);color:var(--nf-white);margin:0;padding:0;overflow-x:hidden;overflow-y:auto;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
-input,textarea{-webkit-user-select:text;user-select:text}
-@keyframes floating{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.empty-state-icon{animation:floating 3s infinite ease-in-out;color:#27272a}
-#splashScreen{position:fixed;inset:0;background:var(--nf-black);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s,visibility .6s}
-#splashScreen.fade-out{opacity:0;visibility:hidden}
-@keyframes pulseLogo{0%{transform:scale(.9);opacity:.6}50%{transform:scale(1.05);opacity:1;text-shadow:0 0 20px rgba(229,9,20,.6)}100%{transform:scale(1);opacity:.9}}
-.splash-logo{animation:pulseLogo 1.5s infinite ease-in-out}
-.page-overflow-wrapper{width:100%;overflow:hidden;transition:height .3s ease}
-.page-container{display:flex;width:300%;transition:transform .4s cubic-bezier(.2,0,0,1);align-items:flex-start}
-.page-content{width:33.3333%;padding:calc(var(--nav-height) + 20px) 16px 140px;box-sizing:border-box}
-.mobile-header{position:fixed;top:0;left:0;right:0;height:var(--nav-height);z-index:1000;display:flex;align-items:center;justify-content:center;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);backdrop-filter:blur(10px);padding:0 20px}
-.header-center-box{display:flex;align-items:center;justify-content:center;width:100%}
-.brand-logo{color:var(--nf-red);font-size:24px;font-weight:900;letter-spacing:-1px;text-transform:uppercase;cursor:pointer;transition:opacity .2s}
-.brand-logo:active{opacity:.6}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:calc(75px + var(--safe-bottom));background:rgba(18,18,18,.98);backdrop-filter:blur(20px);z-index:1000;display:flex;align-items:center;justify-content:space-around;padding:0 12px calc(var(--safe-bottom) + 8px);border-top:1px solid #222;gap:8px}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#71717a;border-radius:10px;transition:all .2s;height:48px;cursor:pointer}
-.nav-item.active{color:#fff;background:var(--nf-red);box-shadow:0 4px 12px rgba(229,9,20,.3)}
-.nav-item span{font-size:10px;font-weight:700;margin-top:2px;line-height:1}
-.nav-item svg{width:var(--icon-size);height:var(--icon-size)}
-.fab-btn{position:fixed;right:20px;bottom:calc(85px + var(--safe-bottom));width:52px;height:52px;background:var(--nf-red);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(229,9,20,.5);z-index:1500;cursor:pointer;border:2px solid rgba(255,255,255,.2);transition:transform .2s}
-.fab-btn:active{transform:scale(.9)}
-.fab-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.poster-card{position:relative;background:#111;border-radius:6px;overflow:hidden;aspect-ratio:4/3;width:100%}
-.poster-card img{width:100%;height:100%;object-fit:cover;pointer-events:none}
-.layout-cols-1{grid-template-columns:repeat(1,1fr)}
-.layout-cols-2{grid-template-columns:repeat(2,1fr)}
-.layout-cols-3{grid-template-columns:repeat(3,1fr)}
-.layout-cols-4{grid-template-columns:repeat(4,1fr)}
-.layout-cols-2 .card-overlay p.title{font-size:11px}
-.layout-cols-3 .card-overlay p.title,.layout-cols-4 .card-overlay p.title{font-size:9px;padding-right:2px}
-.layout-cols-3 .card-overlay p.code,.layout-cols-4 .card-overlay p.code{font-size:7px}
-.layout-cols-3 .action-circle-btn,.layout-cols-4 .action-circle-btn{width:24px;height:24px}
-.layout-cols-3 .action-circle-btn svg,.layout-cols-4 .action-circle-btn svg{width:12px;height:12px}
-.action-circle-btn{position:absolute;width:36px;height:36px;background:rgba(0,0,0,.3);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:50;border:1px solid rgba(255,255,255,.1);color:#fff;transition:transform .2s,background .2s;cursor:pointer}
-.action-circle-btn:active{transform:scale(.9);background:rgba(0,0,0,.5)}
-.card-edit-btn{top:6px;right:6px}
-.card-play-btn{bottom:6px;right:6px}
-.card-play-btn svg{width:18px;height:18px;fill:#fff;margin-left:2px}
-.card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.9),transparent 60%);display:flex;flex-direction:column;justify-content:flex-end;padding:8px;pointer-events:none;z-index:10}
-.page-dot-container{display:flex;flex-direction:column;gap:16px;justify-content:center;align-items:center;padding:20px 0 60px;width:100%}
-.pagination-dots-row{display:flex;gap:8px;justify-content:center;align-items:center;overflow-x:auto;scrollbar-width:none;width:100%}
-.pagination-dots-row::-webkit-scrollbar{display:none}
-.page-dot{min-width:32px;height:32px;border-radius:6px;background:#1a1a1e;color:#71717a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;transition:all .3s;flex-shrink:0;cursor:pointer}
-.page-dot.active{background:var(--nf-red);color:#fff;transform:scale(1.05);box-shadow:0 4px 12px rgba(229,9,20,.3)}
-.drawer{position:fixed;inset:0;background:var(--nf-black);transform:translateY(100%);transition:transform .4s;z-index:2000;overflow-y:auto;padding:25px}
-.drawer.open{transform:translateY(0)}
-.search-container{position:relative;margin-bottom:1.5rem}
-.search-icon{position:absolute;left:1rem;top:50%;transform:translateY(-50%);width:var(--icon-size);height:var(--icon-size);color:#71717a;pointer-events:none}
-.clear-search-btn{position:absolute;right:1rem;top:50%;transform:translateY(-50%);width:20px;height:20px;color:#71717a;cursor:pointer;display:none}
-.search-input{width:100%;background:#18181b;border:none;border-radius:8px;padding:.85rem 3rem;font-size:16px;color:#fff;outline:none}
-.actor-badge{background:#1a1a1a;border-radius:50%;width:80px;height:80px;margin:0 auto 8px;border:1px solid #2a2a2a}
-.tag-pill{background:#111112;color:#e4e4e7;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #222;display:flex;justify-content:space-between;align-items:center;transition:all .2s;box-shadow:0 2px 4px rgba(0,0,0,.2);cursor:pointer;width:calc(50% - 6px)}
-.tag-pill:active{transform:scale(.95);background:#27272a}
-#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:8px 24px;border-radius:999px;font-size:12px;font-weight:700;z-index:7000;opacity:0;transition:all .3s;pointer-events:none}
-.layout-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.layout-option{background:#1a1a1a;border:1px solid #333;padding:10px 0;border-radius:8px;text-align:center;font-size:11px;font-weight:700;color:#71717a;transition:.2s}
-.layout-option.active{background:var(--nf-red);color:#fff;border-color:var(--nf-red)}
-.drawer input[type=text]{font-size:16px}
-</style>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TOPTOON">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TOPTOON 漫畫紀錄網</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f5f5f5;
+            color: #171717;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        /* Mobile App Frame Styling */
+        .app-container {
+            max-width: 480px;
+            width: 100%;
+            height: 100dvh;
+            margin: 0 auto;
+            background-color: #fafafa;
+            box-shadow: 0 0 25px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f0f0f0;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e5e5e5;
+            border-radius: 2px;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-[#f5f5f5] flex justify-center items-center h-[100dvh]">
 
-<div id="splashScreen">
-  <h1 class="brand-logo text-3xl tracking-widest splash-logo">Netflav</h1>
-  <p class="text-zinc-600 text-[10px] mt-4 uppercase tracking-[0.3em]">載入中...</p>
-</div>
+    <div class="app-container">
 
-<div class="fab-btn" onclick="openRandomRecommendation()" title="隨機推薦">
-  <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
-</div>
+        <!-- Top Header -->
+        <header class="w-full py-3 px-4 bg-[#ffffff] shadow-md flex items-center justify-between flex-shrink-0 z-50 border-b border-[#e5e5e5]/50">
+            <div onclick="goHome()" class="flex items-center space-x-2 cursor-pointer active:opacity-80 transition">
+                <h1 class="text-xl font-black tracking-wider">
+                    <span class="text-[#a6051a]">TOP</span><span class="text-neutral-900">TOON</span>
+                </h1>
+            </div>
+        </header>
 
-<header class="mobile-header">
-  <div class="header-center-box"><div class="brand-logo" onclick="refreshAndHome()">Netflav</div></div>
-</header>
+        <!-- Main Content Area -->
+        <main class="flex-1 w-full p-3.5 pb-24 overflow-y-auto">
 
-<div id="appContent" class="page-overflow-wrapper">
-  <div class="page-container" id="pageContainer">
-    <div id="page1" class="page-content active-page">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold">為您推薦</h2>
-        <span id="itemCount" class="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-1 rounded tracking-tighter">0 ITEMS</span>
-      </div>
-      <div class="search-container">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="搜尋女優或番號..." class="search-input">
-        <svg id="clearSearchBtn" class="clear-search-btn" onclick="clearSearch()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </div>
-      <div id="gallery" class="grid gap-3"></div>
-      <div id="paginationContainer" class="page-dot-container mt-8"></div>
+            <!-- TAB 1: 首頁 (Home) -->
+            <section id="tab-home" class="space-y-3">
+                <!-- Comic List -->
+                <div class="space-y-2.5">
+                    <div class="flex justify-between items-center px-1">
+                        <h3 class="font-bold text-xs text-neutral-600 flex items-center space-x-1.5 uppercase tracking-wide">
+                            <i class="fa-solid fa-bookmark text-[#a6051a] text-xs"></i>
+                            <span>漫畫清單</span>
+                        </h3>
+                        <span id="comicCount" class="text-[11px] text-neutral-600 font-medium">共 0 部</span>
+                    </div>
+                    
+                    <!-- Active Filter Banner -->
+                    <div id="filterBannerContainer"></div>
+
+                    <div id="comicListContainer" class="grid grid-cols-2 gap-3">
+                        <!-- Dynamic Comics injected here -->
+                    </div>
+                    <div id="paginationContainer" class="flex items-center justify-center gap-3 pt-3 pb-2"></div>
+                </div>
+            </section>
+
+            <!-- TAB 2: 分類 (Categories) -->
+            <section id="tab-categories" class="hidden space-y-4">
+                <div class="bg-[#ffffff] rounded-xl p-4 shadow border border-[#e5e5e5]/40">
+                    <h2 class="text-base font-bold mb-1">漫畫分類瀏覽</h2>
+                    <p class="text-xs text-neutral-600">點擊下方分類標籤可快速篩選對應漫畫</p>
+                </div>
+
+                <!-- Genre Grid -->
+                <div class="grid grid-cols-2 gap-2.5" id="genreGrid">
+                    <!-- Dynamic categories -->
+                </div>
+            </section>
+
+            <!-- TAB 3: 新增 (Add) -->
+            <section id="tab-add" class="hidden space-y-3.5">
+                <div class="bg-[#ffffff] rounded-xl p-3.5 shadow-lg border border-[#e5e5e5]/50 flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#a6051a]/10 text-[#a6051a] flex items-center justify-center text-base border border-[#a6051a]/30 flex-shrink-0">
+                        <i class="fa-solid fa-circle-plus"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xs font-black tracking-wide text-neutral-900">新增漫畫</h2>
+                        <p class="text-[10px] text-neutral-600">記錄漫畫名稱、分類、狀態、網址與封面</p>
+                    </div>
+                </div>
+
+                <form id="addComicForm" onsubmit="handleAddNewComic(event)" class="bg-[#ffffff] rounded-xl p-3.5 shadow-lg border border-[#e5e5e5]/50 space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-book text-[#a6051a] text-[10px]"></i>
+                            <span>漫畫名稱 *</span>
+                        </label>
+                        <input type="text" id="inputTitle" required placeholder="" class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-tag text-[#a6051a] text-[10px]"></i>
+                            <span>分類 (多個分類可用逗號分隔) *</span>
+                        </label>
+                        <input type="text" id="inputGenre" required placeholder="" class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-circle-dot text-[#a6051a] text-[10px]"></i>
+                            <span>狀態 *</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center justify-center space-x-1.5 bg-[#fafafa] border border-[#a6051a]/40 rounded-xl py-2.5 text-xs cursor-pointer hover:bg-[#e5e5e5] transition shadow-inner">
+                                <input type="radio" name="inputStatus" value="連載中" checked class="accent-[#a6051a]">
+                                <span class="text-neutral-900 font-bold">連載中</span>
+                            </label>
+                            <label class="flex items-center justify-center space-x-1.5 bg-[#fafafa] border border-[#a6051a]/40 rounded-xl py-2.5 text-xs cursor-pointer hover:bg-[#e5e5e5] transition shadow-inner">
+                                <input type="radio" name="inputStatus" value="已完結" class="accent-[#a6051a]">
+                                <span class="text-neutral-900 font-bold">已完結</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-link text-[#a6051a] text-[10px]"></i>
+                            <span>網址</span>
+                        </label>
+                        <input type="url" id="inputUrl" placeholder="" class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-image text-[#a6051a] text-[10px]"></i>
+                            <span>封面網址</span>
+                        </label>
+                        <input type="url" id="inputCoverUrl" placeholder="" class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-bookmark text-[#a6051a] text-[10px]"></i>
+                            <span>閱讀進度（第幾話）</span>
+                        </label>
+                        <input type="number" id="inputProgress" min="0" step="1" placeholder="例如：45" class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+
+                    <button type="submit" class="w-full bg-[#a6051a] hover:bg-[#8a0416] active:scale-95 text-white font-bold py-2.5 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-xs">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>確認新增漫畫</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- TAB 4: 設定 (Settings) -->
+            <section id="tab-settings" class="hidden space-y-3.5">
+                <div class="bg-[#ffffff] rounded-xl p-3.5 shadow-lg border border-[#e5e5e5]/50 flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#a6051a]/10 text-[#a6051a] flex items-center justify-center text-base border border-[#a6051a]/30 flex-shrink-0">
+                        <i class="fa-solid fa-gear"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xs font-black tracking-wide text-neutral-900">設定與備份</h2>
+                        <p class="text-[10px] text-neutral-600">管理您的漫畫資料與備份</p>
+                    </div>
+                </div>
+
+                <div class="bg-[#ffffff] rounded-xl p-3.5 shadow-lg border border-[#e5e5e5]/50 space-y-3">
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-bold text-neutral-600">資料備份與還原</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="exportData()" class="bg-[#fafafa] hover:bg-[#e5e5e5] active:scale-95 text-neutral-900 font-bold py-2.5 rounded-xl transition text-xs border border-[#a6051a]/40 flex items-center justify-center space-x-1.5">
+                                <i class="fa-solid fa-download text-xs text-[#a6051a]"></i>
+                                <span>匯出備份</span>
+                            </button>
+                            <label class="bg-[#fafafa] hover:bg-[#e5e5e5] active:scale-95 text-neutral-900 font-bold py-2.5 rounded-xl transition text-xs border border-[#a6051a]/40 flex items-center justify-center space-x-1.5 cursor-pointer">
+                                <i class="fa-solid fa-upload text-xs text-[#a6051a]"></i>
+                                <span>還原備份</span>
+                                <input type="file" accept=".json" onchange="importData(event)" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Rounded Floating Bottom Navigation Bar -->
+        <nav class="absolute bottom-3 left-3 right-3 bg-[#a6051a] z-40 max-w-[456px] mx-auto shadow-2xl rounded-2xl overflow-hidden flex-shrink-0">
+            <div class="grid grid-cols-4 h-14 text-center">
+                <!-- Tab 1: 首頁 -->
+                <button onclick="goHome()" id="nav-home" class="nav-btn flex flex-col items-center justify-center text-white font-bold transition active:bg-white/10">
+                    <i class="fa-solid fa-house text-sm mb-0.5"></i>
+                    <span class="text-[10px]">首頁</span>
+                </button>
+                <!-- Tab 2: 分類 -->
+                <button onclick="switchTab('categories')" id="nav-categories" class="nav-btn flex flex-col items-center justify-center text-white/50 font-medium transition active:bg-white/10">
+                    <i class="fa-solid fa-compass text-sm mb-0.5"></i>
+                    <span class="text-[10px]">分類</span>
+                </button>
+                <!-- Tab 3: 新增 -->
+                <button onclick="switchTab('add')" id="nav-add" class="nav-btn flex flex-col items-center justify-center text-white/50 font-medium transition active:bg-white/10">
+                    <i class="fa-solid fa-circle-plus text-sm mb-0.5"></i>
+                    <span class="text-[10px]">新增</span>
+                </button>
+                <!-- Tab 4: 設定 -->
+                <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center justify-center text-white/50 font-medium transition active:bg-white/10">
+                    <i class="fa-solid fa-gear text-sm mb-0.5"></i>
+                    <span class="text-[10px]">設定</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Comic Detail Modal -->
+        <div id="comicModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+            <div class="bg-[#ffffff] border border-[#e5e5e5] rounded-xl w-full max-w-sm p-4 shadow-2xl relative space-y-3 max-h-[85vh] overflow-y-auto">
+                <button onclick="closeComicModal()" class="absolute top-3 right-3 text-[#a6051a] hover:text-[#8a0416] p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+                <div class="flex items-center space-x-3 pr-6">
+                    <div id="modalEmojiContainer" class="w-12 h-12 bg-[#fafafa] rounded-xl flex items-center justify-center text-2xl  shadow-inner flex-shrink-0 overflow-hidden">
+                        📖
+                    </div>
+                    <div>
+                        <h3 id="modalTitle" class="text-base font-bold">漫畫名稱</h3>
+                        <p id="modalGenre" class="text-[11px] text-neutral-600">分類</p>
+                    </div>
+                </div>
+
+                <div id="modalUrlBox" class="hidden">
+                    <a id="modalUrlLink" href="#" target="_blank" class="w-full bg-[#a6051a] hover:bg-[#8a0416] active:scale-95 text-white py-2.5 rounded-lg font-bold transition text-xs flex items-center justify-center space-x-2 shadow">
+                        <i class="fa-solid fa-external-link-alt text-xs"></i>
+                        <span>前往漫畫網站閱讀</span>
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                    <button onclick="openEditModal()" class="bg-gray-700 hover:bg-gray-600 active:scale-95 text-white py-2.5 rounded-lg font-bold transition text-xs flex items-center justify-center space-x-1 border border-[#a6051a]/40">
+                        <i class="fa-solid fa-pen text-xs"></i>
+                        <span>修改</span>
+                    </button>
+                    <button onclick="deleteCurrentComic()" class="bg-white hover:bg-neutral-100 active:scale-95 text-[#a6051a] py-2.5 rounded-lg font-bold transition text-xs flex items-center justify-center space-x-1 border border-[#a6051a]/40">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                        <span>刪除</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Comic Modal -->
+        <div id="editModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+            <div class="bg-[#ffffff] border border-[#e5e5e5] rounded-xl w-full max-w-xs p-3.5 shadow-2xl relative space-y-2.5 max-h-[90vh] overflow-y-auto">
+                <button onclick="closeEditModal()" class="absolute top-2.5 right-2.5 text-[#a6051a] hover:text-[#8a0416] p-1">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+                <h3 class="text-xs font-black tracking-wide text-neutral-900 mb-1.5 flex items-center space-x-1">
+                    <i class="fa-solid fa-pen-to-square text-[#a6051a]"></i>
+                    <span>修改漫畫紀錄</span>
+                </h3>
+                <form id="editComicForm" onsubmit="handleUpdateComic(event)" class="space-y-2.5">
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-book text-[#a6051a] text-[10px]"></i>
+                            <span>漫畫名稱 *</span>
+                        </label>
+                        <input type="text" id="editInputTitle" required class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-tag text-[#a6051a] text-[10px]"></i>
+                            <span>分類 (多個分類可用逗號分隔) *</span>
+                        </label>
+                        <input type="text" id="editInputGenre" required class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-circle-dot text-[#a6051a] text-[10px]"></i>
+                            <span>狀態 *</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center justify-center space-x-1.5 bg-[#fafafa] border border-[#a6051a]/40 rounded-xl py-2 text-xs cursor-pointer hover:bg-[#e5e5e5] transition shadow-inner">
+                                <input type="radio" name="editInputStatus" value="連載中" class="accent-[#a6051a]">
+                                <span class="text-neutral-900 font-bold">連載中</span>
+                            </label>
+                            <label class="flex items-center justify-center space-x-1.5 bg-[#fafafa] border border-[#a6051a]/40 rounded-xl py-2 text-xs cursor-pointer hover:bg-[#e5e5e5] transition shadow-inner">
+                                <input type="radio" name="editInputStatus" value="已完結" class="accent-[#a6051a]">
+                                <span class="text-neutral-900 font-bold">已完結</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-link text-[#a6051a] text-[10px]"></i>
+                            <span>網址</span>
+                        </label>
+                        <input type="url" id="editInputUrl" class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-image text-[#a6051a] text-[10px]"></i>
+                            <span>封面網址</span>
+                        </label>
+                        <input type="url" id="editInputCoverUrl" class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-neutral-600 mb-1 flex items-center space-x-1">
+                            <i class="fa-solid fa-bookmark text-[#a6051a] text-[10px]"></i>
+                            <span>閱讀進度（第幾話）</span>
+                        </label>
+                        <input type="number" id="editInputProgress" min="0" step="1" class="w-full bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3.5 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-[#a6051a] transition shadow-inner">
+                    </div>
+                    <div class="flex space-x-2 pt-1">
+                        <button type="button" onclick="closeEditModal()" class="flex-1 bg-[#fafafa] hover:bg-[#e5e5e5] active:scale-95 text-neutral-900 font-bold py-2 rounded-xl transition text-xs border border-[#a6051a]/40">取消</button>
+                        <button type="submit" class="flex-1 bg-[#a6051a] hover:bg-[#8a0416] active:scale-95 text-white font-bold py-2 rounded-xl shadow transition text-xs">儲存修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        
+
+        <!-- Notification / Message Box Modal -->
+        <div id="msgModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+            <div class="bg-[#ffffff] border border-[#e5e5e5] rounded-xl w-full max-w-[280px] p-4 shadow-2xl text-center space-y-3">
+                <div id="msgIcon" class="w-10 h-10 rounded-full bg-[#a6051a]/10 text-[#a6051a] flex items-center justify-center mx-auto text-base">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 id="msgTitle" class="font-bold text-sm">提示訊息</h3>
+                <p id="msgText" class="text-xs text-neutral-600">操作成功</p>
+                <button onclick="closeMsgModal()" class="w-full bg-[#a6051a] hover:bg-[#8a0416] active:scale-95 text-white font-bold py-2 rounded-lg transition text-xs">確定</button>
+            </div>
+        </div>
+
     </div>
-    <div id="page2" class="page-content">
-      <h2 class="text-2xl font-bold mb-6 px-2">影片標籤</h2>
-      <div id="tagCloud" class="flex flex-wrap gap-3 px-2"></div>
-    </div>
-    <div id="page3" class="page-content">
-      <h2 class="text-2xl font-bold mb-10 px-2">所有演員</h2>
-      <div id="actorList" class="grid grid-cols-3 gap-y-10 gap-x-2 text-center"></div>
-      <div id="actorPaginationContainer" class="page-dot-container mt-8"></div>
-    </div>
-  </div>
-</div>
 
-<nav class="bottom-nav">
-  <div class="nav-item active" onclick="switchTab(0)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span>首頁</span>
-  </div>
-  <div class="nav-item" onclick="switchTab(1)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path></svg><span>標籤</span>
-  </div>
-  <div class="nav-item" onclick="switchTab(2)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>演員</span>
-  </div>
-  <div class="nav-item" onclick="toggleFilterDrawer(true)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg><span>設定</span>
-  </div>
-</nav>
+    <script>
+        let comics = JSON.parse(localStorage.getItem('toptoon_comics')) || [];
+        if (!localStorage.getItem('toptoon_comics')) {
+            localStorage.setItem('toptoon_comics', JSON.stringify(comics));
+        }
 
-<div id="randomModal" class="fixed inset-0 bg-black/95 z-[7000] hidden items-center justify-center p-6">
-  <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl overflow-hidden p-6 text-center relative shadow-2xl">
-    <h3 class="text-xs font-bold text-red-600 tracking-widest uppercase mb-4">✨ Today隨機推薦 ✨</h3>
-    <div id="randomCardPreview" class="poster-card mb-4"></div>
-    <p id="randomCardTitle" class="text-sm font-bold truncate text-white mb-6 px-1"></p>
-    <div class="flex gap-3">
-      <button onclick="openRandomRecommendation()" class="flex-1 bg-zinc-800 py-3 rounded-lg font-bold text-xs text-zinc-300">換一部</button>
-      <button id="randomPlayBtn" class="flex-1 bg-red-600 py-3 rounded-lg font-bold text-xs text-white shadow-lg">立即觀看</button>
-    </div>
-    <button onclick="closeRandomModal()" class="absolute top-4 right-4 text-zinc-500"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-  </div>
-</div>
+        let activeComicId = null;
+        let activeGenreFilter = '全部';
+        let currentPage = 1;
+        const comicsPerPage = 10;
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
-<div id="drawer" class="drawer">
-  <div class="flex items-center justify-between mb-8">
-    <h3 class="text-xl font-bold">影片資訊</h3>
-    <button onclick="closeDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-  </div>
-  <div class="space-y-6">
-    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">名稱 / 演員</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">番號 (ID)</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結 (URL)</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤（空白分隔）</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片</label><input type="text" id="imgInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-    <div class="pt-10 space-y-4">
-      <button onclick="saveItem()" class="w-full bg-red-600 py-4 font-bold rounded-lg shadow-lg">儲存內容</button>
-      <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full py-2 text-zinc-600 text-xs font-bold hidden">刪除此項目</button>
-    </div>
-  </div>
-</div>
+        function safeUrl(url) {
+            if (!url) return '';
+            try {
+                const parsed = new URL(url, location.href);
+                return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : '';
+            } catch (e) {
+                return '';
+            }
+        }
 
-<div id="filterDrawer" class="drawer">
-  <div class="flex items-center justify-between mb-8">
-    <h3 class="text-xl font-bold">帳戶設定</h3>
-    <button onclick="toggleFilterDrawer(false)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-  </div>
-  <div class="space-y-4">
-    <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
-      <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">顯示佈局</label>
-      <div class="layout-grid">
-        <button id="layoutBtn1" onclick="updateLayout(1)" class="layout-option">1 欄</button>
-        <button id="layoutBtn2" onclick="updateLayout(2)" class="layout-option">2 欄</button>
-        <button id="layoutBtn3" onclick="updateLayout(3)" class="layout-option">3 欄</button>
-        <button id="layoutBtn4" onclick="updateLayout(4)" class="layout-option">4 欄</button>
-      </div>
-    </div>
-    <button onclick="toggleFilterDrawer(false); openDrawer();" class="w-full py-4 bg-zinc-900 rounded font-bold text-white">新增影片</button>
-    <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
-    <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
-  </div>
-</div>
+        // 把輸入轉成合法的進度數字：空白、負數、亂填都變成 0（0 代表未填）
+        function parseProgress(value) {
+            const n = parseInt(value, 10);
+            if (!Number.isFinite(n) || n < 0) return 0;
+            return Math.min(n, 99999);
+        }
 
-<div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden items-center justify-center p-8">
-  <div class="text-center"><h4 id="confirmTitle" class="text-xl font-bold mb-8">確定要刪除嗎？</h4>
-    <div class="flex flex-col gap-4"><button id="confirmOkBtn" class="w-64 bg-red-600 py-4 font-bold rounded-lg">確定</button><button onclick="closeConfirm()" class="py-2 text-zinc-500">取消</button></div>
-  </div>
-</div>
-<div id="toast"></div>
+        function parseGenres(genreStr) {
+            if (!genreStr || genreStr.trim() === '') return ['未分類'];
+            return genreStr.split(/[,，]/).map(g => g.trim()).filter(g => g.length > 0);
+        }
 
-<script>
-const STORAGE_KEY = 'NF_MOBILE_VAULT_FINAL';
-const NO_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect fill="#111" width="100%" height="100%"/><text x="50%" y="50%" fill="#333" text-anchor="middle" font-size="28">NO IMAGE</text></svg>');
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const $ = id => document.getElementById(id);
+        function handleImgError(imgEl) {
+            const parent = imgEl.parentElement;
+            parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-3xl">📖</div>';
+        }
 
-function loadCollections() {
-  try {
-    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return Array.isArray(d) ? d : [];
-  } catch (e) { return []; }
+        function saveComics() {
+            localStorage.setItem('toptoon_comics', JSON.stringify(comics));
+        }
+
+        function showMsg(title, text) {
+            document.getElementById('msgTitle').innerText = title;
+            document.getElementById('msgText').innerText = text;
+            document.getElementById('msgModal').classList.remove('hidden');
+        }
+
+        function closeMsgModal() {
+            document.getElementById('msgModal').classList.add('hidden');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.app-container > main > section').forEach(sec => sec.classList.add('hidden'));
+            const targetSection = document.getElementById(`tab-${tabName}`);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-white', 'font-bold');
+                btn.classList.add('text-white/50', 'font-medium');
+            });
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-white/50', 'font-medium');
+                activeBtn.classList.add('text-white', 'font-bold');
+            }
+
+            if(tabName === 'home') renderComics();
+            if(tabName === 'categories') renderCategories();
+        }
+        function goHome() {
+            currentPage = 1;
+            activeGenreFilter = '全部';
+            switchTab('home');
+        
+            const main = document.querySelector('.app-container > main');
+            if (main) {
+                main.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function filterByGenre(genre) {
+            activeGenreFilter = genre;
+            currentPage = 1;
+            switchTab('home');
+        }
+
+        function clearGenreFilter() {
+            activeGenreFilter = '全部';
+            currentPage = 1;
+            renderComics();
+        }
+
+        function renderComics() {
+            const container = document.getElementById('comicListContainer');
+            const filterBannerContainer = document.getElementById('filterBannerContainer');
+
+            if (activeGenreFilter !== '全部') {
+                filterBannerContainer.innerHTML = `
+                    <div class="bg-[#fafafa] border border-[#a6051a]/40 rounded-xl px-3 py-2 flex items-center justify-between text-xs shadow-inner mb-2.5">
+                        <span class="text-neutral-600">分類篩選：<strong class="text-neutral-900">${escapeHtml(activeGenreFilter)}</strong></span>
+                        <button onclick="clearGenreFilter()" class="text-[#a6051a] hover:text-[#8a0416] p-1" aria-label="清除篩選">
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                filterBannerContainer.innerHTML = '';
+            }
+
+            const filteredComics = activeGenreFilter === '全部' ?
+                comics :
+                comics.filter(c => parseGenres(c.genre).includes(activeGenreFilter));
+
+            document.getElementById('comicCount').innerText = `共 ${filteredComics.length} 部`;
+
+            if (filteredComics.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-[#ffffff] rounded-xl p-6 text-center border border-[#a6051a]/40 text-neutral-600 space-y-2 col-span-2">
+                        <i class="fa-solid fa-box-open text-2xl"></i>
+                        <p class="text-xs">目前沒有符合的漫畫紀錄</p>
+                    </div>
+                `;
+                renderPagination(0);
+                return;
+            }
+
+            // 每頁只顯示 10 部漫畫
+            const totalPages = Math.ceil(filteredComics.length / comicsPerPage);
+
+            // 刪除資料後，如果目前頁數超出範圍，自動回到最後一頁
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+
+            const startIndex = (currentPage - 1) * comicsPerPage;
+            const paginatedComics = filteredComics.slice(startIndex, startIndex + comicsPerPage);
+
+            container.className = "grid grid-cols-2 gap-3";
+
+            container.innerHTML = paginatedComics.map(comic => {
+                const coverSrc = safeUrl(comic.coverUrl);
+                const coverDisplay = coverSrc ?
+                    `<div class="w-full aspect-[3/4] bg-[#fafafa] rounded-t-xl overflow-hidden relative ">
+                        <img src="${escapeHtml(coverSrc)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="handleImgError(this)">
+                     </div>` :
+                    `<div class="w-full aspect-[3/4] bg-[#fafafa] rounded-t-xl flex items-center justify-center text-3xl relative">
+                        📖
+                     </div>`;
+
+                const statusBadge = comic.status ? `<span class="inline-block text-[9px] ${comic.status === '連載中' ? 'bg-[#a6051a]/10 text-[#a6051a]' : 'bg-gray-200 text-gray-700'} px-1.5 py-0.5 rounded border border-[#a6051a]/40 w-fit">${escapeHtml(comic.status)}</span>` : '';
+
+                // 閱讀進度：舊資料沒有 progress（undefined），不會顯示
+                const progressText = comic.progress > 0 ? `<span class="text-[10px] text-neutral-600 ml-auto">第 ${parseInt(comic.progress, 10)} 話</span>` : '';
+
+                return `
+                    <div data-id="${escapeHtml(comic.id)}" onclick="openComicModal(this.dataset.id)" class="group bg-[#ffffff] hover:bg-[#f0f0f0]  rounded-xl shadow transition cursor-pointer overflow-hidden flex flex-col active:scale-[0.98]">
+                        ${coverDisplay}
+                        <div class="p-2.5 flex flex-col justify-between flex-1 space-y-1.5">
+                            <h4 class="font-bold text-neutral-900 text-xs line-clamp-1">${escapeHtml(comic.title)}</h4>
+                            <div class="flex items-center space-x-1 flex-wrap gap-1">
+                                ${statusBadge}
+                                ${progressText}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            renderPagination(totalPages);
+        }
+
+        // 先提供簡單的「上一頁／下一頁」分頁
+        function renderPagination(totalPages) {
+            const container = document.getElementById('paginationContainer');
+            if (!container) return;
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <button
+                    onclick="changePage(${currentPage - 1})"
+                    ${currentPage === 1 ? 'disabled' : ''}
+                    class="px-4 py-2 rounded-lg text-xs font-bold border border-gray-200 bg-white ${currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-neutral-700 active:bg-gray-100'}">
+                    上一頁
+                </button>
+
+                <span class="text-xs text-gray-500 min-w-[70px] text-center">
+                    第 ${currentPage} / ${totalPages} 頁
+                </span>
+
+                <button
+                    onclick="changePage(${currentPage + 1})"
+                    ${currentPage === totalPages ? 'disabled' : ''}
+                    class="px-4 py-2 rounded-lg text-xs font-bold border border-gray-200 bg-white ${currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-neutral-700 active:bg-gray-100'}">
+                    下一頁
+                </button>
+            `;
+        }
+
+        function changePage(page) {
+            const filteredCount = activeGenreFilter === '全部' ?
+                comics.length :
+                comics.filter(c => parseGenres(c.genre).includes(activeGenreFilter)).length;
+
+            const totalPages = Math.ceil(filteredCount / comicsPerPage);
+
+            if (page < 1 || page > totalPages) return;
+
+            currentPage = page;
+            renderComics();
+
+            // 換頁後回到漫畫列表頂端
+            const main = document.querySelector('.app-container > main');
+            if (main) {
+                main.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function renderCategories() {
+            const genreGrid = document.getElementById('genreGrid');
+            let allGenresSet = new Set();
+            comics.forEach(c => {
+                parseGenres(c.genre).forEach(g => allGenresSet.add(g));
+            });
+            const genres = ['全部', ...allGenresSet];
+        
+            genreGrid.innerHTML = genres.map(g => {
+                const count = g === '全部' ? comics.length : comics.filter(c => parseGenres(c.genre).includes(g)).length;
+                const isSelected = activeGenreFilter === g;
+                const activeStyle = isSelected ? 'border-[#a6051a] bg-[#f0f0f0] ring-1 ring-[#a6051a]/40' : 'border-[#a6051a]/40 hover:border-[#a6051a]';
+        
+                return `
+                    <div data-genre="${escapeHtml(g)}" onclick="filterByGenre(this.dataset.genre)" class="genre-card bg-[#ffffff] ${activeStyle} p-3.5 rounded-xl border flex items-center justify-between shadow cursor-pointer transition active:scale-[0.98]">
+                        <span class="font-bold text-xs text-neutral-900">${escapeHtml(g)}</span>
+                        <span class="text-xs bg-[#fafafa] px-2 py-0.5 rounded-full text-neutral-600 border border-[#a6051a]/40">${count} 部</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function handleAddNewComic(e) {
+            e.preventDefault();
+            const statusInput = document.querySelector('input[name="inputStatus"]:checked');
+            const newComic = {
+                id: Date.now().toString(),
+                title: document.getElementById('inputTitle').value.trim(),
+                genre: document.getElementById('inputGenre').value.trim(),
+                status: statusInput ? statusInput.value : '連載中',
+                url: safeUrl(document.getElementById('inputUrl').value.trim()),
+                coverUrl: safeUrl(document.getElementById('inputCoverUrl').value.trim()),
+                progress: parseProgress(document.getElementById('inputProgress').value)
+            };
+
+            comics.unshift(newComic);
+            saveComics();
+            document.getElementById('addComicForm').reset();
+            showMsg('新增成功', '已成功將漫畫加入追蹤清單！');
+            switchTab('home');
+        }
+
+        function openComicModal(id) {
+            activeComicId = id;
+            const comic = comics.find(c => c.id === id);
+            if (!comic) return;
+        
+            const modalEmojiContainer = document.getElementById('modalEmojiContainer');
+            const coverSrc = safeUrl(comic.coverUrl);
+            modalEmojiContainer.innerText = '📖';
+            if (coverSrc) {
+                const img = document.createElement('img');
+                img.src = coverSrc;
+                img.className = 'w-full h-full object-cover';
+                img.onerror = () => { modalEmojiContainer.innerText = '📖'; };
+                modalEmojiContainer.innerText = '';
+                modalEmojiContainer.appendChild(img);
+            }
+        
+            document.getElementById('modalTitle').innerText = comic.title;
+            document.getElementById('modalGenre').innerText = `分類：${comic.genre} | 狀態：${comic.status || '連載中'}`;
+        
+            const urlBox = document.getElementById('modalUrlBox');
+            const urlLink = document.getElementById('modalUrlLink');
+            const linkHref = safeUrl(comic.url);
+            if (linkHref) {
+                urlLink.href = linkHref;
+                urlLink.rel = 'noopener noreferrer';
+                urlBox.classList.remove('hidden');
+            } else {
+                urlBox.classList.add('hidden');
+            }
+                document.getElementById('comicModal').classList.remove('hidden');
+        }
+        function closeComicModal() {
+                document.getElementById('comicModal').classList.add('hidden');
+        }
+
+        function openEditModal() {
+            closeComicModal();
+            const comic = comics.find(c => c.id === activeComicId);
+            if (!comic) return;
+
+            document.getElementById('editInputTitle').value = comic.title;
+            document.getElementById('editInputGenre').value = comic.genre;
+            document.getElementById('editInputUrl').value = comic.url || '';
+            document.getElementById('editInputCoverUrl').value = comic.coverUrl || '';
+            document.getElementById('editInputProgress').value = comic.progress > 0 ? comic.progress : '';
+
+            const statusRadios = document.querySelectorAll('input[name="editInputStatus"]');
+            statusRadios.forEach(radio => {
+                radio.checked = (radio.value === (comic.status || '連載中'));
+            });
+
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        function handleUpdateComic(e) {
+            e.preventDefault();
+            const comicIndex = comics.findIndex(c => c.id === activeComicId);
+            if (comicIndex === -1) return;
+
+            const statusInput = document.querySelector('input[name="editInputStatus"]:checked');
+            comics[comicIndex].title = document.getElementById('editInputTitle').value.trim();
+            comics[comicIndex].genre = document.getElementById('editInputGenre').value.trim();
+            comics[comicIndex].status = statusInput ? statusInput.value : '連載中';
+            comics[comicIndex].url = safeUrl(document.getElementById('editInputUrl').value.trim());
+            comics[comicIndex].coverUrl = safeUrl(document.getElementById('editInputCoverUrl').value.trim());
+            comics[comicIndex].progress = parseProgress(document.getElementById('editInputProgress').value);
+
+            saveComics();
+            closeEditModal();
+            showMsg('修改成功', '漫畫資訊已成功更新！');
+            renderComics();
+        }
+
+        function deleteCurrentComic() {
+            const comic = comics.find(c => c.id === activeComicId);
+            if (!comic) return;
+        
+            if (!confirm(`確定要刪除「${comic.title}」嗎？\n\n刪除後無法復原。`)) return;
+        
+            comics = comics.filter(c => c.id !== activeComicId);
+            saveComics();
+            closeComicModal();
+            showMsg('刪除成功', '已從追蹤清單移除該漫畫。');
+            renderComics();
+        }
+
+// ================================
+// 資料備份功能
+// ================================
+
+
+
+
+// 產生備份檔案名稱
+function getBackupFileName() {
+    return 'toptoon_backup.json';
 }
-function persist() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); return true; }
-  catch (e) { showToast("儲存失敗：空間不足或被禁用"); return false; }
-}
 
-let collections = loadCollections();
-let currentId = null, currentPage = 1, pageSize = 12;
-let actorCurrentPage = 1, actorPageSize = 18;
-let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 2;
-let lastRandomId = null, activeTab = 0;
 
-function updateContainerHeight() {
-  setTimeout(() => {
-    const p = document.querySelector('.page-content.active-page');
-    const w = $('appContent');
-    if (p && w) w.style.height = (p.scrollHeight + 20) + 'px';
-  }, 50);
-}
-
-function checkDuplicate(el) {
-  if (!el) return false;
-  const val = el.value.trim();
-  if (!val) { el.style.color = 'white'; return false; }
-  const others = collections.filter(i => String(i.id) !== String(currentId));
-  let dup = false;
-  if (el.id === 'codeInput') { const u = val.toUpperCase(); dup = others.some(i => i.code && i.code.toUpperCase() === u); }
-  else if (el.id === 'urlInput') dup = others.some(i => i.url === val);
-  else if (el.id === 'imgInput') dup = others.some(i => i.img === val);
-  el.style.color = dup ? 'var(--nf-red)' : 'white';
-  return dup;
-}
-
-function handleSearchInput() {
-  $('clearSearchBtn').style.display = $('searchInput').value.length > 0 ? 'block' : 'none';
-  currentPage = 1;
-  debouncedRender();
-}
-function clearSearch() {
-  $('searchInput').value = "";
-  $('clearSearchBtn').style.display = 'none';
-  currentPage = 1;
-  renderGallery();
-}
-
-function renderGallery() {
-  const gallery = $('gallery');
-  const q = $('searchInput').value.trim().toLowerCase();
-  const filtered = collections.filter(i =>
-    String(i.name || '').toLowerCase().includes(q) ||
-    String(i.code || '').toLowerCase().includes(q) ||
-    (i.tags || []).some(t => String(t).toLowerCase().includes(q)));
-  $('itemCount').innerText = `${filtered.length} ITEMS`;
-
-  if (filtered.length === 0) {
-    gallery.className = "flex flex-col items-center justify-center py-20 text-center";
-    gallery.innerHTML = `<div class="empty-state-icon mb-6"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div><p class="text-zinc-500 font-bold text-lg mb-4">找不到相關內容</p>`;
-    $('paginationContainer').innerHTML = "";
-    updateContainerHeight();
-    return;
-  }
-
-  gallery.className = `grid gap-3 layout-cols-${currentLayout}`;
-  const total = Math.ceil(filtered.length / pageSize);
-  if (currentPage > total) currentPage = total;
-  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-  gallery.innerHTML = paginated.map(item => `
-    <div class="poster-card">
-      <img src="${esc(item.img) || NO_IMG}" loading="lazy" onerror="this.onerror=null;this.src=NO_IMG">
-      <div class="action-circle-btn card-edit-btn" data-edit="${esc(item.id)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
-      ${item.url ? `<div class="action-circle-btn card-play-btn" data-play="${esc(item.id)}"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
-      <div class="card-overlay">
-        <p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p>
-        <p class="title text-[13px] font-bold truncate">${esc(item.name)}</p>
-      </div>
-    </div>`).join('');
-  renderPagination(total, currentPage, 'changePage', 'paginationContainer');
-  updateContainerHeight();
-}
-
-function renderPagination(total, cur, fn, containerId) {
-  const container = $(containerId);
-  if (total <= 1) { container.innerHTML = ""; return; }
-  const pages = [];
-  for (let i = 1; i <= total; i++) {
-    if (i === 1 || i === total || Math.abs(i - cur) <= 1) pages.push(i);
-    else if (pages[pages.length - 1] !== '...') pages.push('...');
-  }
-  container.innerHTML = `<div class="pagination-dots-row">` + pages.map(p =>
-    p === '...' ? `<div class="px-1 text-zinc-700 text-[10px] font-black">...</div>`
-      : `<div onclick="${fn}(${p})" class="page-dot ${p === cur ? 'active' : ''}">${p}</div>`).join('') + `</div>`;
-}
-
-function updateLayout(cols) {
-  currentLayout = cols;
-  try { localStorage.setItem('NF_LAYOUT_SETTING', cols); } catch (e) {}
-  for (let i = 1; i <= 4; i++) { const b = $(`layoutBtn${i}`); if (b) b.classList.toggle('active', i === cols); }
-  renderGallery();
-}
-
-function renderTagCloud() {
-  const map = {};
-  collections.forEach(i => (i.tags || []).forEach(t => map[t] = (map[t] || 0) + 1));
-  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
-  $('tagCloud').innerHTML = sorted.map(([tag, count]) => `
-    <div data-q="${esc(tag)}" class="tag-pill"><span class="truncate pr-2">${esc(tag)}</span>
-    <span class="text-[10px] font-bold text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded">${count}</span></div>`).join('');
-  updateContainerHeight();
-}
-
-function renderActorList() {
-  const map = {};
-  collections.forEach(i => {
-    String(i.name || '').split(/[\s,\[\]【】，、\/]+/).filter(n => n.trim() && n.length > 1).forEach(n => map[n] = (map[n] || 0) + 1);
-  });
-  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
-  const total = Math.ceil(sorted.length / actorPageSize);
-  if (actorCurrentPage > total) actorCurrentPage = Math.max(total, 1);
-  const paginated = sorted.slice((actorCurrentPage - 1) * actorPageSize, actorCurrentPage * actorPageSize);
-  $('actorList').innerHTML = paginated.map(([name, count]) => {
-    const disp = /^[A-Za-z]/.test(name) ? name.substring(0, 2).toUpperCase() : name.substring(0, 1);
-    return `<div data-q="${esc(name)}" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500">${esc(disp)}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${esc(name)}</span><span class="block text-[9px] text-zinc-600">${count} 作品</span></div>`;
-  }).join('');
-  renderPagination(total, actorCurrentPage, 'changeActorPage', 'actorPaginationContainer');
-  updateContainerHeight();
-}
-
-function refreshAll() { renderGallery(); renderTagCloud(); renderActorList(); }
-
-function changePage(p) { currentPage = p; window.scrollTo({ top: 0, behavior: 'smooth' }); renderGallery(); }
-function changeActorPage(p) { actorCurrentPage = p; window.scrollTo({ top: 0, behavior: 'smooth' }); renderActorList(); }
-
-/* 事件委派：取代 inline onclick 拼字串 */
-document.addEventListener('click', e => {
-  const edit = e.target.closest('[data-edit]');
-  if (edit) { openDrawer(edit.dataset.edit); return; }
-  const play = e.target.closest('[data-play]');
-  if (play) {
-    const it = collections.find(i => String(i.id) === play.dataset.play);
-    if (it) openExternalUrl(it.url, e);
-    return;
-  }
-  const q = e.target.closest('[data-q]');
-  if (q) filterBySearch(q.dataset.q);
-});
-
-function openRandomRecommendation() {
-  if (collections.length === 0) { showToast("目前尚無收藏內容可推薦"); return; }
-  let pool = collections.filter(i => String(i.id) !== String(lastRandomId));
-  if (pool.length === 0) pool = collections;
-  const item = pool[Math.floor(Math.random() * pool.length)];
-  lastRandomId = item.id;
-  $('randomCardPreview').innerHTML = `
-    <img src="${esc(item.img) || NO_IMG}" onerror="this.onerror=null;this.src=NO_IMG" style="width:100%;height:100%;object-fit:cover;">
-    <div class="card-overlay"><p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p></div>`;
-  $('randomCardTitle').innerText = item.name;
-  const btn = $('randomPlayBtn');
-  if (item.url) { btn.style.display = 'block'; btn.onclick = () => { openExternalUrl(item.url); closeRandomModal(); }; }
-  else btn.style.display = 'none';
-  const m = $('randomModal'); m.classList.remove('hidden'); m.classList.add('flex');
-}
-function closeRandomModal() { const m = $('randomModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
-
-function openDrawer(id = null) {
-  currentId = id;
-  $('drawer').classList.add('open');
-  const f = { name: $('nameInput'), code: $('codeInput'), url: $('urlInput'), tags: $('tagsInput'), img: $('imgInput') };
-  const item = id ? collections.find(i => String(i.id) === String(id)) : null;
-  if (item) {
-    f.name.value = item.name || ""; f.code.value = item.code || ""; f.url.value = item.url || "";
-    f.tags.value = (item.tags || []).join(' '); f.img.value = item.img || "";
-    $('drawerDeleteBtn').classList.remove('hidden');
-  } else {
-    currentId = null;
-    Object.values(f).forEach(x => { x.value = ""; x.style.color = "white"; });
-    $('drawerDeleteBtn').classList.add('hidden');
-  }
-  ['codeInput', 'urlInput', 'imgInput'].forEach(fid => checkDuplicate($(fid)));
-}
-
-function saveItem() {
-  const name = $('nameInput').value.trim();
-  if (!name) { showToast("請輸入名稱"); return; }
-  if (['codeInput', 'urlInput', 'imgInput'].some(id => checkDuplicate($(id)))) { showToast("請修正重複的資料"); return; }
-  const data = {
-    id: currentId || Date.now().toString(), name,
-    code: $('codeInput').value.trim().toUpperCase(),
-    url: $('urlInput').value.trim(),
-    tags: $('tagsInput').value.trim().split(/\s+/).filter(Boolean),
-    img: $('imgInput').value.trim()
-  };
-  const backup = collections.slice();
-  const idx = currentId ? collections.findIndex(i => String(i.id) === String(currentId)) : -1;
-  if (idx >= 0) collections[idx] = data; else collections.unshift(data);
-  if (!persist()) { collections = backup; return; }
-  refreshAll(); closeDrawer(); showToast("已儲存");
-}
-
-function switchTab(index) {
-  activeTab = index;
-  $('pageContainer').style.transform = `translateX(-${index * (100 / 3)}%)`;
-  document.querySelectorAll('.nav-item').forEach((el, i) => { if (i < 3) el.classList.toggle('active', i === index); });
-  document.querySelectorAll('.page-content').forEach((p, i) => p.classList.toggle('active-page', i === index));
-  window.scrollTo(0, 0);
-  if (index === 1) renderTagCloud();
-  if (index === 2) renderActorList();
-  updateContainerHeight();
-}
-
-function filterBySearch(val) {
-  $('searchInput').value = val;
-  $('clearSearchBtn').style.display = val ? 'block' : 'none';
-  currentPage = 1;
-  switchTab(0);
-  renderGallery();
-}
-
-function openExternalUrl(url, e) {
-  if (e) e.stopPropagation();
-  const u = String(url || '').trim();
-  if (!u) return;
-  const full = /^https?:\/\//i.test(u) ? u : (/^[a-z][a-z0-9+.-]*:/i.test(u) ? '' : 'https://' + u);
-  if (!full) { showToast("不支援的連結格式"); return; }
-  window.open(full, '_blank', 'noopener,noreferrer');
-}
-
-function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
-function showToast(msg) { const t = $('toast'); t.innerText = msg; t.style.opacity = "1"; clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => { t.style.opacity = "0"; }, 2000); }
-
-function openConfirm(title, fn) {
-  $('confirmTitle').innerText = title;
-  $('confirmOkBtn').onclick = () => { closeConfirm(); fn(); };
-  const m = $('confirmModal'); m.classList.remove('hidden'); m.classList.add('flex');
-}
-function closeConfirm() { const m = $('confirmModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
-function requestDelete() { openConfirm("確定要刪除嗎？", executeDelete); }
-function executeDelete() {
-  const backup = collections.slice();
-  collections = collections.filter(i => String(i.id) !== String(currentId));
-  if (!persist()) { collections = backup; return; }
-  closeDrawer(); refreshAll();
-}
-function closeDrawer() { $('drawer').classList.remove('open'); }
-function toggleFilterDrawer(open) { $('filterDrawer').classList.toggle('open', open); }
-
+// 匯出資料
 function exportData() {
-  const blob = new Blob([JSON.stringify(collections, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'netflav.json'; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
-function importData(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
+    if (!Array.isArray(comics)) {
+        showMsg(
+            '匯出失敗',
+            '目前漫畫資料格式異常，無法進行備份。'
+        );
+        return;
+    }
+
+    if (comics.length === 0) {
+        showMsg(
+            '沒有資料',
+            '目前沒有漫畫資料可以匯出。'
+        );
+        return;
+    }
+
     try {
-      const raw = JSON.parse(ev.target.result);
-      if (!Array.isArray(raw)) throw new Error('not array');
-      const seen = new Set();
-      const data = raw.filter(i => i && typeof i === 'object' && i.name).map((i, n) => {
-        let id = String(i.id ?? (Date.now() + '_' + n));
-        while (seen.has(id)) id += '_';
-        seen.add(id);
-        return {
-          id, name: String(i.name), code: String(i.code || ''), url: String(i.url || ''), img: String(i.img || ''),
-          tags: Array.isArray(i.tags) ? i.tags.map(String) : []
+
+        const backupData = {
+            app: 'TOPTOON 漫畫紀錄網',
+            version: 1,
+            exportTime: new Date().toISOString(),
+            count: comics.length,
+            comics: comics
         };
-      });
-      if (data.length === 0) throw new Error('empty');
-      openConfirm(`匯入 ${data.length} 筆，將覆蓋現有 ${collections.length} 筆資料。確定嗎？`, () => {
-        const backup = collections;
-        collections = data;
-        if (!persist()) { collections = backup; return; }
-        currentPage = 1; actorCurrentPage = 1;
-        refreshAll(); toggleFilterDrawer(false); showToast("匯入成功");
-      });
-    } catch (err) { showToast("格式錯誤"); }
-    e.target.value = '';
-  };
-  reader.readAsText(file);
+
+        const jsonData = JSON.stringify(
+            backupData,
+            null,
+            2
+        );
+
+        const blob = new Blob(
+            [jsonData],
+            {
+                type: 'application/json;charset=utf-8'
+            }
+        );
+
+        const downloadUrl =
+            URL.createObjectURL(blob);
+
+        const downloadLink =
+            document.createElement('a');
+
+        downloadLink.href = downloadUrl;
+        downloadLink.download =
+            getBackupFileName();
+
+        downloadLink.style.display = 'none';
+
+        document.body.appendChild(downloadLink);
+
+        downloadLink.click();
+
+        document.body.removeChild(downloadLink);
+
+        setTimeout(() => {
+            URL.revokeObjectURL(downloadUrl);
+        }, 1000);
+
+        showMsg(
+            '匯出成功',
+            `已成功備份 ${comics.length} 部漫畫資料。`
+        );
+
+    } catch (error) {
+
+        console.error(
+            'TOPTOON 匯出錯誤：',
+            error
+        );
+
+        showMsg(
+            '匯出失敗',
+            '建立備份檔案時發生錯誤，請稍後再試。'
+        );
+    }
 }
 
-function refreshAndHome() { clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
 
-window.onload = () => {
-  updateLayout(currentLayout);
-  renderActorList();
-  setTimeout(() => { const s = $('splashScreen'); if (s) s.classList.add('fade-out'); }, 1200);
-};
-</script>
+// 驗證單筆漫畫資料
+function validateComic(comic) {
+
+    if (!comic || typeof comic !== 'object') {
+        return false;
+    }
+
+    if (
+        typeof comic.id !== 'string' ||
+        typeof comic.title !== 'string' ||
+        typeof comic.genre !== 'string'
+    ) {
+        return false;
+    }
+
+    if (
+        comic.status !== undefined &&
+        typeof comic.status !== 'string'
+    ) {
+        return false;
+    }
+
+    if (
+        comic.url !== undefined &&
+        typeof comic.url !== 'string'
+    ) {
+        return false;
+    }
+
+    if (
+        comic.coverUrl !== undefined &&
+        typeof comic.coverUrl !== 'string'
+    ) {
+        return false;
+    }
+
+    if (
+        comic.progress !== undefined &&
+        typeof comic.progress !== 'number'
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+
+// 匯入資料
+function importData(e) {
+
+    const file = e.target.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    // 檢查副檔名
+    if (
+        !file.name.toLowerCase().endsWith('.json')
+    ) {
+
+        showMsg(
+            '格式錯誤',
+            '請選擇 JSON 備份檔案。'
+        );
+
+        e.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+
+        try {
+
+            const parsedData =
+                JSON.parse(event.target.result);
+
+            let importedComics = null;
+
+            // 新版備份格式
+            if (
+                parsedData &&
+                !Array.isArray(parsedData) &&
+                Array.isArray(parsedData.comics)
+            ) {
+
+                importedComics =
+                    parsedData.comics;
+
+            }
+
+            // 相容舊版直接匯出的陣列格式
+            else if (
+                Array.isArray(parsedData)
+            ) {
+
+                importedComics =
+                    parsedData;
+
+            }
+
+            else {
+
+                showMsg(
+                    '格式錯誤',
+                    '這不是有效的 TOPTOON 漫畫備份檔。'
+                );
+
+                e.target.value = '';
+                return;
+            }
+
+
+            // 檢查每一筆漫畫
+            const invalidIndex =
+                importedComics.findIndex(
+                    comic => !validateComic(comic)
+                );
+
+            if (invalidIndex !== -1) {
+
+                showMsg(
+                    '資料錯誤',
+                    `備份檔第 ${invalidIndex + 1} 筆漫畫資料格式不正確。`
+                );
+
+                e.target.value = '';
+                return;
+            }
+
+
+            // 防止空資料意外覆蓋
+            if (importedComics.length === 0) {
+
+                showMsg(
+                    '沒有漫畫資料',
+                    '這個備份檔案沒有任何漫畫紀錄。'
+                );
+
+                e.target.value = '';
+                return;
+            }
+
+
+            // 確認匯入
+            const shouldImport = confirm(
+                `確定要還原 ${importedComics.length} 部漫畫嗎？\n\n` +
+                `目前資料：${comics.length} 部\n` +
+                `備份資料：${importedComics.length} 部\n\n` +
+                `還原後會取代目前的漫畫資料。`
+            );
+
+            if (!shouldImport) {
+
+                e.target.value = '';
+                return;
+            }
+
+
+            // 建立新的陣列，避免直接引用 JSON
+            comics =
+                importedComics.map(comic => ({
+                    id: String(comic.id),
+                    title: String(comic.title).trim(),
+                    genre: String(comic.genre).trim(),
+                    status: comic.status || '連載中',
+                    url: safeUrl(comic.url),
+                    coverUrl: safeUrl(comic.coverUrl),
+                    progress: parseProgress(comic.progress)
+                }));
+
+
+            saveComics();
+
+            // 重置分類
+            activeGenreFilter = '全部';
+            currentPage = 1;
+
+            // 更新畫面
+            renderComics();
+            renderCategories();
+            
+
+            // 清除 file input
+            e.target.value = '';
+
+            showMsg(
+                '還原成功',
+                `已成功還原 ${comics.length} 部漫畫紀錄。`
+            );
+
+        } catch (error) {
+
+            console.error(
+                'TOPTOON 匯入錯誤：',
+                error
+            );
+
+            showMsg(
+                '讀取失敗',
+                '無法解析這個 JSON 備份檔案，請確認檔案沒有損壞。'
+            );
+
+            e.target.value = '';
+        }
+    };
+
+
+    reader.onerror = function() {
+
+        showMsg(
+            '讀取失敗',
+            '無法讀取備份檔案。'
+        );
+
+        e.target.value = '';
+    };
+
+
+    reader.readAsText(
+        file,
+        'UTF-8'
+    );
+}
+
+
+
+        // Initialize on load
+        window.onload = function() {
+            renderComics();
+        };
+    </script>
 </body>
 </html>
