@@ -1,2302 +1,495 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>netflav</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-        
-        :root {
-            --nf-black: #000000;
-            --nf-dark: #141414;
-            --nf-red: #E50914;
-            --nf-white: #FFFFFF;
-            --nav-height: 70px;
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --icon-size: 20px;
-        }
-
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: var(--nf-black);
-            color: var(--nf-white);
-            margin: 0; padding: 0;
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            overflow-y: auto; 
-        }
-
-        @keyframes floating {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .empty-state-icon {
-            animation: floating 3s infinite ease-in-out;
-            color: #27272a;
-        }
-
-        #splashScreen {
-            position: fixed;
-            inset: 0;
-            background-color: var(--nf-black);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
-        }
-
-        #splashScreen.fade-out {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        @keyframes pulseLogo {
-            0% {
-                transform: scale(0.9);
-                opacity: 0.6;
-            }
-            50% {
-                transform: scale(1.05);
-                opacity: 1;
-                text-shadow: 0 0 20px rgba(229, 9, 20, 0.6);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 0.9;
-            }
-        }
-
-        .splash-logo {
-            animation: pulseLogo 1.5s infinite ease-in-out;
-        }
-
-        .page-overflow-wrapper {
-            width: 100%;
-            overflow: hidden;
-            transition: height 0.3s ease;
-        }
-
-        .page-container {
-            display: flex;
-            width: 300%;
-            transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1);
-            align-items: flex-start;
-        }
-
-        .page-content {
-            width: 33.3333%;
-            padding: calc(var(--nav-height) + 20px) 16px 140px 16px;
-            box-sizing: border-box;
-            height: auto;
-            max-height: none;
-            overflow: visible;
-        }
-
-        .mobile-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: var(--nav-height);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
-            backdrop-filter: blur(10px);
-            padding: 0 20px;
-        }
-
-        .header-center-box {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .brand-logo {
-            color: var(--nf-red);
-            font-size: 24px;
-            font-weight: 900;
-            letter-spacing: -1px;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .brand-logo:active {
-            opacity: 0.6;
-        }
-
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: calc(75px + var(--safe-bottom));
-            background: rgba(18, 18, 18, 0.98);
-            backdrop-filter: blur(20px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            padding: 0 12px calc(var(--safe-bottom) + 8px) 12px;
-            border-top: 1px solid #222;
-            gap: 8px;
-        }
-
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #71717a;
-            background-color: transparent;
-            border: none;
-            border-radius: 10px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            height: 48px;
-        }
-
-        .nav-item.active {
-            color: #fff;
-            background-color: var(--nf-red);
-            box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
-        }
-
-        .nav-item span {
-            font-size: 10px;
-            font-weight: 700;
-            margin-top: 2px;
-            line-height: 1;
-        }
-
-        .nav-item svg {
-            width: var(--icon-size);
-            height: var(--icon-size);
-        }
-
-        .fab-btn {
-            position: fixed;
-            right: 20px;
-            bottom: calc(85px + var(--safe-bottom));
-            width: 52px;
-            height: 52px;
-            background: var(--nf-red);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 20px rgba(229, 9, 20, 0.5);
-            z-index: 1500;
-            cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        .fab-btn:active {
-            transform: scale(0.9);
-        }
-
-        .fab-btn svg {
-            width: 24px;
-            height: 24px;
-            stroke: currentColor;
-            fill: none;
-            stroke-width: 2.5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .poster-card {
-            position: relative;
-            background: #111;
-            border-radius: 6px;
-            overflow: hidden;
-            aspect-ratio: 4 / 3;
-            width: 100%;
-        }
-
-        .poster-card img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            pointer-events: none;
-        }
-
-        .layout-cols-2 .card-overlay p.title {
-            font-size: 11px;
-        }
-
-        .layout-cols-3 .card-overlay p.title,
-        .layout-cols-4 .card-overlay p.title {
-            font-size: 9px;
-            padding-right: 2px;
-        }
-
-        .layout-cols-3 .card-overlay p.code,
-        .layout-cols-4 .card-overlay p.code {
-            font-size: 7px;
-        }
-
-        .layout-cols-3 .action-circle-btn,
-        .layout-cols-4 .action-circle-btn {
-            width: 24px;
-            height: 24px;
-        }
-
-        .layout-cols-3 .action-circle-btn svg,
-        .layout-cols-4 .action-circle-btn svg {
-            width: 12px;
-            height: 12px;
-        }
-
-        .action-circle-btn {
-            position: absolute;
-            width: 36px;
-            height: 36px;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(8px);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            transition: transform 0.2s, background 0.2s;
-            cursor: pointer;
-            pointer-events: auto;
-        }
-
-        .action-circle-btn:active {
-            transform: scale(0.9);
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .card-edit-btn {
-            top: 6px;
-            right: 6px;
-        }
-
-        .card-play-btn {
-            bottom: 6px;
-            right: 6px;
-        }
-
-        .card-play-btn svg {
-            width: 18px;
-            height: 18px;
-            fill: white;
-            margin-left: 2px;
-        }
-
-        .card-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%);
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 8px;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        .page-dot-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            justify-content: center;
-            align-items: center;
-            padding: 20px 0 60px 0;
-            width: 100%;
-        }
-
-        .pagination-dots-row {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            align-items: center;
-            overflow-x: auto;
-            scrollbar-width: none;
-            width: 100%;
-        }
-
-        .pagination-dots-row::-webkit-scrollbar {
-            display: none;
-        }
-
-        .page-dot {
-            min-width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            background-color: #1a1a1e;
-            color: #71717a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 600;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0;
-        }
-
-        .page-dot.active {
-            background-color: var(--nf-red);
-            color: white;
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
-        }
-
-        .drawer {
-            position: fixed;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            background-color: var(--nf-black);
-            transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 2000;
-            overflow-y: auto;
-            padding: 25px;
-        }
-
-        .drawer.open {
-            transform: translateY(0);
-        }
-
-        .search-container {
-            position: relative;
-            margin-bottom: 1.5rem;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            width: var(--icon-size);
-            height: var(--icon-size);
-            color: #71717a;
-            pointer-events: none;
-        }
-
-        .clear-search-btn {
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            color: #71717a;
-            cursor: pointer;
-            display: none;
-        }
-
-        .search-input {
-            width: 100%;
-            background-color: #18181b;
-            border: none;
-            border-radius: 8px;
-            padding: 0.85rem 3rem 0.85rem 3rem;
-            font-size: 0.875rem;
-            color: white;
-            outline: none;
-        }
-
-        .actor-badge {
-            background: #1a1a1a;
-            border-radius: 50%;
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 8px;
-            border: 1px solid #2a2a2a;
-        }
-
-        .tag-pill {
-            background: #111112;
-            color: #e4e4e7;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            border: 1px solid #222;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            cursor: pointer;
-            width: calc(50% - 6px);
-        }
-
-        .tag-pill:active {
-            transform: scale(0.95);
-            background: #27272a;
-        }
-
-        #toast {
-            position: fixed;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            color: black;
-            padding: 8px 24px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: bold;
-            z-index: 7000;
-            opacity: 0;
-            transition: all 0.3s;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-        
-        .layout-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-        }
-
-        .layout-option { 
-            background: #1a1a1a;
-            border: 1px solid #333;
-            padding: 10px 0;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 11px;
-            font-weight: bold;
-            color: #71717a;
-            transition: 0.2s;
-        }
-
-        .layout-option.active {
-            background: var(--nf-red);
-            color: white;
-            border-color: var(--nf-red);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>netflav</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{--nf-black:#000;--nf-dark:#141414;--nf-red:#E50914;--nf-white:#fff;--nav-height:70px;--safe-bottom:env(safe-area-inset-bottom,0px);--icon-size:20px}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--nf-black);color:var(--nf-white);margin:0;padding:0;overflow-x:hidden;overflow-y:auto;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+@keyframes floating{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.empty-state-icon{animation:floating 3s infinite ease-in-out;color:#27272a}
+#splashScreen{position:fixed;inset:0;background:var(--nf-black);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s,visibility .6s}
+#splashScreen.fade-out{opacity:0;visibility:hidden}
+@keyframes pulseLogo{0%{transform:scale(.9);opacity:.6}50%{transform:scale(1.05);opacity:1;text-shadow:0 0 20px rgba(229,9,20,.6)}100%{transform:scale(1);opacity:.9}}
+.splash-logo{animation:pulseLogo 1.5s infinite ease-in-out}
+.page-overflow-wrapper{width:100%;overflow:hidden;transition:height .3s ease}
+.page-container{display:flex;width:300%;transition:transform .4s cubic-bezier(.2,0,0,1);align-items:flex-start}
+.page-content{width:33.3333%;padding:calc(var(--nav-height) + 20px) 16px 140px;box-sizing:border-box}
+.mobile-header{position:fixed;top:0;left:0;right:0;height:var(--nav-height);z-index:1000;display:flex;align-items:center;justify-content:center;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);backdrop-filter:blur(10px);padding:0 20px}
+.header-center-box{display:flex;align-items:center;justify-content:center;width:100%}
+.brand-logo{color:var(--nf-red);font-size:24px;font-weight:900;letter-spacing:-1px;text-transform:uppercase;cursor:pointer;transition:opacity .2s}
+.brand-logo:active{opacity:.6}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:calc(75px + var(--safe-bottom));background:rgba(18,18,18,.98);backdrop-filter:blur(20px);z-index:1000;display:flex;align-items:center;justify-content:space-around;padding:0 12px calc(var(--safe-bottom) + 8px);border-top:1px solid #222;gap:8px}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#71717a;border-radius:10px;transition:all .2s;height:48px;cursor:pointer}
+.nav-item.active{color:#fff;background:var(--nf-red);box-shadow:0 4px 12px rgba(229,9,20,.3)}
+.nav-item span{font-size:10px;font-weight:700;margin-top:2px;line-height:1}
+.nav-item svg{width:var(--icon-size);height:var(--icon-size)}
+.fab-btn{position:fixed;right:20px;bottom:calc(85px + var(--safe-bottom));width:52px;height:52px;background:var(--nf-red);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(229,9,20,.5);z-index:1500;cursor:pointer;border:2px solid rgba(255,255,255,.2);transition:transform .2s}
+.fab-btn:active{transform:scale(.9)}
+.fab-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.poster-card{position:relative;background:#111;border-radius:6px;overflow:hidden;aspect-ratio:4/3;width:100%}
+.poster-card img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.layout-cols-1{grid-template-columns:repeat(1,1fr)}
+.layout-cols-2{grid-template-columns:repeat(2,1fr)}
+.layout-cols-3{grid-template-columns:repeat(3,1fr)}
+.layout-cols-4{grid-template-columns:repeat(4,1fr)}
+.layout-cols-2 .card-overlay p.title{font-size:11px}
+.layout-cols-3 .card-overlay p.title,.layout-cols-4 .card-overlay p.title{font-size:9px;padding-right:2px}
+.layout-cols-3 .card-overlay p.code,.layout-cols-4 .card-overlay p.code{font-size:7px}
+.layout-cols-3 .action-circle-btn,.layout-cols-4 .action-circle-btn{width:24px;height:24px}
+.layout-cols-3 .action-circle-btn svg,.layout-cols-4 .action-circle-btn svg{width:12px;height:12px}
+.action-circle-btn{position:absolute;width:36px;height:36px;background:rgba(0,0,0,.3);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:50;border:1px solid rgba(255,255,255,.1);color:#fff;transition:transform .2s,background .2s;cursor:pointer}
+.action-circle-btn:active{transform:scale(.9);background:rgba(0,0,0,.5)}
+.card-edit-btn{top:6px;right:6px}
+.card-play-btn{bottom:6px;right:6px}
+.card-play-btn svg{width:18px;height:18px;fill:#fff;margin-left:2px}
+.card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.9),transparent 60%);display:flex;flex-direction:column;justify-content:flex-end;padding:8px;pointer-events:none;z-index:10}
+.page-dot-container{display:flex;flex-direction:column;gap:16px;justify-content:center;align-items:center;padding:20px 0 60px;width:100%}
+.pagination-dots-row{display:flex;gap:8px;justify-content:center;align-items:center;overflow-x:auto;scrollbar-width:none;width:100%}
+.pagination-dots-row::-webkit-scrollbar{display:none}
+.page-dot{min-width:32px;height:32px;border-radius:6px;background:#1a1a1e;color:#71717a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;transition:all .3s;flex-shrink:0;cursor:pointer}
+.page-dot.active{background:var(--nf-red);color:#fff;transform:scale(1.05);box-shadow:0 4px 12px rgba(229,9,20,.3)}
+.drawer{position:fixed;inset:0;background:var(--nf-black);transform:translateY(100%);transition:transform .4s;z-index:2000;overflow-y:auto;padding:25px}
+.drawer.open{transform:translateY(0)}
+.search-container{position:relative;margin-bottom:1.5rem}
+.search-icon{position:absolute;left:1rem;top:50%;transform:translateY(-50%);width:var(--icon-size);height:var(--icon-size);color:#71717a;pointer-events:none}
+.clear-search-btn{position:absolute;right:1rem;top:50%;transform:translateY(-50%);width:20px;height:20px;color:#71717a;cursor:pointer;display:none}
+.search-input{width:100%;background:#18181b;border:none;border-radius:8px;padding:.85rem 3rem;font-size:16px;color:#fff;outline:none}
+.actor-badge{background:#1a1a1a;border-radius:50%;width:80px;height:80px;margin:0 auto 8px;border:1px solid #2a2a2a}
+.tag-pill{background:#111112;color:#e4e4e7;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #222;display:flex;justify-content:space-between;align-items:center;transition:all .2s;box-shadow:0 2px 4px rgba(0,0,0,.2);cursor:pointer;width:calc(50% - 6px)}
+.tag-pill:active{transform:scale(.95);background:#27272a}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:8px 24px;border-radius:999px;font-size:12px;font-weight:700;z-index:7000;opacity:0;transition:all .3s;pointer-events:none}
+.layout-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.layout-option{background:#1a1a1a;border:1px solid #333;padding:10px 0;border-radius:8px;text-align:center;font-size:11px;font-weight:700;color:#71717a;transition:.2s}
+.layout-option.active{background:var(--nf-red);color:#fff;border-color:var(--nf-red)}
+.drawer input[type=text]{font-size:16px}
+</style>
 </head>
-
 <body>
 
-    <div id="splashScreen">
-        <h1 class="brand-logo text-3xl tracking-widest splash-logo">Netflav</h1>
-        <p class="text-zinc-600 text-[10px] mt-4 uppercase tracking-[0.3em]">載入中...</p>
+<div id="splashScreen">
+  <h1 class="brand-logo text-3xl tracking-widest splash-logo">Netflav</h1>
+  <p class="text-zinc-600 text-[10px] mt-4 uppercase tracking-[0.3em]">載入中...</p>
+</div>
+
+<div class="fab-btn" onclick="openRandomRecommendation()" title="隨機推薦">
+  <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+</div>
+
+<header class="mobile-header">
+  <div class="header-center-box"><div class="brand-logo" onclick="refreshAndHome()">Netflav</div></div>
+</header>
+
+<div id="appContent" class="page-overflow-wrapper">
+  <div class="page-container" id="pageContainer">
+    <div id="page1" class="page-content active-page">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold">為您推薦</h2>
+        <span id="itemCount" class="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-1 rounded tracking-tighter">0 ITEMS</span>
+      </div>
+      <div class="search-container">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="搜尋女優或番號..." class="search-input">
+        <svg id="clearSearchBtn" class="clear-search-btn" onclick="clearSearch()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </div>
+      <div id="gallery" class="grid gap-3"></div>
+      <div id="paginationContainer" class="page-dot-container mt-8"></div>
     </div>
-
-    <div class="fab-btn" onclick="openRandomRecommendation()" title="隨機推薦">
-        <svg viewBox="0 0 24 24">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-            <line x1="12" y1="22.08" x2="12" y2="12"></line>
-        </svg>
+    <div id="page2" class="page-content">
+      <h2 class="text-2xl font-bold mb-6 px-2">影片標籤</h2>
+      <div id="tagCloud" class="flex flex-wrap gap-3 px-2"></div>
     </div>
-
-    <header class="mobile-header" id="mainHeader">
-        <div class="header-center-box">
-            <div class="brand-logo" id="logoTitle" onclick="refreshAndHome()">Netflav</div>
-        </div>
-    </header>
-
-    <div id="appContent" class="page-overflow-wrapper">
-        <div class="page-container" id="pageContainer">
-
-            <div id="page1" class="page-content active-page">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">為您推薦</h2>
-                    <span id="itemCount" class="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-1 rounded tracking-tighter">0 ITEMS</span>
-                </div>
-                
-                <div class="search-container">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-
-                    <input
-                        type="text"
-                        id="searchInput"
-                        oninput="handleSearchInput()"
-                        placeholder="搜尋女優或番號..."
-                        class="search-input"
-                    >
-
-                    <svg
-                        id="clearSearchBtn"
-                        class="clear-search-btn"
-                        onclick="clearSearch()"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </div>
-
-                <div id="gallery" class="grid gap-3"></div>
-                <div id="paginationContainer" class="page-dot-container mt-8"></div>
-            </div>
-
-            <div id="page2" class="page-content">
-                <h2 class="text-2xl font-bold mb-6 px-2">影片標籤</h2>
-                <div id="tagCloud" class="flex flex-wrap gap-3 px-2"></div>
-            </div>
-            
-            <div id="page3" class="page-content">
-                <h2 class="text-2xl font-bold mb-10 px-2">所有演員</h2>
-                <div id="actorList" class="grid grid-cols-3 gap-y-10 gap-x-2 text-center"></div>
-                <div id="actorPaginationContainer" class="page-dot-container mt-8"></div>
-            </div>
-
-        </div>
+    <div id="page3" class="page-content">
+      <h2 class="text-2xl font-bold mb-10 px-2">所有演員</h2>
+      <div id="actorList" class="grid grid-cols-3 gap-y-10 gap-x-2 text-center"></div>
+      <div id="actorPaginationContainer" class="page-dot-container mt-8"></div>
     </div>
+  </div>
+</div>
 
-    <nav class="bottom-nav" id="bottomNav">
+<nav class="bottom-nav">
+  <div class="nav-item active" onclick="switchTab(0)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span>首頁</span>
+  </div>
+  <div class="nav-item" onclick="switchTab(1)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path></svg><span>標籤</span>
+  </div>
+  <div class="nav-item" onclick="switchTab(2)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>演員</span>
+  </div>
+  <div class="nav-item" onclick="toggleFilterDrawer(true)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg><span>設定</span>
+  </div>
+</nav>
 
-        <div class="nav-item active" id="navHome" onclick="switchTab(0)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-            <span>首頁</span>
-        </div>
-
-        <div class="nav-item" id="navTags" onclick="switchTab(1)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94 2.48-1.94 0-3.42L12 2Z"></path>
-                <path d="M7 7h.01"></path>
-            </svg>
-            <span>標籤</span>
-        </div>
-
-        <div class="nav-item" id="navActor" onclick="switchTab(2)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <span>演員</span>
-        </div>
-
-        <div class="nav-item" onclick="toggleFilterDrawer(true)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            <span>設定</span>
-        </div>
-
-    </nav>
-
-    <div id="randomModal" class="fixed inset-0 bg-black/95 z-[7000] hidden flex items-center justify-center p-6">
-        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl overflow-hidden p-6 text-center relative shadow-2xl">
-            <h3 class="text-xs font-bold text-red-600 tracking-widest uppercase mb-4">✨ Today隨機推薦 ✨</h3>
-            <div id="randomCardPreview" class="poster-card mb-4"></div>
-            <p id="randomCardTitle" class="text-sm font-bold truncate text-white mb-6 px-1"></p>
-
-            <div class="flex gap-3">
-                <button onclick="openRandomRecommendation()" class="flex-1 bg-zinc-800 py-3 rounded-lg font-bold text-xs text-zinc-300">換一部</button>
-                <button id="randomPlayBtn" class="flex-1 bg-red-600 py-3 rounded-lg font-bold text-xs text-white shadow-lg">立即觀看</button>
-            </div>
-
-            <button onclick="closeRandomModal()" class="absolute top-4 right-4 text-zinc-500">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
+<div id="randomModal" class="fixed inset-0 bg-black/95 z-[7000] hidden items-center justify-center p-6">
+  <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl overflow-hidden p-6 text-center relative shadow-2xl">
+    <h3 class="text-xs font-bold text-red-600 tracking-widest uppercase mb-4">✨ Today隨機推薦 ✨</h3>
+    <div id="randomCardPreview" class="poster-card mb-4"></div>
+    <p id="randomCardTitle" class="text-sm font-bold truncate text-white mb-6 px-1"></p>
+    <div class="flex gap-3">
+      <button onclick="openRandomRecommendation()" class="flex-1 bg-zinc-800 py-3 rounded-lg font-bold text-xs text-zinc-300">換一部</button>
+      <button id="randomPlayBtn" class="flex-1 bg-red-600 py-3 rounded-lg font-bold text-xs text-white shadow-lg">立即觀看</button>
     </div>
+    <button onclick="closeRandomModal()" class="absolute top-4 right-4 text-zinc-500"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+  </div>
+</div>
 
-    <div id="drawer" class="drawer">
-        <div class="flex items-center justify-between mb-8">
-            <h3 class="text-xl font-bold">影片資訊</h3>
-            <button onclick="closeDrawer()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-
-        <div class="space-y-6">
-            <div>
-                <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">名稱 / 演員</label>
-                <input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none">
-            </div>
-
-            <div>
-                <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">番號 (ID)</label>
-                <input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none">
-            </div>
-
-            <div>
-                <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結 (URL)</label>
-                <input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none">
-            </div>
-
-            <div>
-                <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤</label>
-                <input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none">
-            </div>
-
-            <div>
-                <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片</label>
-                <input type="text" id="imgInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none">
-            </div>
-
-            <div class="pt-10 space-y-4">
-                <button onclick="saveItem()" class="w-full bg-red-600 py-4 font-bold rounded-lg shadow-lg">儲存內容</button>
-                <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full py-2 text-zinc-600 text-xs font-bold hidden">刪除此項目</button>
-            </div>
-        </div>
+<div id="drawer" class="drawer">
+  <div class="flex items-center justify-between mb-8">
+    <h3 class="text-xl font-bold">影片資訊</h3>
+    <button onclick="closeDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+  </div>
+  <div class="space-y-6">
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">名稱 / 演員</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">番號 (ID)</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結 (URL)</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤（空白分隔）</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片</label><input type="text" id="imgInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div class="pt-10 space-y-4">
+      <button onclick="saveItem()" class="w-full bg-red-600 py-4 font-bold rounded-lg shadow-lg">儲存內容</button>
+      <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full py-2 text-zinc-600 text-xs font-bold hidden">刪除此項目</button>
     </div>
+  </div>
+</div>
 
-    <div id="filterDrawer" class="drawer">
-        <div class="flex items-center justify-between mb-8">
-            <h3 class="text-xl font-bold">帳戶設定</h3>
-            <button onclick="toggleFilterDrawer(false)">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-
-        <div class="space-y-4">
-
-            <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
-                <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">顯示佈局</label>
-
-                <div class="layout-grid">
-                    <button id="layoutBtn1" onclick="updateLayout(1)" class="layout-option">1 欄</button>
-                    <button id="layoutBtn2" onclick="updateLayout(2)" class="layout-option">2 欄</button>
-                    <button id="layoutBtn3" onclick="updateLayout(3)" class="layout-option">3 欄</button>
-                    <button id="layoutBtn4" onclick="updateLayout(4)" class="layout-option">4 欄</button>
-                </div>
-            </div>
-
-            <button onclick="toggleFilterDrawer(false); openDrawer();" class="w-full py-4 bg-zinc-900 rounded font-bold text-white">
-                新增影片
-            </button>
-
-            <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">
-                匯出備份
-            </button>
-
-            <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">
-                匯入備份
-                <input type="file" class="hidden" accept=".json,application/json" onchange="importData(event)">
-            </label>
-
-        </div>
+<div id="filterDrawer" class="drawer">
+  <div class="flex items-center justify-between mb-8">
+    <h3 class="text-xl font-bold">帳戶設定</h3>
+    <button onclick="toggleFilterDrawer(false)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+  </div>
+  <div class="space-y-4">
+    <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
+      <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">顯示佈局</label>
+      <div class="layout-grid">
+        <button id="layoutBtn1" onclick="updateLayout(1)" class="layout-option">1 欄</button>
+        <button id="layoutBtn2" onclick="updateLayout(2)" class="layout-option">2 欄</button>
+        <button id="layoutBtn3" onclick="updateLayout(3)" class="layout-option">3 欄</button>
+        <button id="layoutBtn4" onclick="updateLayout(4)" class="layout-option">4 欄</button>
+      </div>
     </div>
-
-    <div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden flex items-center justify-center p-8">
-        <div class="text-center">
-            <h4 class="text-xl font-bold mb-8">確定要刪除嗎？</h4>
-
-            <div class="flex flex-col gap-4">
-                <button onclick="executeDelete()" class="w-64 bg-red-600 py-4 font-bold rounded-lg">刪除</button>
-                <button onclick="closeConfirm()" class="py-2 text-zinc-500">取消</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="toast"></div>
-
-    <script>
-
-        const STORAGE_KEY = 'NF_MOBILE_VAULT_FINAL';
-
-        let collections = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
-        let currentId = null;
-        let currentPage = 1;
-        let pageSize = 12;
-
-        let actorCurrentPage = 1;
-        let actorPageSize = 18;
-
-        let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 2;
-
-
-        /* ============================================================
-           基本畫面功能
-        ============================================================ */
-
-        function updateContainerHeight() {
-            setTimeout(() => {
-                const activePage = document.querySelector('.page-content.active-page');
-                const wrapper = document.getElementById('appContent');
-
-                if (activePage && wrapper) {
-                    wrapper.style.height = (activePage.scrollHeight + 20) + 'px';
-                }
-            }, 50);
-        }
-
-
-        function checkDuplicate(el) {
-
-            if (!el) return false;
-
-            const val = el.value.trim();
-
-            if (!val) {
-                el.style.color = 'white';
-                return false;
-            }
-
-            const otherItems = collections.filter(
-                i => String(i.id) !== String(currentId)
-            );
-
-            let isDup = false;
-
-            if (el.id === 'codeInput') {
-
-                const upperVal = val.toUpperCase();
-
-                isDup = otherItems.some(
-                    i => i.code && i.code.toUpperCase() === upperVal
-                );
-
-            } else if (el.id === 'urlInput') {
-
-                isDup = otherItems.some(
-                    i => i.url === val
-                );
-
-            } else if (el.id === 'imgInput') {
-
-                isDup = otherItems.some(
-                    i => i.img === val
-                );
-            }
-
-            el.style.color = isDup ? 'var(--nf-red)' : 'white';
-
-            return isDup;
-        }
-
-
-        function handleSearchInput() {
-
-            const input = document.getElementById('searchInput');
-            const clearBtn = document.getElementById('clearSearchBtn');
-
-            clearBtn.style.display =
-                input.value.length > 0 ? 'block' : 'none';
-
-            debouncedRender();
-        }
-
-
-        function clearSearch() {
-
-            const input = document.getElementById('searchInput');
-            const clearBtn = document.getElementById('clearSearchBtn');
-
-            input.value = "";
-
-            clearBtn.style.display = 'none';
-
-            currentPage = 1;
-
-            renderGallery();
-        }
-
-
-        function renderGallery() {
-
-            const gallery = document.getElementById('gallery');
-            const searchInput = document.getElementById('searchInput');
-
-            const query = searchInput.value.trim();
-
-            const filtered = collections.filter(i =>
-                (i.name || '').toLowerCase().includes(query.toLowerCase()) ||
-                (i.code || '').toLowerCase().includes(query.toLowerCase()) ||
-                (i.tags || []).some(
-                    t => t.toLowerCase().includes(query.toLowerCase())
-                )
-            );
-
-            document.getElementById('itemCount').innerText =
-                `${filtered.length} ITEMS`;
-
-
-            if (filtered.length === 0) {
-
-                gallery.className =
-                    "flex flex-col items-center justify-center py-20 text-center";
-
-                gallery.innerHTML = `
-                    <div class="empty-state-icon mb-6">
-                        <svg width="64" height="64" viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </div>
-
-                    <p class="text-zinc-500 font-bold text-lg mb-4">
-                        找不到相關內容
-                    </p>
-                `;
-
-                document.getElementById('paginationContainer').innerHTML = "";
-
-                updateContainerHeight();
-
-                return;
-            }
-
-
-            gallery.className =
-                `grid gap-3 grid-cols-${currentLayout} layout-cols-${currentLayout}`;
-
-
-            const total = Math.ceil(filtered.length / pageSize);
-
-            if (currentPage > total && total > 0) {
-                currentPage = total;
-            }
-
-
-            const paginated = filtered.slice(
-                (currentPage - 1) * pageSize,
-                currentPage * pageSize
-            );
-
-
-            gallery.innerHTML = paginated.map(item => `
-
-                <div class="poster-card">
-
-                    <img
-                        src="${item.img || 'https://via.placeholder.com/640x360/111/333?text=NO+IMAGE'}"
-                        loading="lazy"
-                    >
-
-                    <div
-                        class="action-circle-btn card-edit-btn"
-                        onclick="openDrawer('${item.id}')"
-                    >
-                        <svg width="16" height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </div>
-
-                    ${
-                        item.url
-                        ?
-                        `
-                        <div
-                            class="action-circle-btn card-play-btn"
-                            onclick="openExternalUrl('${item.url}', event)"
-                        >
-                            <svg viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                        </div>
-                        `
-                        :
-                        ''
-                    }
-
-                    <div class="card-overlay">
-
-                        <p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">
-                            ${item.code || 'SERIES'}
-                        </p>
-
-                        <p class="title text-[13px] font-bold truncate">
-                            ${item.name || ''}
-                        </p>
-
-                    </div>
-
-                </div>
-
-            `).join('');
-
-
-            renderPagination(total);
-
-            updateContainerHeight();
-        }
-
-
-        function renderPagination(total) {
-
-            const container =
-                document.getElementById('paginationContainer');
-
-            if (total <= 1) {
-                container.innerHTML = "";
-                return;
-            }
-
-            let pages = [];
-            const range = 1;
-
-            for (let i = 1; i <= total; i++) {
-
-                if (
-                    i === 1 ||
-                    i === total ||
-                    (i >= currentPage - range &&
-                     i <= currentPage + range)
-                ) {
-
-                    pages.push(i);
-
-                } else if (pages[pages.length - 1] !== '...') {
-
-                    pages.push('...');
-                }
-            }
-
-            let dotsHtml =
-                `<div class="pagination-dots-row">`;
-
-            dotsHtml += pages.map(p => {
-
-                if (p === '...') {
-                    return `
-                        <div class="px-1 text-zinc-700 text-[10px] font-black">
-                            ...
-                        </div>
-                    `;
-                }
-
-                return `
-                    <div
-                        onclick="changePage(${p})"
-                        class="page-dot ${p === currentPage ? 'active' : ''}"
-                    >
-                        ${p}
-                    </div>
-                `;
-
-            }).join('');
-
-            dotsHtml += `</div>`;
-
-            container.innerHTML = dotsHtml;
-        }
-
-
-        function updateLayout(cols) {
-
-            currentLayout = cols;
-
-            localStorage.setItem(
-                'NF_LAYOUT_SETTING',
-                cols
-            );
-
-            for (let i = 1; i <= 4; i++) {
-
-                const btn =
-                    document.getElementById(`layoutBtn${i}`);
-
-                if (btn) {
-                    btn.classList.toggle(
-                        'active',
-                        i === cols
-                    );
-                }
-            }
-
-            renderGallery();
-        }
-
-
-        function renderTagCloud() {
-
-            const container =
-                document.getElementById('tagCloud');
-
-            const map = {};
-
-            collections.forEach(i => {
-
-                (i.tags || []).forEach(tag => {
-
-                    map[tag] =
-                        (map[tag] || 0) + 1;
-
-                });
-
-            });
-
-            const sortedTags =
-                Object.entries(map)
-                    .sort((a,b) => b[1] - a[1]);
-
-
-            container.innerHTML =
-                sortedTags.map(([tag, count]) => `
-
-                    <div
-                        onclick="filterBySearch('${escapeHtmlAttribute(tag)}')"
-                        class="tag-pill"
-                    >
-
-                        <span class="truncate pr-2">
-                            ${escapeHtml(tag)}
-                        </span>
-
-                        <span class="text-[10px] font-bold text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded">
-                            ${count}
-                        </span>
-
-                    </div>
-
-                `).join('');
-
-            updateContainerHeight();
-        }
-
-
-        function changePage(p) {
-
-            currentPage = p;
-
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-
-            renderGallery();
-        }
-
-
-        function changeActorPage(p) {
-
-            actorCurrentPage = p;
-
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-
-            renderActorList();
-        }
-
-
-        /* ============================================================
-           隨機推薦
-        ============================================================ */
-
-        function openRandomRecommendation() {
-
-            if (collections.length === 0) {
-
-                showToast("目前尚無收藏內容可推薦");
-
-                return;
-            }
-
-            const randomIndex =
-                Math.floor(
-                    Math.random() * collections.length
-                );
-
-            const item =
-                collections[randomIndex];
-
-
-            document.getElementById(
-                'randomCardPreview'
-            ).innerHTML = `
-
-                <img
-                    src="${item.img || 'https://via.placeholder.com/640x360/111/333?text=NO+IMAGE'}"
-                    loading="lazy"
-                    style="width:100%; height:100%; object-fit:cover;"
-                >
-
-                <div class="card-overlay">
-
-                    <p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">
-                        ${item.code || 'SERIES'}
-                    </p>
-
-                </div>
-
-            `;
-
-
-            document.getElementById(
-                'randomCardTitle'
-            ).innerText = item.name;
-
-
-            const playBtn =
-                document.getElementById('randomPlayBtn');
-
-
-            if (item.url) {
-
-                playBtn.style.display = 'block';
-
-                playBtn.onclick = () => {
-
-                    openExternalUrl(item.url);
-
-                    closeRandomModal();
-
-                };
-
-            } else {
-
-                playBtn.style.display = 'none';
-
-            }
-
-
-            document
-                .getElementById('randomModal')
-                .classList.remove('hidden');
-        }
-
-
-        function closeRandomModal() {
-
-            document
-                .getElementById('randomModal')
-                .classList.add('hidden');
-        }
-
-
-        /* ============================================================
-           編輯 / 新增
-        ============================================================ */
-
-        function openDrawer(id = null) {
-
-            currentId = id;
-
-            document
-                .getElementById('drawer')
-                .classList.add('open');
-
-
-            const fields = {
-
-                name:
-                    document.getElementById('nameInput'),
-
-                code:
-                    document.getElementById('codeInput'),
-
-                url:
-                    document.getElementById('urlInput'),
-
-                tags:
-                    document.getElementById('tagsInput'),
-
-                img:
-                    document.getElementById('imgInput')
-
-            };
-
-
-            if (id) {
-
-                const item =
-                    collections.find(
-                        i => String(i.id) === String(id)
-                    );
-
-                if (!item) return;
-
-                fields.name.value = item.name || "";
-                fields.code.value = item.code || "";
-                fields.url.value = item.url || "";
-                fields.tags.value =
-                    (item.tags || []).join(' ');
-                fields.img.value = item.img || "";
-
-                document
-                    .getElementById('drawerDeleteBtn')
-                    .classList.remove('hidden');
-
-            } else {
-
-                Object.values(fields).forEach(f => {
-
-                    f.value = "";
-                    f.style.color = "white";
-
-                });
-
-                document
-                    .getElementById('drawerDeleteBtn')
-                    .classList.add('hidden');
-            }
-
-
-            [
-                'codeInput',
-                'urlInput',
-                'imgInput'
-            ].forEach(fid =>
-                checkDuplicate(
-                    document.getElementById(fid)
-                )
-            );
-        }
-
-
-        function saveItem() {
-
-            const name =
-                document.getElementById('nameInput')
-                    .value.trim();
-
-
-            if (!name) {
-
-                showToast("請輸入名稱");
-
-                return;
-            }
-
-
-            if (
-                ['codeInput', 'urlInput', 'imgInput']
-                    .some(
-                        id => checkDuplicate(
-                            document.getElementById(id)
-                        )
-                    )
-            ) {
-
-                showToast("請修正重複的資料");
-
-                return;
-            }
-
-
-            const data = {
-
-                id:
-                    currentId ||
-                    Date.now().toString(),
-
-                name,
-
-                code:
-                    document.getElementById('codeInput')
-                        .value.trim()
-                        .toUpperCase(),
-
-                url:
-                    document.getElementById('urlInput')
-                        .value.trim(),
-
-                tags:
-                    document.getElementById('tagsInput')
-                        .value.trim()
-                        .split(/\s+/)
-                        .filter(t => t),
-
-                img:
-                    document.getElementById('imgInput')
-                        .value.trim()
-            };
-
-
-            if (currentId) {
-
-                const index =
-                    collections.findIndex(
-                        i =>
-                            String(i.id) ===
-                            String(currentId)
-                    );
-
-                if (index !== -1) {
-                    collections[index] = data;
-                }
-
-            } else {
-
-                collections.unshift(data);
-
-            }
-
-
-            localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(collections)
-            );
-
-
-            renderGallery();
-
-            closeDrawer();
-
-            showToast("已儲存");
-        }
-
-
-        /* ============================================================
-           分頁
-        ============================================================ */
-
-        function switchTab(index) {
-
-            const container =
-                document.getElementById('pageContainer');
-
-            const pages =
-                document.querySelectorAll('.page-content');
-
-
-            container.style.transform =
-                `translateX(-${index * (100/3)}%)`;
-
-
-            document
-                .querySelectorAll('.nav-item')
-                .forEach((el, i) =>
-                    el.classList.toggle(
-                        'active',
-                        i === index
-                    )
-                );
-
-
-            pages.forEach((page, i) => {
-
-                if (i === index) {
-                    page.classList.add('active-page');
-                } else {
-                    page.classList.remove('active-page');
-                }
-
-            });
-
-
-            window.scrollTo(0, 0);
-
-
-            if (index === 1) {
-                renderTagCloud();
-            }
-
-            if (index === 2) {
-                renderActorList();
-            }
-
-            updateContainerHeight();
-        }
-
-
-        function filterBySearch(val) {
-
-            const input =
-                document.getElementById('searchInput');
-
-            input.value = val;
-
-            handleSearchInput();
-
-            switchTab(0);
-
-            renderGallery();
-        }
-
-
-        function openExternalUrl(url, e) {
-
-            if (e) {
-                e.stopPropagation();
-            }
-
-            window.open(
-                url.startsWith('http')
-                    ? url
-                    : 'https://' + url,
-                '_blank'
-            );
-        }
-
-
-        function debouncedRender() {
-
-            clearTimeout(window.timer);
-
-            window.timer =
-                setTimeout(
-                    renderGallery,
-                    300
-                );
-        }
-
-
-        function showToast(msg) {
-
-            const t =
-                document.getElementById('toast');
-
-            t.innerText = msg;
-
-            t.style.opacity = "1";
-
-            setTimeout(() => {
-
-                t.style.opacity = "0";
-
-            }, 2500);
-        }
-
-
-        function executeDelete() {
-
-            collections =
-                collections.filter(
-                    i =>
-                        String(i.id) !==
-                        String(currentId)
-                );
-
-
-            localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(collections)
-            );
-
-
-            closeConfirm();
-
-            closeDrawer();
-
-            renderGallery();
-
-            renderActorList();
-        }
-
-
-        function requestDelete() {
-
-            document
-                .getElementById('confirmModal')
-                .classList.remove('hidden');
-        }
-
-
-        function closeConfirm() {
-
-            document
-                .getElementById('confirmModal')
-                .classList.add('hidden');
-        }
-
-
-        function closeDrawer() {
-
-            document
-                .getElementById('drawer')
-                .classList.remove('open');
-        }
-
-
-        function toggleFilterDrawer(open) {
-
-            document
-                .getElementById('filterDrawer')
-                .classList.toggle(
-                    'open',
-                    open
-                );
-        }
-
-
-        /* ============================================================
-           匯出
-        ============================================================ */
-
-        function exportData() {
-
-            const blob =
-                new Blob(
-                    [
-                        JSON.stringify(
-                            collections,
-                            null,
-                            2
-                        )
-                    ],
-                    {
-                        type:
-                            'application/json'
-                    }
-                );
-
-
-            const a =
-                document.createElement('a');
-
-            a.href =
-                URL.createObjectURL(blob);
-
-            a.download =
-                `netflav.json`;
-
-            a.click();
-
-            setTimeout(() => {
-                URL.revokeObjectURL(a.href);
-            }, 1000);
-        }
-
-
-        /* ============================================================
-           原本的「檔案匯入」
-           保持完整覆蓋模式
-        ============================================================ */
-
-        function importData(e) {
-
-            const file =
-                e.target.files &&
-                e.target.files[0];
-
-            if (!file) return;
-
-
-            const reader =
-                new FileReader();
-
-
-            reader.onload = (ev) => {
-
-                try {
-
-                    const data =
-                        JSON.parse(
-                            ev.target.result
-                        );
-
-
-                    if (!Array.isArray(data)) {
-                        throw new Error(
-                            "JSON 必須是陣列"
-                        );
-                    }
-
-
-                    collections = data;
-
-                    localStorage.setItem(
-                        STORAGE_KEY,
-                        JSON.stringify(collections)
-                    );
-
-
-                    currentPage = 1;
-                    actorCurrentPage = 1;
-
-
-                    renderGallery();
-                    renderActorList();
-
-
-                    showToast(
-                        `匯入成功，共 ${data.length} 筆`
-                    );
-
-
-                } catch (err) {
-
-                    console.error(err);
-
-                    showToast(
-                        "格式錯誤"
-                    );
-                }
-
-            };
-
-
-            reader.readAsText(file);
-
-            // 清除 input，讓同一檔案可以再次選擇
-            e.target.value = "";
-        }
-
-
-        /* ============================================================
-           新功能：
-           從 URL #import= 自動匯入 JSON
-           
-           使用方式：
-           
-           https://avp-six.vercel.app/#import=URL編碼後的JSON
-           
-           此模式採「智慧合併」，不會直接覆蓋目前資料。
-        ============================================================ */
-
-        function importDataFromUrl() {
-
-            const hash =
-                window.location.hash;
-
-
-            if (!hash.startsWith('#import=')) {
-                return;
-            }
-
-
-            try {
-
-                const encoded =
-                    hash.substring(
-                        '#import='.length
-                    );
-
-
-                if (!encoded) {
-                    throw new Error(
-                        "沒有 JSON 資料"
-                    );
-                }
-
-
-                const jsonText =
-                    decodeURIComponent(
-                        encoded
-                    );
-
-
-                const incomingData =
-                    JSON.parse(
-                        jsonText
-                    );
-
-
-                if (!Array.isArray(incomingData)) {
-
-                    throw new Error(
-                        "JSON 格式必須是陣列"
-                    );
-                }
-
-
-                const result =
-                    mergeImportedData(
-                        incomingData
-                    );
-
-
-                collections =
-                    result.collections;
-
-
-                localStorage.setItem(
-                    STORAGE_KEY,
-                    JSON.stringify(collections)
-                );
-
-
-                currentPage = 1;
-                actorCurrentPage = 1;
-
-
-                renderGallery();
-                renderActorList();
-
-
-                showToast(
-                    `快速匯入完成：新增 ${result.added} 筆，略過 ${result.skipped} 筆`
-                );
-
-
-                /*
-                 * 非常重要：
-                 * 匯入成功後，把 JSON 從網址移除。
-                 *
-                 * 否則使用者重新整理頁面，
-                 * 可能會再次匯入一次。
-                 */
-
-                history.replaceState(
-                    null,
-                    '',
-                    window.location.pathname +
-                    window.location.search
-                );
-
-
-            } catch (err) {
-
-                console.error(
-                    'URL JSON Import Error:',
-                    err
-                );
-
-
-                showToast(
-                    "快速匯入失敗：JSON 格式錯誤"
-                );
-
-
-                /*
-                 * 即使失敗也清掉 URL，
-                 * 避免重新整理一直重試。
-                 */
-
-                history.replaceState(
-                    null,
-                    '',
-                    window.location.pathname +
-                    window.location.search
-                );
-            }
-        }
-
-
-        /* ============================================================
-           智慧合併
-           
-           判斷重複順序：
-           
-           1. id
-           2. code
-           3. url
-           4. img
-           
-           只要其中一項符合，就視為同一筆。
-        ============================================================ */
-
-        function mergeImportedData(incomingData) {
-
-            const existing =
-                [...collections];
-
-
-            const existingIds =
-                new Set(
-                    existing
-                        .map(i => String(i.id || ''))
-                        .filter(Boolean)
-                );
-
-
-            const existingCodes =
-                new Set(
-                    existing
-                        .map(i =>
-                            String(i.code || '')
-                                .trim()
-                                .toUpperCase()
-                        )
-                        .filter(Boolean)
-                );
-
-
-            const existingUrls =
-                new Set(
-                    existing
-                        .map(i =>
-                            String(i.url || '')
-                                .trim()
-                        )
-                        .filter(Boolean)
-                );
-
-
-            const existingImgs =
-                new Set(
-                    existing
-                        .map(i =>
-                            String(i.img || '')
-                                .trim()
-                        )
-                        .filter(Boolean)
-                );
-
-
-            let added = 0;
-            let skipped = 0;
-
-
-            incomingData.forEach(rawItem => {
-
-                if (
-                    !rawItem ||
-                    typeof rawItem !== 'object'
-                ) {
-                    skipped++;
-                    return;
-                }
-
-
-                const item = {
-
-                    id:
-                        rawItem.id != null
-                            ? String(rawItem.id)
-                            : Date.now().toString() +
-                              Math.random()
-                                  .toString(36)
-                                  .substring(2, 8),
-
-                    name:
-                        String(
-                            rawItem.name || ''
-                        ).trim(),
-
-                    code:
-                        String(
-                            rawItem.code || ''
-                        ).trim()
-                        .toUpperCase(),
-
-                    url:
-                        String(
-                            rawItem.url || ''
-                        ).trim(),
-
-                    tags:
-                        Array.isArray(
-                            rawItem.tags
-                        )
-                            ? rawItem.tags
-                                .map(t => String(t).trim())
-                                .filter(Boolean)
-                            : String(
-                                rawItem.tags || ''
-                              )
-                                .trim()
-                                .split(/\s+/)
-                                .filter(Boolean),
-
-                    img:
-                        String(
-                            rawItem.img || ''
-                        ).trim()
-                };
-
-
-                if (!item.name) {
-                    skipped++;
-                    return;
-                }
-
-
-                const duplicate =
-                    (
-                        item.id &&
-                        existingIds.has(
-                            item.id
-                        )
-                    ) ||
-
-                    (
-                        item.code &&
-                        existingCodes.has(
-                            item.code
-                        )
-                    ) ||
-
-                    (
-                        item.url &&
-                        existingUrls.has(
-                            item.url
-                        )
-                    ) ||
-
-                    (
-                        item.img &&
-                        existingImgs.has(
-                            item.img
-                        )
-                    );
-
-
-                if (duplicate) {
-
-                    skipped++;
-
-                    return;
-                }
-
-
-                existing.unshift(item);
-
-                added++;
-
-
-                if (item.id) {
-                    existingIds.add(
-                        item.id
-                    );
-                }
-
-                if (item.code) {
-                    existingCodes.add(
-                        item.code
-                    );
-                }
-
-                if (item.url) {
-                    existingUrls.add(
-                        item.url
-                    );
-                }
-
-                if (item.img) {
-                    existingImgs.add(
-                        item.img
-                    );
-                }
-
-            });
-
-
-            return {
-
-                collections: existing,
-
-                added,
-
-                skipped
-            };
-        }
-
-
-        /* ============================================================
-           演員
-        ============================================================ */
-
-        function renderActorList() {
-
-            const list =
-                document.getElementById(
-                    'actorList'
-                );
-
-            const container =
-                document.getElementById(
-                    'actorPaginationContainer'
-                );
-
-
-            const map = {};
-
-
-            collections.forEach(i => {
-
-                const names =
-                    (i.name || '')
-                        .split(
-                            /[\s,[,，、/]+/
-                        )
-                        .filter(
-                            n =>
-                                n.trim() &&
-                                n.length > 1
-                        );
-
-
-                names.forEach(n => {
-
-                    map[n] =
-                        (map[n] || 0) + 1;
-
-                });
-
-            });
-
-
-            const sorted =
-                Object.entries(map)
-                    .sort(
-                        (a,b) =>
-                            b[1] - a[1]
-                    );
-
-
-            const total =
-                Math.ceil(
-                    sorted.length /
-                    actorPageSize
-                );
-
-
-            if (
-                actorCurrentPage > total &&
-                total > 0
-            ) {
-                actorCurrentPage = total;
-            }
-
-
-            const paginated =
-                sorted.slice(
-                    (actorCurrentPage - 1) *
-                        actorPageSize,
-
-                    actorCurrentPage *
-                        actorPageSize
-                );
-
-
-            list.innerHTML =
-                paginated.map(
-                    ([name, count]) => {
-
-                        let disp =
-                            name.match(
-                                /^[A-Za-z]/
-                            )
-                                ? name
-                                    .substring(0, 2)
-                                    .toUpperCase()
-                                : name.substring(
-                                    0,
-                                    1
-                                );
-
-
-                        return `
-
-                            <div
-                                onclick="filterBySearch('${escapeHtmlAttribute(name)}')"
-                                class="active:opacity-70 flex flex-col items-center"
-                            >
-
-                                <div
-                                    class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"
-                                >
-                                    <span class="text-xl font-black text-zinc-500">
-                                        ${escapeHtml(disp)}
-                                    </span>
-                                </div>
-
-                                <span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">
-                                    ${escapeHtml(name)}
-                                </span>
-
-                                <span class="block text-[9px] text-zinc-600">
-                                    ${count} 作品
-                                </span>
-
-                            </div>
-                        `;
-                    }
-                ).join('');
-
-
-            if (total <= 1) {
-
-                container.innerHTML = "";
-
-                updateContainerHeight();
-
-                return;
-            }
-
-
-            let pages = [];
-            const range = 1;
-
-
-            for (
-                let i = 1;
-                i <= total;
-                i++
-            ) {
-
-                if (
-                    i === 1 ||
-                    i === total ||
-                    (
-                        i >= actorCurrentPage - range &&
-                        i <= actorCurrentPage + range
-                    )
-                ) {
-
-                    pages.push(i);
-
-                } else if (
-                    pages[pages.length - 1] !== '...'
-                ) {
-
-                    pages.push('...');
-                }
-            }
-
-
-            let dotsHtml =
-                `<div class="pagination-dots-row">`;
-
-
-            dotsHtml += pages.map(p => {
-
-                if (p === '...') {
-
-                    return `
-                        <div class="px-1 text-zinc-700 text-[10px] font-black">
-                            ...
-                        </div>
-                    `;
-                }
-
-
-                return `
-                    <div
-                        onclick="changeActorPage(${p})"
-                        class="page-dot ${p === actorCurrentPage ? 'active' : ''}"
-                    >
-                        ${p}
-                    </div>
-                `;
-
-            }).join('');
-
-
-            dotsHtml += `</div>`;
-
-
-            container.innerHTML =
-                dotsHtml;
-
-
-            updateContainerHeight();
-        }
-
-
-        function refreshAndHome() {
-
-            clearSearch();
-
-            switchTab(0);
-
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        }
-
-
-        /* ============================================================
-           HTML 安全處理
-        ============================================================ */
-
-        function escapeHtml(value) {
-
-            return String(value ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-
-        function escapeHtmlAttribute(value) {
-
-            return escapeHtml(value)
-                .replace(/\\/g, '\\\\');
-        }
-
-
-        /* ============================================================
-           初始化
-        ============================================================ */
-
-        [
-            'codeInput',
-            'urlInput',
-            'imgInput'
-        ].forEach(id => {
-
-            const el =
-                document.getElementById(id);
-
-            el.addEventListener(
-                'input',
-                () => checkDuplicate(el)
-            );
-        });
-
-
-        window.onload = () => {
-
-            updateLayout(
-                currentLayout
-            );
-
-            renderGallery();
-
-            renderActorList();
-
-
-            setTimeout(() => {
-
-                const splash =
-                    document.getElementById(
-                        'splashScreen'
-                    );
-
-                if (splash) {
-                    splash.classList.add(
-                        'fade-out'
-                    );
-                }
-
-
-                /*
-                 * Splash 結束後檢查：
-                 *
-                 * https://avp-six.vercel.app/#import=...
-                 *
-                 * 如果有，就自動匯入。
-                 */
-
-                importDataFromUrl();
-
-            }, 1200);
-
+    <button onclick="toggleFilterDrawer(false); openDrawer();" class="w-full py-4 bg-zinc-900 rounded font-bold text-white">新增影片</button>
+    <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
+    <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
+  </div>
+</div>
+
+<div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden items-center justify-center p-8">
+  <div class="text-center"><h4 id="confirmTitle" class="text-xl font-bold mb-8">確定要刪除嗎？</h4>
+    <div class="flex flex-col gap-4"><button id="confirmOkBtn" class="w-64 bg-red-600 py-4 font-bold rounded-lg">確定</button><button onclick="closeConfirm()" class="py-2 text-zinc-500">取消</button></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'NF_MOBILE_VAULT_FINAL';
+const NO_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect fill="#111" width="100%" height="100%"/><text x="50%" y="50%" fill="#333" text-anchor="middle" font-size="28">NO IMAGE</text></svg>');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+
+function loadCollections() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return Array.isArray(d) ? d : [];
+  } catch (e) { return []; }
+}
+function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); return true; }
+  catch (e) { showToast("儲存失敗：空間不足或被禁用"); return false; }
+}
+
+let collections = loadCollections();
+let currentId = null, currentPage = 1, pageSize = 12;
+let actorCurrentPage = 1, actorPageSize = 18;
+let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 2;
+let lastRandomId = null, activeTab = 0;
+
+function updateContainerHeight() {
+  setTimeout(() => {
+    const p = document.querySelector('.page-content.active-page');
+    const w = $('appContent');
+    if (p && w) w.style.height = (p.scrollHeight + 20) + 'px';
+  }, 50);
+}
+
+function checkDuplicate(el) {
+  if (!el) return false;
+  const val = el.value.trim();
+  if (!val) { el.style.color = 'white'; return false; }
+  const others = collections.filter(i => String(i.id) !== String(currentId));
+  let dup = false;
+  if (el.id === 'codeInput') { const u = val.toUpperCase(); dup = others.some(i => i.code && i.code.toUpperCase() === u); }
+  else if (el.id === 'urlInput') dup = others.some(i => i.url === val);
+  else if (el.id === 'imgInput') dup = others.some(i => i.img === val);
+  el.style.color = dup ? 'var(--nf-red)' : 'white';
+  return dup;
+}
+
+function handleSearchInput() {
+  $('clearSearchBtn').style.display = $('searchInput').value.length > 0 ? 'block' : 'none';
+  currentPage = 1;
+  debouncedRender();
+}
+function clearSearch() {
+  $('searchInput').value = "";
+  $('clearSearchBtn').style.display = 'none';
+  currentPage = 1;
+  renderGallery();
+}
+
+function renderGallery() {
+  const gallery = $('gallery');
+  const q = $('searchInput').value.trim().toLowerCase();
+  const filtered = collections.filter(i =>
+    String(i.name || '').toLowerCase().includes(q) ||
+    String(i.code || '').toLowerCase().includes(q) ||
+    (i.tags || []).some(t => String(t).toLowerCase().includes(q)));
+  $('itemCount').innerText = `${filtered.length} ITEMS`;
+
+  if (filtered.length === 0) {
+    gallery.className = "flex flex-col items-center justify-center py-20 text-center";
+    gallery.innerHTML = `<div class="empty-state-icon mb-6"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div><p class="text-zinc-500 font-bold text-lg mb-4">找不到相關內容</p>`;
+    $('paginationContainer').innerHTML = "";
+    updateContainerHeight();
+    return;
+  }
+
+  gallery.className = `grid gap-3 layout-cols-${currentLayout}`;
+  const total = Math.ceil(filtered.length / pageSize);
+  if (currentPage > total) currentPage = total;
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  gallery.innerHTML = paginated.map(item => `
+    <div class="poster-card">
+      <img src="${esc(item.img) || NO_IMG}" loading="lazy" onerror="this.onerror=null;this.src=NO_IMG">
+      <div class="action-circle-btn card-edit-btn" data-edit="${esc(item.id)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
+      ${item.url ? `<div class="action-circle-btn card-play-btn" data-play="${esc(item.id)}"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
+      <div class="card-overlay">
+        <p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p>
+        <p class="title text-[13px] font-bold truncate">${esc(item.name)}</p>
+      </div>
+    </div>`).join('');
+  renderPagination(total, currentPage, 'changePage', 'paginationContainer');
+  updateContainerHeight();
+}
+
+function renderPagination(total, cur, fn, containerId) {
+  const container = $(containerId);
+  if (total <= 1) { container.innerHTML = ""; return; }
+  const pages = [];
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || Math.abs(i - cur) <= 1) pages.push(i);
+    else if (pages[pages.length - 1] !== '...') pages.push('...');
+  }
+  container.innerHTML = `<div class="pagination-dots-row">` + pages.map(p =>
+    p === '...' ? `<div class="px-1 text-zinc-700 text-[10px] font-black">...</div>`
+      : `<div onclick="${fn}(${p})" class="page-dot ${p === cur ? 'active' : ''}">${p}</div>`).join('') + `</div>`;
+}
+
+function updateLayout(cols) {
+  currentLayout = cols;
+  try { localStorage.setItem('NF_LAYOUT_SETTING', cols); } catch (e) {}
+  for (let i = 1; i <= 4; i++) { const b = $(`layoutBtn${i}`); if (b) b.classList.toggle('active', i === cols); }
+  renderGallery();
+}
+
+function renderTagCloud() {
+  const map = {};
+  collections.forEach(i => (i.tags || []).forEach(t => map[t] = (map[t] || 0) + 1));
+  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
+  $('tagCloud').innerHTML = sorted.map(([tag, count]) => `
+    <div data-q="${esc(tag)}" class="tag-pill"><span class="truncate pr-2">${esc(tag)}</span>
+    <span class="text-[10px] font-bold text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded">${count}</span></div>`).join('');
+  updateContainerHeight();
+}
+
+function renderActorList() {
+  const map = {};
+  collections.forEach(i => {
+    String(i.name || '').split(/[\s,\[\]【】，、\/]+/).filter(n => n.trim() && n.length > 1).forEach(n => map[n] = (map[n] || 0) + 1);
+  });
+  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
+  const total = Math.ceil(sorted.length / actorPageSize);
+  if (actorCurrentPage > total) actorCurrentPage = Math.max(total, 1);
+  const paginated = sorted.slice((actorCurrentPage - 1) * actorPageSize, actorCurrentPage * actorPageSize);
+  $('actorList').innerHTML = paginated.map(([name, count]) => {
+    const disp = /^[A-Za-z]/.test(name) ? name.substring(0, 2).toUpperCase() : name.substring(0, 1);
+    return `<div data-q="${esc(name)}" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500">${esc(disp)}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${esc(name)}</span><span class="block text-[9px] text-zinc-600">${count} 作品</span></div>`;
+  }).join('');
+  renderPagination(total, actorCurrentPage, 'changeActorPage', 'actorPaginationContainer');
+  updateContainerHeight();
+}
+
+function refreshAll() { renderGallery(); renderTagCloud(); renderActorList(); }
+
+function changePage(p) { currentPage = p; window.scrollTo({ top: 0, behavior: 'smooth' }); renderGallery(); }
+function changeActorPage(p) { actorCurrentPage = p; window.scrollTo({ top: 0, behavior: 'smooth' }); renderActorList(); }
+
+/* 事件委派：取代 inline onclick 拼字串 */
+document.addEventListener('click', e => {
+  const edit = e.target.closest('[data-edit]');
+  if (edit) { openDrawer(edit.dataset.edit); return; }
+  const play = e.target.closest('[data-play]');
+  if (play) {
+    const it = collections.find(i => String(i.id) === play.dataset.play);
+    if (it) openExternalUrl(it.url, e);
+    return;
+  }
+  const q = e.target.closest('[data-q]');
+  if (q) filterBySearch(q.dataset.q);
+});
+
+function openRandomRecommendation() {
+  if (collections.length === 0) { showToast("目前尚無收藏內容可推薦"); return; }
+  let pool = collections.filter(i => String(i.id) !== String(lastRandomId));
+  if (pool.length === 0) pool = collections;
+  const item = pool[Math.floor(Math.random() * pool.length)];
+  lastRandomId = item.id;
+  $('randomCardPreview').innerHTML = `
+    <img src="${esc(item.img) || NO_IMG}" onerror="this.onerror=null;this.src=NO_IMG" style="width:100%;height:100%;object-fit:cover;">
+    <div class="card-overlay"><p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p></div>`;
+  $('randomCardTitle').innerText = item.name;
+  const btn = $('randomPlayBtn');
+  if (item.url) { btn.style.display = 'block'; btn.onclick = () => { openExternalUrl(item.url); closeRandomModal(); }; }
+  else btn.style.display = 'none';
+  const m = $('randomModal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeRandomModal() { const m = $('randomModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+function openDrawer(id = null) {
+  currentId = id;
+  $('drawer').classList.add('open');
+  const f = { name: $('nameInput'), code: $('codeInput'), url: $('urlInput'), tags: $('tagsInput'), img: $('imgInput') };
+  const item = id ? collections.find(i => String(i.id) === String(id)) : null;
+  if (item) {
+    f.name.value = item.name || ""; f.code.value = item.code || ""; f.url.value = item.url || "";
+    f.tags.value = (item.tags || []).join(' '); f.img.value = item.img || "";
+    $('drawerDeleteBtn').classList.remove('hidden');
+  } else {
+    currentId = null;
+    Object.values(f).forEach(x => { x.value = ""; x.style.color = "white"; });
+    $('drawerDeleteBtn').classList.add('hidden');
+  }
+  ['codeInput', 'urlInput', 'imgInput'].forEach(fid => checkDuplicate($(fid)));
+}
+
+function saveItem() {
+  const name = $('nameInput').value.trim();
+  if (!name) { showToast("請輸入名稱"); return; }
+  if (['codeInput', 'urlInput', 'imgInput'].some(id => checkDuplicate($(id)))) { showToast("請修正重複的資料"); return; }
+  const data = {
+    id: currentId || Date.now().toString(), name,
+    code: $('codeInput').value.trim().toUpperCase(),
+    url: $('urlInput').value.trim(),
+    tags: $('tagsInput').value.trim().split(/\s+/).filter(Boolean),
+    img: $('imgInput').value.trim()
+  };
+  const backup = collections.slice();
+  const idx = currentId ? collections.findIndex(i => String(i.id) === String(currentId)) : -1;
+  if (idx >= 0) collections[idx] = data; else collections.unshift(data);
+  if (!persist()) { collections = backup; return; }
+  refreshAll(); closeDrawer(); showToast("已儲存");
+}
+
+function switchTab(index) {
+  activeTab = index;
+  $('pageContainer').style.transform = `translateX(-${index * (100 / 3)}%)`;
+  document.querySelectorAll('.nav-item').forEach((el, i) => { if (i < 3) el.classList.toggle('active', i === index); });
+  document.querySelectorAll('.page-content').forEach((p, i) => p.classList.toggle('active-page', i === index));
+  window.scrollTo(0, 0);
+  if (index === 1) renderTagCloud();
+  if (index === 2) renderActorList();
+  updateContainerHeight();
+}
+
+function filterBySearch(val) {
+  $('searchInput').value = val;
+  $('clearSearchBtn').style.display = val ? 'block' : 'none';
+  currentPage = 1;
+  switchTab(0);
+  renderGallery();
+}
+
+function openExternalUrl(url, e) {
+  if (e) e.stopPropagation();
+  const u = String(url || '').trim();
+  if (!u) return;
+  const full = /^https?:\/\//i.test(u) ? u : (/^[a-z][a-z0-9+.-]*:/i.test(u) ? '' : 'https://' + u);
+  if (!full) { showToast("不支援的連結格式"); return; }
+  window.open(full, '_blank', 'noopener,noreferrer');
+}
+
+function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
+function showToast(msg) { const t = $('toast'); t.innerText = msg; t.style.opacity = "1"; clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => { t.style.opacity = "0"; }, 2000); }
+
+function openConfirm(title, fn) {
+  $('confirmTitle').innerText = title;
+  $('confirmOkBtn').onclick = () => { closeConfirm(); fn(); };
+  const m = $('confirmModal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeConfirm() { const m = $('confirmModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function requestDelete() { openConfirm("確定要刪除嗎？", executeDelete); }
+function executeDelete() {
+  const backup = collections.slice();
+  collections = collections.filter(i => String(i.id) !== String(currentId));
+  if (!persist()) { collections = backup; return; }
+  closeDrawer(); refreshAll();
+}
+function closeDrawer() { $('drawer').classList.remove('open'); }
+function toggleFilterDrawer(open) { $('filterDrawer').classList.toggle('open', open); }
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(collections, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'netflav.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const raw = JSON.parse(ev.target.result);
+      if (!Array.isArray(raw)) throw new Error('not array');
+      const seen = new Set();
+      const data = raw.filter(i => i && typeof i === 'object' && i.name).map((i, n) => {
+        let id = String(i.id ?? (Date.now() + '_' + n));
+        while (seen.has(id)) id += '_';
+        seen.add(id);
+        return {
+          id, name: String(i.name), code: String(i.code || ''), url: String(i.url || ''), img: String(i.img || ''),
+          tags: Array.isArray(i.tags) ? i.tags.map(String) : []
         };
+      });
+      if (data.length === 0) throw new Error('empty');
+      openConfirm(`匯入 ${data.length} 筆，將覆蓋現有 ${collections.length} 筆資料。確定嗎？`, () => {
+        const backup = collections;
+        collections = data;
+        if (!persist()) { collections = backup; return; }
+        currentPage = 1; actorCurrentPage = 1;
+        refreshAll(); toggleFilterDrawer(false); showToast("匯入成功");
+      });
+    } catch (err) { showToast("格式錯誤"); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
 
-    </script>
+function refreshAndHome() { clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
 
+window.onload = () => {
+  updateLayout(currentLayout);
+  renderActorList();
+  setTimeout(() => { const s = $('splashScreen'); if (s) s.classList.add('fade-out'); }, 1200);
+};
+</script>
 </body>
 </html>
