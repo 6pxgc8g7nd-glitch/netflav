@@ -98,7 +98,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 .layout-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .layout-option{background:#1a1a1a;border:1px solid #333;padding:10px 0;border-radius:8px;text-align:center;font-size:11px;font-weight:700;color:#71717a;transition:.2s}
 .layout-option.active{background:var(--nf-red);color:#fff;border-color:var(--nf-red)}
-.drawer input[type=text]{font-size:16px}
+.drawer input[type=text],.drawer input[type=password]{font-size:16px}
 </style>
 </head>
 <body>
@@ -216,6 +216,17 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
         <button id="sizeBtn48" onclick="updatePageSize(48)" class="layout-option">48 部</button>
       </div>
     </div>
+    <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
+      <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">雲端自動備份（GitHub Gist）</label>
+      <p id="cloudStatus" class="text-xs text-zinc-400 mb-3 leading-relaxed"></p>
+      <input type="password" id="tokenInput" placeholder="貼上 GitHub 權杖" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" class="w-full bg-zinc-900 p-3 rounded-lg text-white outline-none mb-3">
+      <button onclick="saveToken()" class="w-full py-3 mb-2 bg-red-600 rounded-lg text-xs font-bold text-white">儲存權杖並連結</button>
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="backupToCloudNow()" class="py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">立即備份</button>
+        <button onclick="restoreFromCloud()" class="py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">從雲端還原</button>
+        <button onclick="removeToken()" class="py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-400">移除權杖</button>
+      </div>
+    </div>
     <button onclick="toggleFilterDrawer(false); openDrawer();" class="w-full py-4 bg-zinc-900 rounded font-bold text-white">新增影片</button>
     <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
     <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
@@ -242,7 +253,7 @@ function loadCollections() {
   } catch (e) { return []; }
 }
 function persist() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); return true; }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); scheduleBackup(); return true; }
   catch (e) { showToast("儲存失敗：空間不足或被禁用"); return false; }
 }
 
@@ -527,7 +538,7 @@ function executeDelete() {
   closeDrawer(); refreshAll();
 }
 function closeDrawer() { $('drawer').classList.remove('open'); }
-function toggleFilterDrawer(open) { $('filterDrawer').classList.toggle('open', open); }
+function toggleFilterDrawer(open) { $('filterDrawer').classList.toggle('open', open); if (open) updateCloudUI(); }
 
 async function exportData() {
   const EXPORT_NAME = 'netflav.json';
@@ -617,6 +628,146 @@ function handleHash() {
 }
 window.addEventListener('hashchange', handleHash);
 
+/* 雲端自動備份：GitHub Gist（私人） */
+const GIST_FILE = 'netflav.json', GIST_DESC = 'Netflav backup';
+const K_TOKEN = 'NF_GIST_TOKEN', K_ID = 'NF_GIST_ID', K_LAST = 'NF_GIST_LAST';
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+const lsSet = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
+let backupBusy = false, backupPending = false, backupTimer = null;
+
+async function gh(path, opts = {}) {
+  const headers = { 'Authorization': 'Bearer ' + lsGet(K_TOKEN), 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  const r = await fetch('https://api.github.com' + path, Object.assign({}, opts, { headers }));
+  if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+function ghErrMsg(e) {
+  if (e && e.status === 401) return '權杖無效或已過期';
+  if (e && (e.status === 403 || e.status === 404)) return '權杖權限不足，請確認有勾選 gist';
+  return '連線失敗，請檢查網路';
+}
+async function findCloudGist() {
+  for (let page = 1; page <= 5; page++) {
+    const list = await gh(`/gists?per_page=100&page=${page}`);
+    const g = list.find(x => x.description === GIST_DESC && x.files && x.files[GIST_FILE]);
+    if (g) return g;
+    if (list.length < 100) break;
+  }
+  return null;
+}
+async function readCloud(id) {
+  const g = await gh('/gists/' + id);
+  const f = g.files && g.files[GIST_FILE];
+  if (!f) throw new Error('no file');
+  const text = f.truncated ? await (await fetch(f.raw_url)).text() : f.content;
+  const arr = JSON.parse(text);
+  if (!Array.isArray(arr)) throw new Error('bad format');
+  return arr.filter(i => i && typeof i === 'object' && i.name).map((i, n) => ({
+    id: String(i.id ?? (Date.now() + '_' + n)), name: String(i.name), code: String(i.code || ''),
+    url: String(i.url || ''), img: String(i.img || ''),
+    tags: Array.isArray(i.tags) ? i.tags.map(String) : [],
+    actor: typeof i.actor === 'string' ? i.actor : undefined
+  }));
+}
+function writeCloud(id) {
+  const files = { [GIST_FILE]: { content: JSON.stringify(collections, null, 2) } };
+  return id
+    ? gh('/gists/' + id, { method: 'PATCH', body: JSON.stringify({ description: GIST_DESC, files }) })
+    : gh('/gists', { method: 'POST', body: JSON.stringify({ description: GIST_DESC, public: false, files }) });
+}
+function scheduleBackup() {
+  if (!lsGet(K_TOKEN) || !lsGet(K_ID)) return;
+  clearTimeout(backupTimer);
+  backupTimer = setTimeout(() => runBackup(), 3000);
+}
+async function runBackup(forceId) {
+  if (!lsGet(K_TOKEN)) return false;
+  if (backupBusy) { backupPending = true; return false; }
+  backupBusy = true;
+  let ok = false;
+  try {
+    const g = await writeCloud(forceId || lsGet(K_ID));
+    lsSet(K_ID, g.id); lsSet(K_LAST, new Date().toISOString());
+    ok = true;
+  } catch (e) {
+    let msg = ghErrMsg(e);
+    if (e && e.status === 404 && lsGet(K_ID)) { lsSet(K_ID, ''); msg = '找不到雲端備份，請重新連結'; }
+    showToast('雲端備份失敗：' + msg);
+  } finally {
+    backupBusy = false;
+    if (backupPending) { backupPending = false; scheduleBackup(); }
+    updateCloudUI();
+  }
+  return ok;
+}
+function updateCloudUI() {
+  const el = $('cloudStatus'); if (!el) return;
+  const last = lsGet(K_LAST);
+  if (!lsGet(K_TOKEN)) el.textContent = '尚未設定。貼上權杖後，每次儲存都會自動備份。';
+  else if (!lsGet(K_ID)) el.textContent = '已有權杖，但尚未連結雲端備份。';
+  else el.textContent = '已開啟自動備份' + (last ? '・上次同步 ' + new Date(last).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+}
+function applyCloud(cloud, id) {
+  const prev = collections;
+  collections = cloud;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); }
+  catch (e) { collections = prev; showToast('儲存失敗：空間不足或被禁用'); return; }
+  lsSet(K_ID, id); lsSet(K_LAST, new Date().toISOString());
+  currentPage = 1; actorCurrentPage = 1; tagCurrentPage = 1;
+  refreshAll(); updateCloudUI(); showToast(`已從雲端還原 ${cloud.length} 筆`);
+}
+async function saveToken() {
+  const t = $('tokenInput').value.trim();
+  if (!t) { showToast('請先貼上權杖'); return; }
+  const old = lsGet(K_TOKEN);
+  lsSet(K_TOKEN, t);
+  try {
+    showToast('連線中…');
+    const g = await findCloudGist();
+    $('tokenInput').value = '';
+    if (lsGet(K_ID)) showToast('權杖已更新');
+    else if (g) {
+      const cloud = await readCloud(g.id);
+      openConfirm(`雲端已有 ${cloud.length} 筆備份，本機有 ${collections.length} 筆。\n要用雲端覆蓋本機嗎？`, () => applyCloud(cloud, g.id));
+    } else if (collections.length) {
+      if (await runBackup()) showToast('已建立雲端備份，之後會自動備份');
+    } else showToast('權杖已儲存，雲端還沒有備份');
+  } catch (e) { lsSet(K_TOKEN, old); showToast('無法連線：' + ghErrMsg(e)); }
+  updateCloudUI();
+}
+async function restoreFromCloud() {
+  if (!lsGet(K_TOKEN)) { showToast('請先儲存權杖'); return; }
+  try {
+    showToast('讀取中…');
+    let id = lsGet(K_ID);
+    if (!id) { const g = await findCloudGist(); if (!g) { showToast('雲端還沒有備份'); return; } id = g.id; }
+    const cloud = await readCloud(id);
+    openConfirm(`用雲端的 ${cloud.length} 筆覆蓋本機的 ${collections.length} 筆？`, () => applyCloud(cloud, id));
+  } catch (e) { showToast('還原失敗：' + ghErrMsg(e)); }
+}
+async function backupToCloudNow() {
+  if (!lsGet(K_TOKEN)) { showToast('請先儲存權杖'); return; }
+  try {
+    if (!lsGet(K_ID)) {
+      const g = await findCloudGist();
+      if (g) {
+        const cloud = await readCloud(g.id);
+        openConfirm(`雲端已有 ${cloud.length} 筆備份。\n要用本機的 ${collections.length} 筆覆蓋雲端嗎？`, async () => { if (await runBackup(g.id)) showToast('已備份'); });
+        return;
+      }
+    }
+    clearTimeout(backupTimer);
+    if (await runBackup()) showToast(`已備份 ${collections.length} 筆`);
+  } catch (e) { showToast('備份失敗：' + ghErrMsg(e)); }
+}
+function removeToken() {
+  openConfirm('移除權杖並停止自動備份？\n（雲端的備份不會被刪除）', () => {
+    lsSet(K_TOKEN, ''); lsSet(K_ID, ''); lsSet(K_LAST, '');
+    clearTimeout(backupTimer); updateCloudUI(); showToast('已移除');
+  });
+}
+
 function refreshAndHome() { clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 ['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
 
@@ -628,6 +779,7 @@ window.onload = () => {
   updatePageSize(pageSize);
   renderActorList();
   handleHash();
+  updateCloudUI();
   setTimeout(() => { const s = $('splashScreen'); if (s) s.classList.add('fade-out'); }, 1200);
 };
 </script>
