@@ -194,7 +194,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 
 <div id="filterDrawer" class="drawer">
   <div class="flex items-center justify-between mb-8">
-    <h3 class="text-xl font-bold">帳戶設定</h3>
+    <h3 id="settingsTitle" class="text-xl font-bold" style="-webkit-touch-callout:none">帳戶設定</h3>
     <button onclick="toggleFilterDrawer(false)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
   </div>
   <div class="space-y-4">
@@ -216,7 +216,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
         <button id="sizeBtn48" onclick="updatePageSize(48)" class="layout-option">48 部</button>
       </div>
     </div>
-    <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
+    <div id="cloudBox" class="hidden bg-zinc-950 p-4 rounded-lg border border-zinc-900">
       <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">雲端自動備份（GitHub Gist）</label>
       <p id="cloudStatus" class="text-xs text-zinc-400 mb-3 leading-relaxed"></p>
       <input type="password" id="tokenInput" placeholder="貼上 GitHub 權杖" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" class="w-full bg-zinc-900 p-3 rounded-lg text-white outline-none mb-3">
@@ -540,7 +540,10 @@ function executeDelete() {
   closeDrawer(); refreshAll();
 }
 function closeDrawer() { $('drawer').classList.remove('open'); }
-function toggleFilterDrawer(open) { $('filterDrawer').classList.toggle('open', open); if (open) updateCloudUI(); }
+function toggleFilterDrawer(open) {
+  $('filterDrawer').classList.toggle('open', open);
+  if (open) updateCloudUI(); else $('cloudBox').classList.add('hidden'); // 關閉設定時一律收起
+}
 
 async function exportData() {
   const EXPORT_NAME = 'netflav.json';
@@ -769,6 +772,23 @@ function removeToken() {
     clearTimeout(backupTimer); updateCloudUI(); showToast('已移除');
   });
 }
+
+/* 長按「帳戶設定」標題 1 秒，顯示 / 隱藏雲端備份區塊 */
+(function () {
+  const t = $('settingsTitle'); let timer = null;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  t.addEventListener('pointerdown', () => {
+    cancel();
+    timer = setTimeout(() => {
+      timer = null;
+      const box = $('cloudBox');
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) { updateCloudUI(); box.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }, 1000);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => t.addEventListener(ev, cancel));
+  t.addEventListener('contextmenu', e => e.preventDefault());
+})();
 
 function refreshAndHome() { clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 ['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
