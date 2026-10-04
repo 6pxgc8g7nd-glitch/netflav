@@ -283,7 +283,10 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
       </div>
     </div>
     <button onclick="toggleFilterDrawer(false); openDrawer();" class="w-full py-4 bg-zinc-900 rounded font-bold text-white">新增影片</button>
-    <button onclick="precacheCovers()" class="w-full py-4 bg-zinc-900 rounded font-bold">預先下載封面（離線用）</button>
+    <div class="grid grid-cols-2 gap-3">
+      <button onclick="precacheCovers()" class="py-4 bg-zinc-900 rounded font-bold text-sm">預先下載封面</button>
+      <button onclick="clearCoverCache()" class="py-4 bg-zinc-900 rounded font-bold text-sm">清除封面快取</button>
+    </div>
     <div class="grid grid-cols-2 gap-3">
       <button onclick="exportData()" class="py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
       <label class="block py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
@@ -853,6 +856,15 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   navigator.serviceWorker.addEventListener('message', e => {
     if (e.data && e.data.type === 'precache-done') showToast(`封面已存好 ${e.data.ok} / ${e.data.total} 張`);
+  });
+}
+async function clearCoverCache() {
+  const KEY = 'netflav-img-v1';
+  let n = 0;
+  try { if ('caches' in window && await caches.has(KEY)) n = (await (await caches.open(KEY)).keys()).length; } catch (e) {}
+  if (!n) { showToast('目前沒有已存的封面'); return; }
+  openConfirm(`清除已存的 ${n} 張封面？\n（收藏資料不會刪除，封面之後會重新載入）`, async () => {
+    try { await caches.delete(KEY); showToast('已清除封面快取'); } catch (e) { showToast('清除失敗'); }
   });
 }
 function precacheCovers() {
