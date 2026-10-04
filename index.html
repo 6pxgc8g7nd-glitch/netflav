@@ -283,6 +283,7 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
       </div>
     </div>
     <button onclick="toggleFilterDrawer(false); openDrawer();" class="w-full py-4 bg-zinc-900 rounded font-bold text-white">新增影片</button>
+    <button onclick="precacheCovers()" class="w-full py-4 bg-zinc-900 rounded font-bold">預先下載封面（離線用）</button>
     <div class="grid grid-cols-2 gap-3">
       <button onclick="exportData()" class="py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
       <label class="block py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
@@ -387,7 +388,7 @@ function renderGallery() {
 
   gallery.innerHTML = paginated.map(item => `
     <div class="poster-card" data-card="${esc(item.id)}">
-      <img src="${esc(item.img) || NO_IMG}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=NO_IMG">
+      <img src="${esc(item.img) || NO_IMG}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=NO_IMG">
       <div class="card-overlay">
         <p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p>
         <p class="title text-[13px] font-bold truncate">${esc(item.name)}</p>
@@ -850,6 +851,17 @@ function refreshAndHome() { clearSearch(); switchTab(0); window.scrollTo({ top: 
 
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.type === 'precache-done') showToast(`封面已存好 ${e.data.ok} / ${e.data.total} 張`);
+  });
+}
+function precacheCovers() {
+  const sw = 'serviceWorker' in navigator && navigator.serviceWorker.controller;
+  if (!sw) { showToast('離線功能尚未啟用，請重新開啟 app 再試'); return; }
+  const urls = [...new Set(collections.map(i => i.img).filter(u => /^https?:\/\//i.test(u || '')))];
+  if (!urls.length) { showToast('沒有封面可以下載'); return; }
+  showToast(`開始下載 ${urls.length} 張封面…`);
+  sw.postMessage({ type: 'precache', urls });
 }
 window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
