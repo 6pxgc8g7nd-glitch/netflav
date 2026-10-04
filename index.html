@@ -579,14 +579,15 @@ function importData(e) {
 function parseAddParams(str) {
   const i = str.indexOf('add?');
   const p = new URLSearchParams(i >= 0 ? str.slice(i + 4) : str.replace(/^[#?]/, ''));
-  return { name: p.get('name') || '', actor: p.get('actor') || '', url: p.get('url') || '', img: p.get('img') || '' };
+  return { name: p.get('name') || '', actor: p.get('actor') || '', code: p.get('code') || '', tags: p.get('tags') || '', url: p.get('url') || '', img: p.get('img') || '' };
 }
 function setFields(d) {
-  let name = String(d.name || '').trim(), code = '';
-  const m = name.match(/^([A-Za-z]{2,6})-?(\d{2,5})\b[\s:：\-]*/);
+  let name = String(d.name || '').trim(), code = String(d.code || '').trim().toUpperCase();
+  const m = code ? null : name.match(/^([A-Za-z]{2,6})-?(\d{2,5})\b[\s:：\-]*/);
   if (m) { code = (m[1] + '-' + m[2]).toUpperCase(); name = name.slice(m[0].length).trim() || name; }
   $('nameInput').value = name;
   if (d.actor) $('actorInput').value = d.actor;
+  if (d.tags) $('tagsInput').value = d.tags;
   if (code) $('codeInput').value = code;
   $('urlInput').value = d.url || '';
   $('imgInput').value = d.img || '';
