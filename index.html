@@ -69,13 +69,8 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 .layout-cols-2 .card-overlay p.title{font-size:11px}
 .layout-cols-3 .card-overlay p.title,.layout-cols-4 .card-overlay p.title{font-size:9px;padding-right:2px}
 .layout-cols-3 .card-overlay p.code,.layout-cols-4 .card-overlay p.code{font-size:7px}
-.layout-cols-3 .action-circle-btn,.layout-cols-4 .action-circle-btn{width:24px;height:24px}
-.layout-cols-3 .action-circle-btn svg,.layout-cols-4 .action-circle-btn svg{width:12px;height:12px}
-.action-circle-btn{position:absolute;width:36px;height:36px;background:rgba(0,0,0,.1);backdrop-filter:blur(4px);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:50;border:1px solid rgba(255,255,255,.05);color:rgba(255,255,255,.7);transition:transform .2s,background .2s;cursor:pointer}
-.action-circle-btn:active{transform:scale(.9);background:rgba(0,0,0,.3)}
-.card-edit-btn{top:6px;right:6px}
-.card-play-btn{bottom:6px;right:6px}
-.card-play-btn svg{width:18px;height:18px;fill:rgba(255,255,255,.7);margin-left:2px}
+.poster-card{cursor:pointer;-webkit-touch-callout:none;transition:transform .15s}
+.poster-card[data-card]:active{transform:scale(.97)}
 .card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.9),transparent 60%);display:flex;flex-direction:column;justify-content:flex-end;padding:8px;pointer-events:none;z-index:10}
 .page-dot-container{display:flex;flex-direction:column;gap:16px;justify-content:center;align-items:center;padding:8px 0 0;width:100%}
 .pagination-dots-row{display:flex;gap:8px;justify-content:center;align-items:center;overflow-x:auto;scrollbar-width:none;width:100%}
@@ -316,10 +311,8 @@ function renderGallery() {
   const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   gallery.innerHTML = paginated.map(item => `
-    <div class="poster-card">
+    <div class="poster-card" data-card="${esc(item.id)}">
       <img src="${esc(item.img) || NO_IMG}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=NO_IMG">
-      <div class="action-circle-btn card-edit-btn" data-edit="${esc(item.id)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></div>
-      ${item.url ? `<div class="action-circle-btn card-play-btn" data-play="${esc(item.id)}"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>` : ''}
       <div class="card-overlay">
         <p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p>
         <p class="title text-[13px] font-bold truncate">${esc(item.name)}</p>
@@ -380,14 +373,38 @@ function refreshAll() { renderGallery(); renderTagCloud(); renderActorList(); }
 function changePage(p) { currentPage = p; window.scrollTo({ top: 0, behavior: 'smooth' }); renderGallery(); }
 function changeActorPage(p) { actorCurrentPage = p; window.scrollTo({ top: 0, behavior: 'smooth' }); renderActorList(); }
 
-/* 事件委派：取代 inline onclick 拼字串 */
+/* 事件委派：點擊封面跳轉，長按封面編輯 */
+let lpTimer = null, lpFired = false, lpX = 0, lpY = 0;
+const LONG_PRESS_MS = 500, MOVE_TOL = 10;
+function cancelLongPress() { clearTimeout(lpTimer); lpTimer = null; }
+
+document.addEventListener('pointerdown', e => {
+  const card = e.target.closest('[data-card]');
+  if (!card) return;
+  lpFired = false; lpX = e.clientX; lpY = e.clientY;
+  cancelLongPress();
+  lpTimer = setTimeout(() => {
+    lpTimer = null; lpFired = true;
+    if (navigator.vibrate) navigator.vibrate(15);
+    openDrawer(card.dataset.card);
+  }, LONG_PRESS_MS);
+});
+document.addEventListener('pointermove', e => {
+  if (lpTimer && (Math.abs(e.clientX - lpX) > MOVE_TOL || Math.abs(e.clientY - lpY) > MOVE_TOL)) cancelLongPress();
+});
+['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => {
+  cancelLongPress();
+  if (lpFired) setTimeout(() => { lpFired = false; }, 400); // 吃掉長按放開後的 click
+}));
+document.addEventListener('contextmenu', e => { if (e.target.closest('[data-card]')) e.preventDefault(); });
+
 document.addEventListener('click', e => {
-  const edit = e.target.closest('[data-edit]');
-  if (edit) { openDrawer(edit.dataset.edit); return; }
-  const play = e.target.closest('[data-play]');
-  if (play) {
-    const it = collections.find(i => String(i.id) === play.dataset.play);
-    if (it) openExternalUrl(it.url, e);
+  const card = e.target.closest('[data-card]');
+  if (card) {
+    if (lpFired) return;
+    const it = collections.find(i => String(i.id) === card.dataset.card);
+    if (!it) return;
+    if (it.url) openExternalUrl(it.url, e); else openDrawer(it.id); // 沒有連結就直接開編輯
     return;
   }
   const q = e.target.closest('[data-q]');
