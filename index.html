@@ -72,17 +72,19 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 .poster-card{cursor:pointer;-webkit-touch-callout:none;transition:transform .15s}
 .poster-card[data-card]:active{transform:scale(.97)}
 .card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.9),transparent 60%);display:flex;flex-direction:column;justify-content:flex-end;padding:8px;pointer-events:none;z-index:10}
+#page2,#page3{padding-bottom:calc(100px + var(--safe-bottom))}
 .page-dot-container{display:flex;flex-direction:column;gap:16px;justify-content:center;align-items:center;padding:8px 0 0;width:100%}
 .pagination-dots-row{display:flex;gap:8px;justify-content:center;align-items:center;overflow-x:auto;scrollbar-width:none;width:100%}
 .pagination-dots-row::-webkit-scrollbar{display:none}
 .page-dot{min-width:32px;height:32px;border-radius:6px;background:#1a1a1e;color:#71717a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;transition:all .3s;flex-shrink:0;cursor:pointer}
 .page-dot.active{background:var(--nf-red);color:#fff;transform:scale(1.05);box-shadow:0 4px 12px rgba(229,9,20,.3)}
-.page-nav-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%}
-.page-nav-btn{flex:1;height:44px;border-radius:10px;background:var(--nf-red);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;border:none;box-shadow:0 4px 12px rgba(229,9,20,.3);transition:transform .2s,opacity .2s}
+.page-nav-row{display:flex;align-items:center;justify-content:center;gap:14px;width:100%}
+.page-nav-btn{flex:none;width:64px;height:34px;border-radius:8px;background:var(--nf-red);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:2px;border:none;box-shadow:0 2px 8px rgba(229,9,20,.3);transition:transform .2s,opacity .2s}
+.page-nav-btn{padding:0}
 .page-nav-btn:active:not(:disabled){transform:scale(.95)}
 .page-nav-btn:disabled{background:#1a1a1e;color:#3f3f46;box-shadow:none}
-.page-nav-info{min-width:64px;text-align:center;font-size:12px;font-weight:600;color:#71717a}
-.page-nav-info b{color:#fff;font-size:14px}
+.page-nav-info{min-width:72px;text-align:center;font-size:15px;font-weight:600;color:#71717a}
+.page-nav-info b{color:#fff;font-size:inherit}
 .drawer{position:fixed;inset:0;background:var(--nf-black);transform:translateY(100%);transition:transform .4s;z-index:2000;overflow-y:auto;padding:25px}
 .drawer.open{transform:translateY(0)}
 .search-container{position:relative;margin-bottom:1.5rem}
@@ -127,16 +129,16 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
         <svg id="clearSearchBtn" class="clear-search-btn" onclick="clearSearch()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </div>
       <div id="gallery" class="grid gap-3"></div>
-      <div id="paginationContainer" class="page-dot-container mt-8"></div>
+      <div id="paginationContainer" class="page-dot-container mt-6"></div>
     </div>
     <div id="page2" class="page-content">
       <h2 class="text-2xl font-bold mb-6 px-2">影片標籤</h2>
       <div id="tagCloud" class="flex flex-wrap gap-3 px-2"></div>
     </div>
     <div id="page3" class="page-content">
-      <h2 class="text-2xl font-bold mb-10 px-2">所有演員</h2>
-      <div id="actorList" class="grid grid-cols-3 gap-y-10 gap-x-2 text-center"></div>
-      <div id="actorPaginationContainer" class="page-dot-container mt-8"></div>
+      <h2 class="text-2xl font-bold mb-6 px-2">所有演員</h2>
+      <div id="actorList" class="grid grid-cols-3 gap-y-6 gap-x-2 text-center"></div>
+      <div id="actorPaginationContainer" class="page-dot-container mt-6"></div>
     </div>
   </div>
 </div>
@@ -175,6 +177,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
     <button onclick="closeDrawer()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
   </div>
   <div class="space-y-6">
+    <button id="pasteBtn" onclick="pasteFromClipboard()" class="w-full py-3 bg-zinc-900 rounded-lg text-xs font-bold text-zinc-300">從剪貼簿貼上</button>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">名稱 / 演員</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">番號 (ID)</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結 (URL)</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
@@ -218,8 +221,8 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 </div>
 
 <div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden items-center justify-center p-8">
-  <div class="text-center"><h4 id="confirmTitle" class="text-xl font-bold mb-8">確定要刪除嗎？</h4>
-    <div class="flex flex-col gap-4"><button id="confirmOkBtn" class="w-64 bg-red-600 py-4 font-bold rounded-lg">確定</button><button onclick="closeConfirm()" class="py-2 text-zinc-500">取消</button></div>
+  <div class="text-center"><h4 id="confirmTitle" class="text-xl font-bold mb-8 leading-relaxed">確定要刪除嗎？</h4>
+    <div class="flex flex-col items-center gap-4"><button id="confirmOkBtn" class="w-64 bg-red-600 py-4 font-bold rounded-lg">確定</button><button onclick="closeConfirm()" class="w-64 py-4 font-bold rounded-lg bg-zinc-800 text-zinc-300">取消</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -298,7 +301,7 @@ function renderGallery() {
   $('itemCount').innerText = `${filtered.length} ITEMS`;
 
   if (filtered.length === 0) {
-    gallery.className = "flex flex-col items-center justify-center py-20 text-center";
+    gallery.className = "flex flex-col items-center justify-center py-12 text-center";
     gallery.innerHTML = `<div class="empty-state-icon mb-6"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div><p class="text-zinc-500 font-bold text-lg mb-4">找不到相關內容</p>`;
     $('paginationContainer').innerHTML = "";
     updateContainerHeight();
@@ -325,12 +328,12 @@ function renderGallery() {
 function renderPagination(total, cur, fn, containerId) {
   const container = $(containerId);
   if (total <= 1) { container.innerHTML = ""; return; }
-  const arrow = (d, dir) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="${d}"></polyline></svg>`;
+  const arrow = (d, dir) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="${d}"></polyline></svg>`;
   const prevOff = cur <= 1, nextOff = cur >= total;
   container.innerHTML = `<div class="page-nav-row">
-    <button class="page-nav-btn" ${prevOff ? 'disabled' : `onclick="${fn}(${cur - 1})"`} aria-label="上一頁">${arrow('15 18 9 12 15 6')}<span>上一頁</span></button>
+    <button class="page-nav-btn" ${prevOff ? 'disabled' : `onclick="${fn}(${cur - 1})"`} aria-label="上一頁">${arrow('15 18 9 12 15 6')}</button>
     <div class="page-nav-info"><b>${cur}</b> / ${total}</div>
-    <button class="page-nav-btn" ${nextOff ? 'disabled' : `onclick="${fn}(${cur + 1})"`} aria-label="下一頁"><span>下一頁</span>${arrow('9 18 15 12 9 6')}</button>
+    <button class="page-nav-btn" ${nextOff ? 'disabled' : `onclick="${fn}(${cur + 1})"`} aria-label="下一頁">${arrow('9 18 15 12 9 6')}</button>
   </div>`;
 }
 
@@ -442,6 +445,7 @@ function openDrawer(id = null) {
     Object.values(f).forEach(x => { x.value = ""; x.style.color = "white"; });
     $('drawerDeleteBtn').classList.add('hidden');
   }
+  $('pasteBtn').classList.toggle('hidden', !!item);
   ['codeInput', 'urlInput', 'imgInput'].forEach(fid => checkDuplicate($(fid)));
 }
 
@@ -512,11 +516,12 @@ function closeDrawer() { $('drawer').classList.remove('open'); }
 function toggleFilterDrawer(open) { $('filterDrawer').classList.toggle('open', open); }
 
 async function exportData() {
+  const EXPORT_NAME = 'netflav.json';
   const text = JSON.stringify(collections, null, 2);
   try {
-    const file = new File([text], 'netflav.json', { type: 'application/json' });
+    const file = new File([text], EXPORT_NAME, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'netflav 備份' });
+      await navigator.share({ files: [file] });
       return;
     }
   } catch (err) {
@@ -525,7 +530,7 @@ async function exportData() {
   const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'netflav.json'; a.click();
+  a.href = url; a.download = EXPORT_NAME; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -561,13 +566,51 @@ function importData(e) {
   reader.readAsText(file);
 }
 
+/* 從連結 / 剪貼簿帶入資料（供 iPhone 捷徑使用）
+   格式：#add?name=標題&url=網址&img=封面網址 */
+function parseAddParams(str) {
+  const i = str.indexOf('add?');
+  const p = new URLSearchParams(i >= 0 ? str.slice(i + 4) : str.replace(/^[#?]/, ''));
+  return { name: p.get('name') || '', url: p.get('url') || '', img: p.get('img') || '' };
+}
+function setFields(d) {
+  let name = String(d.name || '').trim(), code = '';
+  const m = name.match(/^([A-Za-z]{2,6})-?(\d{2,5})\b[\s:：\-]*/);
+  if (m) { code = (m[1] + '-' + m[2]).toUpperCase(); name = name.slice(m[0].length).trim() || name; }
+  $('nameInput').value = name;
+  if (code) $('codeInput').value = code;
+  $('urlInput').value = d.url || '';
+  $('imgInput').value = d.img || '';
+  const dup = ['codeInput', 'urlInput', 'imgInput'].map(id => checkDuplicate($(id))).some(Boolean);
+  if (dup) showToast("這部可能已經加過了");
+}
+async function pasteFromClipboard() {
+  try {
+    const t = (await navigator.clipboard.readText()).trim();
+    if (!t) { showToast("剪貼簿是空的"); return; }
+    if (/^https?:\/\//i.test(t) && !t.includes('add?')) setFields({ url: t });
+    else setFields(parseAddParams(t));
+  } catch (e) { showToast("無法讀取剪貼簿"); }
+}
+function handleHash() {
+  if (!location.hash.startsWith('#add?')) return;
+  const d = parseAddParams(location.hash);
+  history.replaceState(null, '', location.pathname + location.search);
+  openDrawer(); setFields(d);
+}
+window.addEventListener('hashchange', handleHash);
+
 function refreshAndHome() { clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 ['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
+
+window.addEventListener('resize', updateContainerHeight);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
 window.onload = () => {
   updateLayout(currentLayout);
   updatePageSize(pageSize);
   renderActorList();
+  handleHash();
   setTimeout(() => { const s = $('splashScreen'); if (s) s.classList.add('fade-out'); }, 1200);
 };
 </script>
