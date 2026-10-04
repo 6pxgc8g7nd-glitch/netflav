@@ -125,7 +125,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
       </div>
       <div class="search-container">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="搜尋女優或番號..." class="search-input">
+        <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="搜尋標題、女優或番號..." class="search-input">
         <svg id="clearSearchBtn" class="clear-search-btn" onclick="clearSearch()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </div>
       <div id="gallery" class="grid gap-3"></div>
@@ -178,9 +178,10 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
   </div>
   <div class="space-y-6">
     <button id="pasteBtn" onclick="pasteFromClipboard()" class="w-full py-3 bg-zinc-900 rounded-lg text-xs font-bold text-zinc-300">從剪貼簿貼上</button>
-    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">名稱 / 演員</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">番號 (ID)</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結 (URL)</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標題</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">女優（多位請用逗號或頓號分隔）</label><input type="text" id="actorInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">番號</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤（空白分隔）</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片</label><input type="text" id="imgInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div class="pt-10 space-y-4">
@@ -296,6 +297,7 @@ function renderGallery() {
   const q = $('searchInput').value.trim().toLowerCase();
   const filtered = collections.filter(i =>
     String(i.name || '').toLowerCase().includes(q) ||
+    String(i.actor || '').toLowerCase().includes(q) ||
     String(i.code || '').toLowerCase().includes(q) ||
     (i.tags || []).some(t => String(t).toLowerCase().includes(q)));
   $('itemCount').innerText = `${filtered.length} ITEMS`;
@@ -354,11 +356,15 @@ function renderTagCloud() {
   updateContainerHeight();
 }
 
+function actorsOf(i) {
+  const list = typeof i.actor === 'string'
+    ? i.actor.split(/[,，、\/／]+/).map(n => n.trim()).filter(Boolean)
+    : String(i.name || '').split(/[\s,\[\]【】，、\/]+/).filter(n => n.trim() && n.length > 1); // 舊資料
+  return [...new Set(list)];
+}
 function renderActorList() {
   const map = {};
-  collections.forEach(i => {
-    String(i.name || '').split(/[\s,\[\]【】，、\/]+/).filter(n => n.trim() && n.length > 1).forEach(n => map[n] = (map[n] || 0) + 1);
-  });
+  collections.forEach(i => actorsOf(i).forEach(n => map[n] = (map[n] || 0) + 1));
   const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
   const total = Math.ceil(sorted.length / actorPageSize);
   if (actorCurrentPage > total) actorCurrentPage = Math.max(total, 1);
@@ -434,10 +440,10 @@ function closeRandomModal() { const m = $('randomModal'); m.classList.add('hidde
 function openDrawer(id = null) {
   currentId = id;
   $('drawer').classList.add('open');
-  const f = { name: $('nameInput'), code: $('codeInput'), url: $('urlInput'), tags: $('tagsInput'), img: $('imgInput') };
+  const f = { name: $('nameInput'), actor: $('actorInput'), code: $('codeInput'), url: $('urlInput'), tags: $('tagsInput'), img: $('imgInput') };
   const item = id ? collections.find(i => String(i.id) === String(id)) : null;
   if (item) {
-    f.name.value = item.name || ""; f.code.value = item.code || ""; f.url.value = item.url || "";
+    f.name.value = item.name || ""; f.actor.value = item.actor || ""; f.code.value = item.code || ""; f.url.value = item.url || "";
     f.tags.value = (item.tags || []).join(' '); f.img.value = item.img || "";
     $('drawerDeleteBtn').classList.remove('hidden');
   } else {
@@ -455,6 +461,7 @@ function saveItem() {
   if (['codeInput', 'urlInput', 'imgInput'].some(id => checkDuplicate($(id)))) { showToast("請修正重複的資料"); return; }
   const data = {
     id: currentId || Date.now().toString(), name,
+    actor: $('actorInput').value.trim(),
     code: $('codeInput').value.trim().toUpperCase(),
     url: $('urlInput').value.trim(),
     tags: $('tagsInput').value.trim().split(/\s+/).filter(Boolean),
@@ -549,7 +556,8 @@ function importData(e) {
         seen.add(id);
         return {
           id, name: String(i.name), code: String(i.code || ''), url: String(i.url || ''), img: String(i.img || ''),
-          tags: Array.isArray(i.tags) ? i.tags.map(String) : []
+          tags: Array.isArray(i.tags) ? i.tags.map(String) : [],
+          actor: typeof i.actor === 'string' ? i.actor : undefined
         };
       });
       if (data.length === 0) throw new Error('empty');
@@ -571,13 +579,14 @@ function importData(e) {
 function parseAddParams(str) {
   const i = str.indexOf('add?');
   const p = new URLSearchParams(i >= 0 ? str.slice(i + 4) : str.replace(/^[#?]/, ''));
-  return { name: p.get('name') || '', url: p.get('url') || '', img: p.get('img') || '' };
+  return { name: p.get('name') || '', actor: p.get('actor') || '', url: p.get('url') || '', img: p.get('img') || '' };
 }
 function setFields(d) {
   let name = String(d.name || '').trim(), code = '';
   const m = name.match(/^([A-Za-z]{2,6})-?(\d{2,5})\b[\s:：\-]*/);
   if (m) { code = (m[1] + '-' + m[2]).toUpperCase(); name = name.slice(m[0].length).trim() || name; }
   $('nameInput').value = name;
+  if (d.actor) $('actorInput').value = d.actor;
   if (code) $('codeInput').value = code;
   $('urlInput').value = d.url || '';
   $('imgInput').value = d.img || '';
