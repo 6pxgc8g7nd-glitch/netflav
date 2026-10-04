@@ -228,8 +228,10 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
       </div>
     </div>
     <button onclick="toggleFilterDrawer(false); openDrawer();" class="w-full py-4 bg-zinc-900 rounded font-bold text-white">新增影片</button>
-    <button onclick="exportData()" class="w-full py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
-    <label class="block w-full py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
+    <div class="grid grid-cols-2 gap-3">
+      <button onclick="exportData()" class="py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
+      <label class="block py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
+    </div>
   </div>
 </div>
 
