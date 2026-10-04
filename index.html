@@ -179,7 +179,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
   <div class="space-y-6">
     <button id="pasteBtn" onclick="pasteFromClipboard()" class="w-full py-3 bg-zinc-900 rounded-lg text-xs font-bold text-zinc-300">從剪貼簿貼上</button>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標題</label><input type="text" id="nameInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
-    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">女優（多位請用逗號或頓號分隔）</label><input type="text" id="actorInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">女優（空白分隔）</label><input type="text" id="actorInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">番號</label><input type="text" id="codeInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤（空白分隔）</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
@@ -358,7 +358,7 @@ function renderTagCloud() {
 
 function actorsOf(i) {
   const list = typeof i.actor === 'string'
-    ? i.actor.split(/[,，、\/／]+/).map(n => n.trim()).filter(Boolean)
+    ? i.actor.split(/[\s,，、\/／]+/).map(n => n.trim()).filter(Boolean)
     : String(i.name || '').split(/[\s,\[\]【】，、\/]+/).filter(n => n.trim() && n.length > 1); // 舊資料
   return [...new Set(list)];
 }
