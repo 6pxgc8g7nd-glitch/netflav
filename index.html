@@ -86,12 +86,13 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 .card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.9),transparent 60%);display:flex;flex-direction:column;justify-content:flex-end;padding:8px;pointer-events:none;z-index:10;color:#fff}
 #page2,#page3{padding-bottom:calc(100px + var(--safe-bottom))}
 .page-dot-container{display:flex;flex-direction:column;gap:16px;justify-content:center;align-items:center;padding:8px 0 0;width:100%}
-.page-nav-row{display:flex;align-items:center;justify-content:center;gap:14px;width:100%}
-.page-nav-btn{flex:none;width:64px;height:34px;border-radius:8px;background:var(--nf-red);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:2px;border:none;box-shadow:0 2px 8px rgba(229,9,20,.3);transition:transform .2s,opacity .2s}
+.page-nav-row{display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.page-nav-btn{flex:none;width:44px;height:36px;border-radius:8px;background:var(--nf-red);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:2px;border:none;box-shadow:0 2px 8px rgba(229,9,20,.3);transition:transform .2s,opacity .2s}
 .page-nav-btn{padding:0}
 .page-nav-btn:active:not(:disabled){transform:scale(.95)}
 .page-nav-btn:disabled{background:var(--z900);color:var(--t600);box-shadow:none}
-.page-nav-info{min-width:72px;text-align:center;font-size:15px;font-weight:600;color:var(--t500)}
+.page-nav-info{min-width:84px;height:36px;padding:0 10px;border-radius:18px;text-align:center;font-size:15px;font-weight:600;color:var(--t500)}
+.page-nav-info:active{background:var(--glass-active)}
 .page-nav-info b{color:var(--fg);font-size:inherit}
 .drawer{position:fixed;inset:0;background:var(--nf-black);transform:translateY(100%);transition:transform .4s;z-index:2000;overflow-y:auto;padding:25px}
 .drawer.open{transform:translateY(0)}
@@ -137,7 +138,7 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
 .z-\[6000\]{z-index:6000}.z-\[7000\]{z-index:7000}
 .block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}
 .flex-1{flex:1 1 0%}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}
-.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}
+.items-center{align-items:center}.items-end{align-items:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}
 .gap-2{gap:.5rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-x-2{column-gap:.5rem}.gap-y-6{row-gap:1.5rem}
 .grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .space-y-4>:not([hidden])~:not([hidden]){margin-top:1rem;margin-bottom:0}
@@ -238,6 +239,10 @@ html[data-theme=light] #toast,html[data-theme=light] #undoBar{color:#0f0f0f}
 .tag-count{flex:none;min-width:26px;text-align:center;font-size:12px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;color:var(--fg);background:rgba(255,255,255,.18)}
 html[data-theme=light] .tag-count{background:rgba(0,0,0,.08)}
 #itemCount{color:var(--fg)}
+.page-nav-info{background:var(--glass-bg);border:1px solid var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi)}
+.page-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-height:46vh;overflow-y:auto;margin-top:14px}
+.page-chip{height:44px;border-radius:14px;background:var(--glass-bg);border:1px solid var(--glass-bd);font-weight:700;font-size:14px;color:var(--fg)}
+.page-chip.active{background:var(--nf-red);color:#fff;border-color:transparent}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
 </style>
 <script>
@@ -396,6 +401,12 @@ applyGlass();
   </div>
 </div>
 
+<div id="pageModal" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this)closePagePicker()">
+  <div class="keep-dark glassy w-full" style="border-radius:28px 28px 0 0;padding:20px 16px calc(24px + var(--safe-bottom))">
+    <p class="text-center text-sm font-bold">跳到第幾頁</p>
+    <div id="pageGrid" class="page-grid"></div>
+  </div>
+</div>
 <div id="confirmModal" class="keep-dark fixed inset-0 bg-black/95 z-[6000] hidden items-center justify-center p-8">
   <div class="text-center"><h4 id="confirmTitle" class="text-xl font-bold mb-8 leading-relaxed">確定要刪除嗎？</h4>
     <div class="flex flex-col items-center gap-4"><button id="confirmOkBtn" class="w-64 bg-red-600 py-4 font-bold rounded-lg text-white">確定</button><button onclick="closeConfirm()" class="w-64 py-4 font-bold rounded-lg bg-zinc-800 text-zinc-300">取消</button></div>
@@ -527,14 +538,27 @@ function renderGallery() {
 function renderPagination(total, cur, fn, containerId) {
   const container = $(containerId);
   if (total <= 1) { container.innerHTML = ""; return; }
-  const arrow = (d, dir) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="${d}"></polyline></svg>`;
-  const prevOff = cur <= 1, nextOff = cur >= total;
+  const ico = (...polys) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${polys.map(p => `<polyline points="${p}"></polyline>`).join('')}</svg>`;
+  const btn = (off, page, label, icon) => `<button class="page-nav-btn" ${off ? 'disabled' : `onclick="${fn}(${page})"`} aria-label="${label}">${icon}</button>`;
+  const atStart = cur <= 1, atEnd = cur >= total;
   container.innerHTML = `<div class="page-nav-row">
-    <button class="page-nav-btn" ${prevOff ? 'disabled' : `onclick="${fn}(${cur - 1})"`} aria-label="上一頁">${arrow('15 18 9 12 15 6')}</button>
-    <div class="page-nav-info"><b>${cur}</b> / ${total}</div>
-    <button class="page-nav-btn" ${nextOff ? 'disabled' : `onclick="${fn}(${cur + 1})"`} aria-label="下一頁">${arrow('9 18 15 12 9 6')}</button>
+    ${btn(atStart, 1, '第一頁', ico('18 17 12 12 18 7', '11 17 5 12 11 7'))}
+    ${btn(atStart, cur - 1, '上一頁', ico('15 18 9 12 15 6'))}
+    <button class="page-nav-info" onclick="openPagePicker(${total},${cur},'${fn}')" aria-label="跳到指定頁"><b>${cur}</b> / ${total}</button>
+    ${btn(atEnd, cur + 1, '下一頁', ico('9 18 15 12 9 6'))}
+    ${btn(atEnd, total, '最後一頁', ico('6 17 12 12 6 7', '13 17 19 12 13 7'))}
   </div>`;
 }
+
+/* 點頁碼 → 跳頁選單 */
+function openPagePicker(total, cur, fn) {
+  $('pageGrid').innerHTML = Array.from({ length: total }, (_, i) => i + 1)
+    .map(p => `<button class="page-chip${p === cur ? ' active' : ''}" onclick="pickPage('${fn}',${p})">${p}</button>`).join('');
+  const m = $('pageModal'); m.classList.remove('hidden'); m.classList.add('flex');
+  const a = $('pageGrid').querySelector('.active'); if (a) a.scrollIntoView({ block: 'center' });
+}
+function closePagePicker() { const m = $('pageModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function pickPage(fn, p) { closePagePicker(); window[fn](p); }
 
 function updateLayout(cols) {
   currentLayout = cols;
