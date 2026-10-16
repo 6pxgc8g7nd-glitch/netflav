@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>netflav</title>
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -51,6 +51,7 @@ html[data-theme=light]{--nf-black:#f4f4f5;--fg:#18181b;--z950:#fafafa;--z900:#e8
 .keep-dark{color:var(--fg)}
 body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Heiti TC','Microsoft JhengHei',sans-serif;background:var(--nf-black);color:var(--fg);margin:0;padding:0;overflow-x:hidden;overflow-y:auto;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 input,textarea{-webkit-user-select:text;user-select:text}
+html,body{touch-action:manipulation}
 html,body,.drawer{scrollbar-width:none;-ms-overflow-style:none}
 html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{display:none;width:0;height:0}
 @keyframes floating{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -1008,6 +1009,10 @@ function precacheCovers() {
   showToast(`開始下載 ${urls.length} 張封面…`);
   sw.postMessage({ type: 'precache', urls });
 }
+/* 禁止雙擊 / 雙指縮放（iOS） */
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => { const n = Date.now(); if (n - lastTouchEnd < 300 && !e.target.closest('input,textarea')) e.preventDefault(); lastTouchEnd = n; }, { passive: false });
 window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
