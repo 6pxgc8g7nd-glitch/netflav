@@ -14,13 +14,10 @@
 /* 先套用外觀設定，避免畫面閃一下 */
 (function () {
   try {
-    var ACC = { red: '#E50914', blue: '#2563eb', green: '#16a34a', purple: '#9333ea', orange: '#ea580c' };
     var t = localStorage.getItem('NF_THEME') === 'light' ? 'light' : 'dark';
-    var a = localStorage.getItem('NF_ACCENT');
-    if (!a || !ACC[a]) a = 'red';
     document.documentElement.setAttribute('data-theme', t);
-    /* 預設紅色：深色 = Netflix 紅，淺色 = YouTube 紅 */
-    document.documentElement.style.setProperty('--nf-red', a === 'red' ? (t === 'light' ? '#FF0000' : '#E50914') : ACC[a]);
+    /* 深色 = Netflix 紅，淺色 = YouTube 紅 */
+    document.documentElement.style.setProperty('--nf-red', t === 'light' ? '#FF0000' : '#E50914');
     var m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute('content', t === 'light' ? '#ffffff' : '#141414');
   } catch (e) {}
@@ -114,9 +111,6 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 .layout-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .layout-option{background:var(--z900);border:1px solid var(--b700);padding:10px 0;border-radius:8px;text-align:center;font-size:11px;font-weight:700;color:var(--t500);transition:.2s}
 .layout-option.active{background:var(--nf-red);color:#fff;border-color:var(--nf-red)}
-.accent-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
-.accent-swatch{height:36px;border-radius:8px;border:2px solid transparent;transition:.2s}
-.accent-swatch.active{border-color:var(--fg);box-shadow:inset 0 0 0 2px var(--nf-black)}
 .drawer input[type=text],.drawer input[type=password]{font-size:16px}
 </style>
 <style id="nf-base">
@@ -213,7 +207,7 @@ html[data-theme=light] .glassy,html[data-theme=light] #toast,html[data-theme=lig
 .page-nav-btn:disabled{background:transparent;color:var(--t600);border-color:transparent;opacity:.5}
 .bg-red-600{background-image:linear-gradient(to bottom,rgba(255,255,255,.22),rgba(255,255,255,0));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 20px color-mix(in srgb,var(--nf-red) 40%,transparent)}
 button:active{transition:transform .25s var(--pop)}
-.bg-red-600:active,.layout-option:active,.accent-swatch:active{transform:scale(.96)}
+.bg-red-600:active,.layout-option:active{transform:scale(.96)}
 
 /* 圓角 */
 .rounded{border-radius:12px}.rounded-lg{border-radius:16px}.rounded-2xl{border-radius:28px}
@@ -357,15 +351,7 @@ applyGlass();
         <div class="layout-grid">
           <button id="themeBtnDark" onclick="setTheme('dark')" class="layout-option">深色</button>
           <button id="themeBtnLight" onclick="setTheme('light')" class="layout-option">淺色</button>
-        </div>
-        <div class="accent-grid">
-          <button id="accentBtn_red" onclick="setAccent('red')" class="accent-swatch" style="background:#E50914" aria-label="紅色"></button>
-          <button id="accentBtn_blue" onclick="setAccent('blue')" class="accent-swatch" style="background:#2563eb" aria-label="藍色"></button>
-          <button id="accentBtn_green" onclick="setAccent('green')" class="accent-swatch" style="background:#16a34a" aria-label="綠色"></button>
-          <button id="accentBtn_purple" onclick="setAccent('purple')" class="accent-swatch" style="background:#9333ea" aria-label="紫色"></button>
-          <button id="accentBtn_orange" onclick="setAccent('orange')" class="accent-swatch" style="background:#ea580c" aria-label="橘色"></button>
-        </div>
-        <label class="block text-[10px] text-zinc-500 font-bold mt-4 mb-2 uppercase tracking-widest">玻璃透明度</label>
+        </div>        <label class="block text-[10px] text-zinc-500 font-bold mt-4 mb-2 uppercase tracking-widest">玻璃透明度</label>
         <input type="range" id="glassRange" min="0" max="100" step="1" oninput="setGlass(this.value)">
       </div>
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
@@ -449,35 +435,23 @@ let tagCurrentPage = 1, tagPageSize = 20;
 let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 2;
 let lastRandomId = null, activeTab = 0;
 
-/* 外觀：深色 / 淺色 + 強調色 */
-const ACCENTS = { red: '#E50914', blue: '#2563eb', green: '#16a34a', purple: '#9333ea', orange: '#ea580c' };
+/* 外觀：深色 / 淺色 */
 function currentTheme() { return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
-function currentAccent() {
-  let a = ''; try { a = localStorage.getItem('NF_ACCENT') || ''; } catch (e) {}
-  return ACCENTS[a] ? a : 'red';
-}
-function applyAccent() {
-  const a = currentAccent(), light = currentTheme() === 'light';
-  document.documentElement.style.setProperty('--nf-red', a === 'red' ? (light ? '#FF0000' : '#E50914') : ACCENTS[a]);
+function applyAccent() { // 深色 = Netflix 紅，淺色 = YouTube 紅
+  document.documentElement.style.setProperty('--nf-red', currentTheme() === 'light' ? '#FF0000' : '#E50914');
 }
 function updateAppearanceUI() {
   applyAccent();
-  const t = currentTheme(), a = currentAccent();
+  const t = currentTheme();
   const gr = $('glassRange'); if (gr) gr.value = glassLevel();
   $('themeBtnDark').classList.toggle('active', t === 'dark');
   $('themeBtnLight').classList.toggle('active', t === 'light');
-  Object.keys(ACCENTS).forEach(k => $('accentBtn_' + k).classList.toggle('active', k === a));
   const m = document.querySelector('meta[name="theme-color"]');
   if (m) m.setAttribute('content', t === 'light' ? '#ffffff' : '#141414');
 }
 function setTheme(t) {
   document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
   try { localStorage.setItem('NF_THEME', t === 'light' ? 'light' : 'dark'); } catch (e) {}
-  updateAppearanceUI();
-}
-function setAccent(k) {
-  if (!ACCENTS[k]) return;
-  try { localStorage.setItem('NF_ACCENT', k); } catch (e) {}
   updateAppearanceUI();
 }
 
