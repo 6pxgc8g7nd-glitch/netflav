@@ -177,6 +177,79 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
 .outline-none{outline:2px solid transparent;outline-offset:2px}.cursor-pointer{cursor:pointer}
 .active\:opacity-70:active{opacity:.7}
 </style>
+<style id="glass">
+/* ===== iOS 27 / Liquid Glass 風格 ===== */
+:root{--glass-bg:var(--gd);--glass-bd:rgba(255,255,255,.16);--glass-hi:rgba(255,255,255,.28);--glass-active:rgba(255,255,255,.2);--spring:cubic-bezier(.32,.72,0,1);--pop:cubic-bezier(.34,1.56,.64,1)}
+html[data-theme=light]{--glass-bg:var(--gl);--glass-bd:rgba(255,255,255,.85);--glass-hi:rgba(255,255,255,.95);--glass-active:rgba(255,255,255,.95)}
+.keep-dark{--glass-bg:var(--gd);--glass-bd:rgba(255,255,255,.16);--glass-hi:rgba(255,255,255,.28);--glass-active:rgba(255,255,255,.2)}
+.glassy{background:var(--glass-bg);border:1px solid var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi),0 8px 32px rgba(0,0,0,.18);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+
+/* 背景色塊：給玻璃透出來的東西 */
+body::before{content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;filter:blur(30px);
+  background:radial-gradient(38% 26% at 18% 12%,color-mix(in srgb,var(--nf-red) 55%,transparent),transparent 70%),
+             radial-gradient(34% 28% at 88% 48%,color-mix(in srgb,#5e5ce6 45%,transparent),transparent 70%),
+             radial-gradient(40% 26% at 25% 92%,color-mix(in srgb,var(--nf-red) 35%,transparent),transparent 70%)}
+html[data-theme=light] body::before{opacity:.55}
+
+/* 頂部列 */
+.mobile-header{background:linear-gradient(to bottom,var(--hdr),transparent);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);-webkit-mask-image:linear-gradient(to bottom,#000 70%,transparent);mask-image:linear-gradient(to bottom,#000 70%,transparent)}
+.brand-logo{font-weight:800;letter-spacing:-.5px}
+
+/* 懸浮膠囊 Tab Bar */
+.bottom-nav{left:12px;right:12px;bottom:calc(10px + var(--safe-bottom));height:66px;padding:6px;border-radius:33px;gap:4px;background:var(--glass-bg);border:1px solid var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi),0 12px 40px rgba(0,0,0,.28);backdrop-filter:blur(30px) saturate(190%);-webkit-backdrop-filter:blur(30px) saturate(190%)}
+.nav-item{height:54px;border-radius:27px;color:var(--t400);transition:background .35s var(--spring),color .25s,transform .3s var(--pop)}
+.nav-item:active{transform:scale(.94)}
+.nav-item.active{background:var(--glass-active);color:var(--nf-red);box-shadow:inset 0 1px 0 var(--glass-hi),0 2px 10px rgba(0,0,0,.15)}
+.nav-item span{font-weight:600}
+.page-content{padding-bottom:calc(150px + var(--safe-bottom))}
+#page2,#page3{padding-bottom:calc(130px + var(--safe-bottom))}
+
+/* 玻璃按鈕 */
+.fab-btn{bottom:calc(98px + var(--safe-bottom));background:var(--glass-bg);color:var(--nf-red);border:1px solid var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi),0 8px 28px rgba(0,0,0,.3);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);transition:transform .3s var(--pop)}
+.page-nav-btn{background:var(--glass-bg);color:var(--nf-red);border:1px solid var(--glass-bd);border-radius:17px;box-shadow:inset 0 1px 0 var(--glass-hi);transition:transform .3s var(--pop)}
+.page-nav-btn:disabled{background:transparent;color:var(--t600);border-color:transparent;opacity:.5}
+.bg-red-600{background-image:linear-gradient(to bottom,rgba(255,255,255,.22),rgba(255,255,255,0));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 20px color-mix(in srgb,var(--nf-red) 40%,transparent)}
+button:active{transition:transform .25s var(--pop)}
+.bg-red-600:active,.layout-option:active,.accent-swatch:active{transform:scale(.96)}
+
+/* 圓角 */
+.rounded{border-radius:12px}.rounded-lg{border-radius:16px}.rounded-2xl{border-radius:28px}
+.poster-card{border-radius:20px;border:1px solid var(--glass-bd);box-shadow:0 8px 24px rgba(0,0,0,.25);transition:transform .35s var(--pop)}
+.card-overlay{padding:12px;background:linear-gradient(to top,rgba(0,0,0,.78),transparent 62%)}
+.layout-option{border-radius:14px;background:var(--glass-bg);border:1px solid var(--glass-bd)}
+
+/* 半透明層（取代實心色） */
+.bg-zinc-900,.bg-zinc-800{background-color:var(--glass-bg)}
+.bg-zinc-950{background-color:var(--glass-bg);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);box-shadow:inset 0 1px 0 var(--glass-hi)}
+.border-zinc-900,.border-zinc-800,.border-zinc-700{border-color:var(--glass-bd)}
+.search-input{border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi);backdrop-filter:blur(20px) saturate(170%);-webkit-backdrop-filter:blur(20px) saturate(170%)}
+.tag-pill{border-radius:999px;background:var(--glass-bg);border-color:var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi)}
+.actor-badge{background:var(--glass-bg);border-color:var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi),0 6px 18px rgba(0,0,0,.2)}
+#toast,#undoBar{background:var(--glass-bg);color:var(--fg);border:1px solid var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 32px rgba(0,0,0,.3);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+html[data-theme=light] #toast,html[data-theme=light] #undoBar{color:#18181b}
+#undoBar{bottom:calc(100px + var(--safe-bottom))}
+#undoBtn:active{background:var(--glass-active)}
+
+/* 抽屜與彈窗 */
+.drawer{background:color-mix(in srgb,var(--nf-black) 70%,transparent);backdrop-filter:blur(36px) saturate(170%);-webkit-backdrop-filter:blur(36px) saturate(170%);transition:transform .55s var(--spring);border-radius:28px 28px 0 0}
+.bg-black\/95{background-color:rgba(0,0,0,.45);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+#randomModal>div{background:var(--glass-bg);border-color:var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi),0 24px 60px rgba(0,0,0,.45);backdrop-filter:blur(36px) saturate(180%);-webkit-backdrop-filter:blur(36px) saturate(180%)}
+/* 修正：搜尋圖示被玻璃層蓋住、番號在彩色封面上看不清 */
+.search-icon,.clear-search-btn{z-index:2}
+.card-overlay p.code{color:rgba(255,255,255,.78)}
+#glassRange{width:100%;accent-color:var(--nf-red);height:28px}
+</style>
+<script>
+/* 玻璃透明度：0–100，預設 40 */
+function glassLevel() { let v = 40; try { const n = parseInt(localStorage.getItem('NF_GLASS')); if (n >= 0 && n <= 100) v = n; } catch (e) {} return v; }
+function applyGlass() {
+  const L = glassLevel(), r = document.documentElement.style;
+  r.setProperty('--gd', 'rgba(255,255,255,' + (0.05 + L * 0.002).toFixed(3) + ')');
+  r.setProperty('--gl', 'rgba(255,255,255,' + (0.35 + L * 0.006).toFixed(3) + ')');
+}
+function setGlass(v) { try { localStorage.setItem('NF_GLASS', v); } catch (e) {} applyGlass(); }
+applyGlass();
+</script>
 </head>
 <body>
 
@@ -291,6 +364,8 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
           <button id="accentBtn_purple" onclick="setAccent('purple')" class="accent-swatch" style="background:#9333ea" aria-label="紫色"></button>
           <button id="accentBtn_orange" onclick="setAccent('orange')" class="accent-swatch" style="background:#ea580c" aria-label="橘色"></button>
         </div>
+        <label class="block text-[10px] text-zinc-500 font-bold mt-4 mb-2 uppercase tracking-widest">玻璃透明度</label>
+        <input type="range" id="glassRange" min="0" max="100" step="1" oninput="setGlass(this.value)">
       </div>
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
         <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">顯示佈局</label>
@@ -382,6 +457,7 @@ function currentAccent() {
 }
 function updateAppearanceUI() {
   const t = currentTheme(), a = currentAccent();
+  const gr = $('glassRange'); if (gr) gr.value = glassLevel();
   $('themeBtnDark').classList.toggle('active', t === 'dark');
   $('themeBtnLight').classList.toggle('active', t === 'light');
   Object.keys(ACCENTS).forEach(k => $('accentBtn_' + k).classList.toggle('active', k === a));
