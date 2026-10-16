@@ -288,7 +288,7 @@ applyGlass();
       <div id="tagPaginationContainer" class="page-dot-container mt-6"></div>
     </div>
     <div id="page3" class="page-content">
-      <h2 class="text-2xl font-bold mb-6 px-2">所有女優</h2>
+      <h2 class="text-2xl font-bold mb-6 px-2">所有演員</h2>
       <div id="actorList" class="grid grid-cols-3 gap-y-6 gap-x-2 text-center"></div>
       <div id="actorPaginationContainer" class="page-dot-container mt-6"></div>
     </div>
@@ -303,7 +303,7 @@ applyGlass();
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path></svg><span>標籤</span>
   </div>
   <div class="nav-item" onclick="switchTab(2)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>女優</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>演員</span>
   </div>
   <div class="nav-item" onclick="toggleFilterDrawer(true)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg><span>設定</span>
@@ -381,6 +381,11 @@ applyGlass();
       <div id="cloudBox" class="hidden bg-zinc-950 p-4 rounded-lg border border-zinc-900">
         <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">雲端自動備份（GitHub Gist）</label>
         <p id="cloudStatus" class="text-xs text-zinc-400 mb-3 leading-relaxed"></p>
+        <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">備份名稱（不同 app 請用不同名稱）</label>
+        <div class="flex gap-2 mb-3">
+          <input type="text" id="backupNameInput" maxlength="60" placeholder="Netflav backup" autocomplete="off" autocapitalize="off" spellcheck="false" class="flex-1 bg-zinc-900 p-3 rounded-lg text-white outline-none" style="min-width:0">
+          <button onclick="saveBackupName()" class="px-4 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">套用</button>
+        </div>
         <input type="password" id="tokenInput" placeholder="貼上 GitHub 權杖" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" class="w-full bg-zinc-900 p-3 rounded-lg text-white outline-none mb-3">
         <button onclick="saveToken()" class="w-full py-3 mb-2 bg-red-600 rounded-lg text-xs font-bold text-white">儲存權杖並連結</button>
         <div class="grid grid-cols-3 gap-2">
@@ -870,12 +875,14 @@ function handleHash() {
 window.addEventListener('hashchange', handleHash);
 
 /* 雲端自動備份：GitHub Gist（私人） */
-const GIST_FILE = 'netflav.json', GIST_DESC = 'Netflav backup';
+const GIST_FILE = 'netflav.json', DEFAULT_GIST_DESC = 'Netflav backup';
+const K_NAME = 'NF_GIST_NAME'; // 備份名稱：不同 app / 不同副本用不同名稱，就會備份到各自的 Gist
 const K_TOKEN = 'NF_GIST_TOKEN', K_ID = 'NF_GIST_ID', K_LAST = 'NF_GIST_LAST';
 const K_TS = 'NF_GIST_TS';        // 本機最後一次看到的雲端 updated_at
 const K_DIRTY = 'NF_GIST_DIRTY';  // 本機有尚未同步到雲端的變更
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const lsSet = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
+const gistDesc = () => lsGet(K_NAME) || DEFAULT_GIST_DESC;
 let backupBusy = false, backupPending = false, backupTimer = null;
 
 async function gh(path, opts = {}) {
@@ -893,7 +900,7 @@ function ghErrMsg(e) {
 async function findCloudGist() {
   for (let page = 1; page <= 5; page++) {
     const list = await gh(`/gists?per_page=100&page=${page}`);
-    const g = list.find(x => x.description === GIST_DESC && x.files && x.files[GIST_FILE]);
+    const g = list.find(x => x.description === gistDesc() && x.files && x.files[GIST_FILE]);
     if (g) return g;
     if (list.length < 100) break;
   }
@@ -917,8 +924,8 @@ async function readCloud(id) {
 function writeCloud(id) {
   const files = { [GIST_FILE]: { content: JSON.stringify(collections, null, 2) } };
   return id
-    ? gh('/gists/' + id, { method: 'PATCH', body: JSON.stringify({ description: GIST_DESC, files }) })
-    : gh('/gists', { method: 'POST', body: JSON.stringify({ description: GIST_DESC, public: false, files }) });
+    ? gh('/gists/' + id, { method: 'PATCH', body: JSON.stringify({ description: gistDesc(), files }) })
+    : gh('/gists', { method: 'POST', body: JSON.stringify({ description: gistDesc(), public: false, files }) });
 }
 function scheduleBackup() {
   if (!lsGet(K_TOKEN) || !lsGet(K_ID)) return;
@@ -948,7 +955,15 @@ async function runBackup(forceId) {
   }
   return ok;
 }
+function saveBackupName() {
+  const v = $('backupNameInput').value.trim().slice(0, 60), old = gistDesc();
+  lsSet(K_NAME, v === DEFAULT_GIST_DESC ? '' : v);
+  if (gistDesc() === old) { showToast('名稱沒有變'); return; }
+  if (lsGet(K_TOKEN) && lsGet(K_ID)) { scheduleBackup(); showToast('已套用，下次備份會改用新名稱'); }
+  else showToast('已套用，連結時會用「' + gistDesc() + '」找雲端備份');
+}
 function updateCloudUI() {
+  const nm = $('backupNameInput'); if (nm && document.activeElement !== nm) nm.value = lsGet(K_NAME);
   const el = $('cloudStatus'); if (!el) return;
   const last = lsGet(K_LAST);
   if (!lsGet(K_TOKEN)) el.textContent = '尚未設定。貼上權杖後，每次儲存都會自動備份。';
