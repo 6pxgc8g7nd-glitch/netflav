@@ -159,7 +159,7 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
 .py-3{padding-top:.75rem;padding-bottom:.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.py-12{padding-top:3rem;padding-bottom:3rem}
 .pr-2{padding-right:.5rem}.pt-10{padding-top:2.5rem}
 .mb-0\.5{margin-bottom:.125rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}
-.mt-2{margin-top:.5rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}
+.mt-0\.5{margin-top:.125rem}.mt-2{margin-top:.5rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}
 .border{border-width:1px}.border-zinc-700{border-color:var(--b700)}.border-zinc-800{border-color:var(--b800)}.border-zinc-900{border-color:var(--b900)}
 .rounded{border-radius:.25rem}.rounded-lg{border-radius:.5rem}.rounded-2xl{border-radius:1rem}
 .shadow-lg{box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1)}
@@ -244,6 +244,9 @@ html[data-theme=light] #toast,html[data-theme=light] #undoBar{color:#0f0f0f}
 /* 修正：搜尋圖示被玻璃層蓋住、番號在彩色封面上看不清 */
 .search-icon,.clear-search-btn{z-index:2}
 .card-overlay p.code{color:rgba(255,255,255,.78)}
+/* 標籤數量：提高對比 */
+.tag-count{flex:none;min-width:26px;text-align:center;font-size:12px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;color:var(--fg);background:rgba(255,255,255,.18)}
+html[data-theme=light] .tag-count{background:rgba(0,0,0,.08)}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
 </style>
 <script>
@@ -583,7 +586,7 @@ function renderTagCloud() {
   const paginated = sorted.slice((tagCurrentPage - 1) * tagPageSize, tagCurrentPage * tagPageSize);
   $('tagCloud').innerHTML = paginated.map(([tag, count]) => `
     <div data-q="${esc(tag)}" class="tag-pill"><span class="truncate pr-2">${esc(tag)}</span>
-    <span class="text-[10px] font-bold text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded">${count}</span></div>`).join('');
+    <span class="tag-count">${count}</span></div>`).join('');
   renderPagination(total, tagCurrentPage, 'changeTagPage', 'tagPaginationContainer');
   updateContainerHeight();
 }
@@ -603,7 +606,7 @@ function renderActorList() {
   const paginated = sorted.slice((actorCurrentPage - 1) * actorPageSize, actorCurrentPage * actorPageSize);
   $('actorList').innerHTML = paginated.map(([name, count]) => {
     const disp = /^[A-Za-z]/.test(name) ? name.substring(0, 2).toUpperCase() : name.substring(0, 1);
-    return `<div data-q="${esc(name)}" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500">${esc(disp)}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${esc(name)}</span><span class="block text-[9px] text-zinc-600">${count} 作品</span></div>`;
+    return `<div data-q="${esc(name)}" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden flex items-center justify-center bg-zinc-800 border-zinc-700 shadow-inner"><span class="text-xl font-black text-zinc-500">${esc(disp)}</span></div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${esc(name)}</span><span class="block text-[11px] text-zinc-400 mt-0.5">${count} 作品</span></div>`;
   }).join('');
   renderPagination(total, actorCurrentPage, 'changeActorPage', 'actorPaginationContainer');
   updateContainerHeight();
