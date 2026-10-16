@@ -60,10 +60,6 @@ html,body,.drawer{scrollbar-width:none;-ms-overflow-style:none}
 html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{display:none;width:0;height:0}
 @keyframes floating{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .empty-state-icon{animation:floating 3s infinite ease-in-out;color:var(--b800)}
-#splashScreen{position:fixed;inset:0;background:var(--nf-black);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s,visibility .6s}
-#splashScreen.fade-out{opacity:0;visibility:hidden}
-@keyframes pulseLogo{0%{transform:scale(.9);opacity:.6}50%{transform:scale(1.05);opacity:1;text-shadow:0 0 20px rgba(229,9,20,.6)}100%{transform:scale(1);opacity:.9}}
-.splash-logo{animation:pulseLogo 1.5s infinite ease-in-out}
 .page-overflow-wrapper{width:100%;overflow:hidden;transition:height .3s ease}
 .page-container{display:flex;width:300%;transition:transform .4s cubic-bezier(.2,0,0,1);align-items:flex-start}
 .page-content{width:33.3333%;padding:calc(var(--nav-height) + 20px) 16px calc(140px + var(--safe-bottom));box-sizing:border-box}
@@ -262,11 +258,6 @@ applyGlass();
 </script>
 </head>
 <body>
-
-<div id="splashScreen">
-  <h1 class="brand-logo text-3xl tracking-widest splash-logo">Netflav</h1>
-  <p class="text-zinc-600 text-[10px] mt-4 uppercase tracking-[0.3em]">載入中...</p>
-</div>
 
 <div class="fab-btn" id="fabBtn" onclick="openRandomRecommendation()" title="隨機推薦">
   <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
@@ -1113,7 +1104,6 @@ window.onload = () => {
   renderActorList();
   handleHash();
   updateCloudUI();
-  setTimeout(() => { const s = $('splashScreen'); if (s) s.classList.add('fade-out'); }, 1200);
   setTimeout(() => checkCloud(true), 2500);
 };
 </script>
