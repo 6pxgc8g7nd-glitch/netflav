@@ -11,6 +11,18 @@
 <meta name="apple-mobile-web-app-title" content="Netflav">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%23000'/%3E%3Cpath d='M160 400V112h56l80 168V112h56v288h-56l-80-168v168z' fill='%23E50914'/%3E%3C/svg%3E">
 <script>
+/* 先套用外觀設定，避免畫面閃一下 */
+(function () {
+  try {
+    var ACC = { red: '#E50914', blue: '#2563eb', green: '#16a34a', purple: '#9333ea', orange: '#ea580c' };
+    var t = localStorage.getItem('NF_THEME') === 'light' ? 'light' : 'dark';
+    var a = localStorage.getItem('NF_ACCENT');
+    document.documentElement.setAttribute('data-theme', t);
+    if (a && ACC[a]) document.documentElement.style.setProperty('--nf-red', ACC[a]);
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute('content', t === 'light' ? '#f4f4f5' : '#000000');
+  } catch (e) {}
+})();
 /* 產生 app 圖示（180x180 PNG），供 iOS「加入主畫面」使用 */
 (function () {
   try {
@@ -32,13 +44,17 @@
 })();
 </script>
 <style>
-:root{--nf-black:#000;--nf-dark:#141414;--nf-red:#E50914;--nf-white:#fff;--nav-height:70px;--safe-bottom:env(safe-area-inset-bottom,0px);--icon-size:20px}
-body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Heiti TC','Microsoft JhengHei',sans-serif;background:var(--nf-black);color:var(--nf-white);margin:0;padding:0;overflow-x:hidden;overflow-y:auto;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{--nf-dark:#141414;--nf-red:#E50914;--nf-white:#fff;--nav-height:70px;--safe-bottom:env(safe-area-inset-bottom,0px);--icon-size:20px}
+/* 主題色票：深色為預設，淺色由 html[data-theme=light] 覆蓋；.keep-dark 的區塊（彈窗）永遠維持深色 */
+:root,.keep-dark{--nf-black:#000;--fg:#fff;--z950:#09090b;--z900:#18181b;--z800:#27272a;--b700:#3f3f46;--b800:#27272a;--b900:#18181b;--t200:#e4e4e7;--t300:#d4d4d8;--t400:#a1a1aa;--t500:#71717a;--t600:#52525b;--card:#111;--pill-b:#222;--navbg:rgba(18,18,18,.98);--navb:#222;--hdr:rgba(0,0,0,.9)}
+html[data-theme=light]{--nf-black:#f4f4f5;--fg:#18181b;--z950:#fafafa;--z900:#e8e8ec;--z800:#d4d4d8;--b700:#c4c4cc;--b800:#d4d4d8;--b900:#e4e4e7;--t200:#27272a;--t300:#3f3f46;--t400:#52525b;--t500:#71717a;--t600:#8a8a93;--card:#fff;--pill-b:#e0e0e4;--navbg:rgba(250,250,250,.98);--navb:#ddd;--hdr:rgba(244,244,245,.9)}
+.keep-dark{color:var(--fg)}
+body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Heiti TC','Microsoft JhengHei',sans-serif;background:var(--nf-black);color:var(--fg);margin:0;padding:0;overflow-x:hidden;overflow-y:auto;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 input,textarea{-webkit-user-select:text;user-select:text}
 html,body,.drawer{scrollbar-width:none;-ms-overflow-style:none}
 html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{display:none;width:0;height:0}
 @keyframes floating{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.empty-state-icon{animation:floating 3s infinite ease-in-out;color:#27272a}
+.empty-state-icon{animation:floating 3s infinite ease-in-out;color:var(--b800)}
 #splashScreen{position:fixed;inset:0;background:var(--nf-black);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s,visibility .6s}
 #splashScreen.fade-out{opacity:0;visibility:hidden}
 @keyframes pulseLogo{0%{transform:scale(.9);opacity:.6}50%{transform:scale(1.05);opacity:1;text-shadow:0 0 20px rgba(229,9,20,.6)}100%{transform:scale(1);opacity:.9}}
@@ -46,11 +62,11 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 .page-overflow-wrapper{width:100%;overflow:hidden;transition:height .3s ease}
 .page-container{display:flex;width:300%;transition:transform .4s cubic-bezier(.2,0,0,1);align-items:flex-start}
 .page-content{width:33.3333%;padding:calc(var(--nav-height) + 20px) 16px calc(140px + var(--safe-bottom));box-sizing:border-box}
-.mobile-header{position:fixed;top:0;left:0;right:0;height:var(--nav-height);z-index:1000;display:flex;align-items:center;justify-content:center;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);backdrop-filter:blur(10px);padding:0 20px}
+.mobile-header{position:fixed;top:0;left:0;right:0;height:var(--nav-height);z-index:1000;display:flex;align-items:center;justify-content:center;background:linear-gradient(to bottom,var(--hdr),transparent);backdrop-filter:blur(10px);padding:0 20px}
 .header-center-box{display:flex;align-items:center;justify-content:center;width:100%}
 .brand-logo{color:var(--nf-red);font-size:24px;font-weight:900;letter-spacing:-1px;text-transform:uppercase;cursor:pointer;transition:opacity .2s}
 .brand-logo:active{opacity:.6}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:calc(75px + var(--safe-bottom));background:rgba(18,18,18,.98);backdrop-filter:blur(20px);z-index:1000;display:flex;align-items:center;justify-content:space-around;padding:0 12px calc(var(--safe-bottom) + 8px);border-top:1px solid #222;gap:8px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:calc(75px + var(--safe-bottom));background:var(--navbg);backdrop-filter:blur(20px);z-index:1000;display:flex;align-items:center;justify-content:space-around;padding:0 12px calc(var(--safe-bottom) + 8px);border-top:1px solid var(--navb);gap:8px}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#71717a;border-radius:10px;transition:all .2s;height:48px;cursor:pointer}
 .nav-item.active{color:#fff;background:var(--nf-red);box-shadow:0 4px 12px rgba(229,9,20,.3)}
 .nav-item span{font-size:10px;font-weight:700;margin-top:2px;line-height:1}
@@ -58,7 +74,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 .fab-btn{position:fixed;right:20px;bottom:calc(85px + var(--safe-bottom));width:52px;height:52px;background:var(--nf-red);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(229,9,20,.5);z-index:1500;cursor:pointer;border:2px solid rgba(255,255,255,.2);transition:transform .2s}
 .fab-btn:active{transform:scale(.9)}
 .fab-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.poster-card{position:relative;background:#111;border-radius:6px;overflow:hidden;aspect-ratio:4/3;width:100%}
+.poster-card{position:relative;background:var(--card);border-radius:6px;overflow:hidden;aspect-ratio:4/3;width:100%}
 .poster-card img{width:100%;height:100%;object-fit:cover;pointer-events:none}
 .layout-cols-1{grid-template-columns:repeat(1,1fr)}
 .layout-cols-2{grid-template-columns:repeat(2,1fr)}
@@ -69,33 +85,37 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 .layout-cols-3 .card-overlay p.code,.layout-cols-4 .card-overlay p.code{font-size:7px}
 .poster-card{cursor:pointer;-webkit-touch-callout:none;transition:transform .15s}
 .poster-card[data-card]:active{transform:scale(.97)}
-.card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.9),transparent 60%);display:flex;flex-direction:column;justify-content:flex-end;padding:8px;pointer-events:none;z-index:10}
+.card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.9),transparent 60%);display:flex;flex-direction:column;justify-content:flex-end;padding:8px;pointer-events:none;z-index:10;color:#fff}
 #page2,#page3{padding-bottom:calc(100px + var(--safe-bottom))}
 .page-dot-container{display:flex;flex-direction:column;gap:16px;justify-content:center;align-items:center;padding:8px 0 0;width:100%}
-.pagination-dots-row{display:flex;gap:8px;justify-content:center;align-items:center;overflow-x:auto;scrollbar-width:none;width:100%}
-.pagination-dots-row::-webkit-scrollbar{display:none}
-.page-dot{min-width:32px;height:32px;border-radius:6px;background:#1a1a1e;color:#71717a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;transition:all .3s;flex-shrink:0;cursor:pointer}
-.page-dot.active{background:var(--nf-red);color:#fff;transform:scale(1.05);box-shadow:0 4px 12px rgba(229,9,20,.3)}
 .page-nav-row{display:flex;align-items:center;justify-content:center;gap:14px;width:100%}
 .page-nav-btn{flex:none;width:64px;height:34px;border-radius:8px;background:var(--nf-red);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:2px;border:none;box-shadow:0 2px 8px rgba(229,9,20,.3);transition:transform .2s,opacity .2s}
 .page-nav-btn{padding:0}
 .page-nav-btn:active:not(:disabled){transform:scale(.95)}
-.page-nav-btn:disabled{background:#1a1a1e;color:#3f3f46;box-shadow:none}
-.page-nav-info{min-width:72px;text-align:center;font-size:15px;font-weight:600;color:#71717a}
-.page-nav-info b{color:#fff;font-size:inherit}
+.page-nav-btn:disabled{background:var(--z900);color:var(--t600);box-shadow:none}
+.page-nav-info{min-width:72px;text-align:center;font-size:15px;font-weight:600;color:var(--t500)}
+.page-nav-info b{color:var(--fg);font-size:inherit}
 .drawer{position:fixed;inset:0;background:var(--nf-black);transform:translateY(100%);transition:transform .4s;z-index:2000;overflow-y:auto;padding:25px}
 .drawer.open{transform:translateY(0)}
 .search-container{position:relative;margin-bottom:1.5rem}
 .search-icon{position:absolute;left:1rem;top:50%;transform:translateY(-50%);width:var(--icon-size);height:var(--icon-size);color:#71717a;pointer-events:none}
 .clear-search-btn{position:absolute;right:1rem;top:50%;transform:translateY(-50%);width:20px;height:20px;color:#71717a;cursor:pointer;display:none}
-.search-input{width:100%;background:#18181b;border:none;border-radius:8px;padding:.85rem 3rem;font-size:16px;color:#fff;outline:none}
-.actor-badge{background:#1a1a1a;border-radius:50%;width:80px;height:80px;margin:0 auto 8px;border:1px solid #2a2a2a}
-.tag-pill{background:#111112;color:#e4e4e7;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #222;display:flex;justify-content:space-between;align-items:center;transition:all .2s;box-shadow:0 2px 4px rgba(0,0,0,.2);cursor:pointer;width:calc(50% - 6px)}
-.tag-pill:active{transform:scale(.95);background:#27272a}
-#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:8px 24px;border-radius:999px;font-size:12px;font-weight:700;z-index:7000;opacity:0;transition:all .3s;pointer-events:none}
+.search-input{width:100%;background:var(--z900);border:none;border-radius:8px;padding:.85rem 3rem;font-size:16px;color:var(--fg);outline:none}
+.actor-badge{background:var(--z800);border-radius:50%;width:80px;height:80px;margin:0 auto 8px;border:1px solid var(--b700)}
+.tag-pill{background:var(--card);color:var(--t200);padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid var(--pill-b);display:flex;justify-content:space-between;align-items:center;transition:all .2s;box-shadow:0 2px 4px rgba(0,0,0,.2);cursor:pointer;width:calc(50% - 6px)}
+.tag-pill:active{transform:scale(.95);background:var(--z800)}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:8px 24px;border-radius:999px;font-size:12px;font-weight:700;z-index:7000;opacity:0;transition:all .3s;pointer-events:none;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+#undoBar{position:fixed;left:50%;bottom:calc(92px + var(--safe-bottom));transform:translate(-50%,20px);background:#fff;color:#000;padding:8px 8px 8px 18px;border-radius:999px;font-size:12px;font-weight:700;z-index:7000;display:flex;align-items:center;gap:10px;max-width:calc(100% - 32px);opacity:0;visibility:hidden;transition:all .25s;box-shadow:0 4px 20px rgba(0,0,0,.35)}
+#undoBar.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+#undoMsg{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55vw}
+#undoBtn{color:var(--nf-red);font-weight:900;font-size:13px;padding:6px 14px;border-radius:999px}
+#undoBtn:active{background:rgba(0,0,0,.08)}
 .layout-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.layout-option{background:#1a1a1a;border:1px solid #333;padding:10px 0;border-radius:8px;text-align:center;font-size:11px;font-weight:700;color:#71717a;transition:.2s}
+.layout-option{background:var(--z900);border:1px solid var(--b700);padding:10px 0;border-radius:8px;text-align:center;font-size:11px;font-weight:700;color:var(--t500);transition:.2s}
 .layout-option.active{background:var(--nf-red);color:#fff;border-color:var(--nf-red)}
+.accent-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+.accent-swatch{height:36px;border-radius:8px;border:2px solid transparent;transition:.2s}
+.accent-swatch.active{border-color:var(--fg);box-shadow:inset 0 0 0 2px var(--nf-black)}
 .drawer input[type=text],.drawer input[type=password]{font-size:16px}
 </style>
 <style id="nf-base">
@@ -116,7 +136,7 @@ img,video{max-width:100%;height:auto}
 [hidden]{display:none}
 input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
 
-/* 工具類別（只含這個頁面用到的） */
+/* 工具類別（只含這個頁面用到的；顏色改用主題變數） */
 .fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}
 .inset-0{inset:0}.right-4{right:1rem}.top-4{top:1rem}
 .z-\[6000\]{z-index:6000}.z-\[7000\]{z-index:7000}
@@ -135,15 +155,16 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
 .pr-2{padding-right:.5rem}.pt-10{padding-top:2.5rem}
 .mb-0\.5{margin-bottom:.125rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}
 .mt-2{margin-top:.5rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}
-.border{border-width:1px}.border-zinc-700{border-color:#3f3f46}.border-zinc-800{border-color:#27272a}.border-zinc-900{border-color:#18181b}
+.border{border-width:1px}.border-zinc-700{border-color:var(--b700)}.border-zinc-800{border-color:var(--b800)}.border-zinc-900{border-color:var(--b900)}
 .rounded{border-radius:.25rem}.rounded-lg{border-radius:.5rem}.rounded-2xl{border-radius:1rem}
 .shadow-lg{box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1)}
 .shadow-2xl{box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
 .shadow-inner{box-shadow:inset 0 2px 4px 0 rgba(0,0,0,.05)}
-.bg-black\/95{background-color:rgba(0,0,0,.95)}.bg-red-600{background-color:#dc2626}
-.bg-zinc-800{background-color:#27272a}.bg-zinc-900{background-color:#18181b}.bg-zinc-950{background-color:#09090b}
-.text-white{color:#fff}.text-red-600{color:#dc2626}
-.text-zinc-200{color:#e4e4e7}.text-zinc-300{color:#d4d4d8}.text-zinc-400{color:#a1a1aa}.text-zinc-500{color:#71717a}.text-zinc-600{color:#52525b}
+.bg-black\/95{background-color:rgba(0,0,0,.95)}.bg-red-600{background-color:var(--nf-red)}
+.bg-zinc-800{background-color:var(--z800)}.bg-zinc-900{background-color:var(--z900)}.bg-zinc-950{background-color:var(--z950)}
+.text-white{color:var(--fg)}.text-red-600{color:var(--nf-red)}
+.text-zinc-200{color:var(--t200)}.text-zinc-300{color:var(--t300)}.text-zinc-400{color:var(--t400)}.text-zinc-500{color:var(--t500)}.text-zinc-600{color:var(--t600)}
+.bg-red-600.text-white{color:#fff}
 .text-xs{font-size:.75rem;line-height:1rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-lg{font-size:1.125rem;line-height:1.75rem}
 .text-xl{font-size:1.25rem;line-height:1.75rem}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}
 .text-\[8px\]{font-size:8px}.text-\[9px\]{font-size:9px}.text-\[10px\]{font-size:10px}.text-\[13px\]{font-size:13px}
@@ -214,7 +235,7 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
   </div>
 </nav>
 
-<div id="randomModal" class="fixed inset-0 bg-black/95 z-[7000] hidden items-center justify-center p-6">
+<div id="randomModal" class="keep-dark fixed inset-0 bg-black/95 z-[7000] hidden items-center justify-center p-6">
   <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl overflow-hidden p-6 text-center relative shadow-2xl">
     <h3 class="text-xs font-bold text-red-600 tracking-widest uppercase mb-4">✨ Today隨機推薦 ✨</h3>
     <div id="randomCardPreview" class="poster-card mb-4"></div>
@@ -241,7 +262,7 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤（空白分隔）</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片</label><input type="text" id="imgInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div class="pt-10 space-y-4">
-      <button onclick="saveItem()" class="w-full bg-red-600 py-4 font-bold rounded-lg shadow-lg">儲存內容</button>
+      <button onclick="saveItem()" class="w-full bg-red-600 py-4 font-bold rounded-lg shadow-lg text-white">儲存內容</button>
       <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full py-2 text-zinc-600 text-xs font-bold hidden">刪除此項目</button>
     </div>
   </div>
@@ -254,8 +275,22 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
   </div>
   <div class="space-y-4">
     <button onclick="toggleFilterDrawer(false); openDrawer();" class="w-full py-4 bg-zinc-900 rounded font-bold text-white">新增影片</button>
-    <button id="advBtn" onclick="toggleAdvanced()" class="w-full py-4 bg-zinc-900 rounded font-bold flex items-center justify-center gap-2"><span>進階</span><svg id="advArrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+    <button id="advBtn" onclick="toggleAdvanced()" class="w-full py-4 bg-zinc-900 rounded font-bold flex items-center justify-center gap-2 text-white"><span>進階</span><svg id="advArrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
     <div id="advancedBox" class="hidden space-y-4">
+      <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
+        <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">外觀</label>
+        <div class="layout-grid">
+          <button id="themeBtnDark" onclick="setTheme('dark')" class="layout-option">深色</button>
+          <button id="themeBtnLight" onclick="setTheme('light')" class="layout-option">淺色</button>
+        </div>
+        <div class="accent-grid">
+          <button id="accentBtn_red" onclick="setAccent('red')" class="accent-swatch" style="background:#E50914" aria-label="紅色"></button>
+          <button id="accentBtn_blue" onclick="setAccent('blue')" class="accent-swatch" style="background:#2563eb" aria-label="藍色"></button>
+          <button id="accentBtn_green" onclick="setAccent('green')" class="accent-swatch" style="background:#16a34a" aria-label="綠色"></button>
+          <button id="accentBtn_purple" onclick="setAccent('purple')" class="accent-swatch" style="background:#9333ea" aria-label="紫色"></button>
+          <button id="accentBtn_orange" onclick="setAccent('orange')" class="accent-swatch" style="background:#ea580c" aria-label="橘色"></button>
+        </div>
+      </div>
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
         <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">顯示佈局</label>
         <div class="layout-grid">
@@ -286,23 +321,24 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
         </div>
       </div>
       <div class="grid grid-cols-2 gap-3">
-        <button onclick="precacheCovers()" class="py-4 bg-zinc-900 rounded font-bold text-sm">預先下載封面</button>
-        <button onclick="clearCoverCache()" class="py-4 bg-zinc-900 rounded font-bold text-sm">清除封面快取</button>
+        <button onclick="precacheCovers()" class="py-4 bg-zinc-900 rounded font-bold text-sm text-white">預先下載封面</button>
+        <button onclick="clearCoverCache()" class="py-4 bg-zinc-900 rounded font-bold text-sm text-white">清除封面快取</button>
       </div>
       <div class="grid grid-cols-2 gap-3">
-        <button onclick="exportData()" class="py-4 bg-zinc-900 rounded font-bold">匯出備份</button>
+        <button onclick="exportData()" class="py-4 bg-zinc-900 rounded font-bold text-white">匯出備份</button>
         <label class="block py-4 bg-zinc-900 rounded font-bold text-center cursor-pointer">匯入備份 <input type="file" class="hidden" accept=".json" onchange="importData(event)"></label>
       </div>
     </div>
   </div>
 </div>
 
-<div id="confirmModal" class="fixed inset-0 bg-black/95 z-[6000] hidden items-center justify-center p-8">
+<div id="confirmModal" class="keep-dark fixed inset-0 bg-black/95 z-[6000] hidden items-center justify-center p-8">
   <div class="text-center"><h4 id="confirmTitle" class="text-xl font-bold mb-8 leading-relaxed">確定要刪除嗎？</h4>
-    <div class="flex flex-col items-center gap-4"><button id="confirmOkBtn" class="w-64 bg-red-600 py-4 font-bold rounded-lg">確定</button><button onclick="closeConfirm()" class="w-64 py-4 font-bold rounded-lg bg-zinc-800 text-zinc-300">取消</button></div>
+    <div class="flex flex-col items-center gap-4"><button id="confirmOkBtn" class="w-64 bg-red-600 py-4 font-bold rounded-lg text-white">確定</button><button onclick="closeConfirm()" class="w-64 py-4 font-bold rounded-lg bg-zinc-800 text-zinc-300">取消</button></div>
   </div>
 </div>
 <div id="toast"></div>
+<div id="undoBar"><span id="undoMsg"></span><button id="undoBtn" onclick="doUndo()">復原</button></div>
 
 <script>
 const STORAGE_KEY = 'NF_MOBILE_VAULT_FINAL';
@@ -336,6 +372,33 @@ let tagCurrentPage = 1, tagPageSize = 20;
 let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 2;
 let lastRandomId = null, activeTab = 0;
 
+/* 外觀：深色 / 淺色 + 強調色 */
+const ACCENTS = { red: '#E50914', blue: '#2563eb', green: '#16a34a', purple: '#9333ea', orange: '#ea580c' };
+function currentTheme() { return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
+function currentAccent() {
+  let a = ''; try { a = localStorage.getItem('NF_ACCENT') || ''; } catch (e) {}
+  return ACCENTS[a] ? a : 'red';
+}
+function updateAppearanceUI() {
+  const t = currentTheme(), a = currentAccent();
+  $('themeBtnDark').classList.toggle('active', t === 'dark');
+  $('themeBtnLight').classList.toggle('active', t === 'light');
+  Object.keys(ACCENTS).forEach(k => $('accentBtn_' + k).classList.toggle('active', k === a));
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute('content', t === 'light' ? '#f4f4f5' : '#000000');
+}
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+  try { localStorage.setItem('NF_THEME', t === 'light' ? 'light' : 'dark'); } catch (e) {}
+  updateAppearanceUI();
+}
+function setAccent(k) {
+  if (!ACCENTS[k]) return;
+  document.documentElement.style.setProperty('--nf-red', ACCENTS[k]);
+  try { localStorage.setItem('NF_ACCENT', k); } catch (e) {}
+  updateAppearanceUI();
+}
+
 function updateContainerHeight() {
   setTimeout(() => {
     const p = document.querySelector('.page-content.active-page');
@@ -347,13 +410,13 @@ function updateContainerHeight() {
 function checkDuplicate(el) {
   if (!el) return false;
   const val = el.value.trim();
-  if (!val) { el.style.color = 'white'; return false; }
+  if (!val) { el.style.color = ''; return false; }
   const others = collections.filter(i => String(i.id) !== String(currentId));
   let dup = false;
   if (el.id === 'codeInput') { const u = val.toUpperCase(); dup = others.some(i => i.code && i.code.toUpperCase() === u); }
   else if (el.id === 'urlInput') dup = others.some(i => i.url === val);
   else if (el.id === 'imgInput') dup = others.some(i => i.img === val);
-  el.style.color = dup ? 'var(--nf-red)' : 'white';
+  el.style.color = dup ? 'var(--nf-red)' : '';
   return dup;
 }
 
@@ -530,7 +593,7 @@ function openDrawer(id = null) {
     $('drawerDeleteBtn').classList.remove('hidden');
   } else {
     currentId = null;
-    Object.values(f).forEach(x => { x.value = ""; x.style.color = "white"; });
+    Object.values(f).forEach(x => { x.value = ""; x.style.color = ""; });
     $('drawerDeleteBtn').classList.add('hidden');
   }
   $('pasteBtn').classList.toggle('hidden', !!item);
@@ -588,6 +651,18 @@ function openExternalUrl(url, e) {
 function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
 function showToast(msg) { const t = $('toast'); t.innerText = msg; t.style.opacity = "1"; clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => { t.style.opacity = "0"; }, 2000); }
 
+/* 復原：刪除後 7 秒內可以還原 */
+let undoFn = null, undoTimer = null;
+function showUndo(msg, fn) {
+  clearTimeout(undoTimer);
+  undoFn = fn;
+  $('undoMsg').textContent = msg;
+  $('undoBar').classList.add('show');
+  undoTimer = setTimeout(hideUndo, 7000);
+}
+function hideUndo() { clearTimeout(undoTimer); undoFn = null; $('undoBar').classList.remove('show'); }
+function doUndo() { const f = undoFn; hideUndo(); if (f) f(); }
+
 function openConfirm(title, fn) {
   $('confirmTitle').innerText = title;
   $('confirmOkBtn').onclick = () => { closeConfirm(); fn(); };
@@ -596,10 +671,20 @@ function openConfirm(title, fn) {
 function closeConfirm() { const m = $('confirmModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
 function requestDelete() { openConfirm("確定要刪除嗎？", executeDelete); }
 function executeDelete() {
+  const idx = collections.findIndex(i => String(i.id) === String(currentId));
+  if (idx < 0) { closeDrawer(); return; }
+  const item = collections[idx];
   const backup = collections.slice();
-  collections = collections.filter(i => String(i.id) !== String(currentId));
+  collections = collections.filter(i => String(i.id) !== String(item.id));
   if (!persist()) { collections = backup; return; }
   closeDrawer(); refreshAll();
+  showUndo(`已刪除「${item.name}」`, () => {
+    if (collections.some(i => String(i.id) === String(item.id))) return;
+    const prev = collections.slice();
+    collections.splice(Math.min(idx, collections.length), 0, item);
+    if (!persist()) { collections = prev; return; }
+    refreshAll(); showToast("已復原");
+  });
 }
 function closeDrawer() { $('drawer').classList.remove('open'); }
 function toggleAdvanced(open) {
@@ -657,6 +742,7 @@ function importData(e) {
         const backup = collections;
         collections = data;
         if (!persist()) { collections = backup; return; }
+        hideUndo();
         currentPage = 1; actorCurrentPage = 1; tagCurrentPage = 1;
         refreshAll(); toggleFilterDrawer(false); showToast("匯入成功");
       });
@@ -705,6 +791,8 @@ window.addEventListener('hashchange', handleHash);
 /* 雲端自動備份：GitHub Gist（私人） */
 const GIST_FILE = 'netflav.json', GIST_DESC = 'Netflav backup';
 const K_TOKEN = 'NF_GIST_TOKEN', K_ID = 'NF_GIST_ID', K_LAST = 'NF_GIST_LAST';
+const K_TS = 'NF_GIST_TS';        // 本機最後一次看到的雲端 updated_at
+const K_DIRTY = 'NF_GIST_DIRTY';  // 本機有尚未同步到雲端的變更
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 const lsSet = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
 let backupBusy = false, backupPending = false, backupTimer = null;
@@ -737,12 +825,13 @@ async function readCloud(id) {
   const text = f.truncated ? await (await fetch(f.raw_url)).text() : f.content;
   const arr = JSON.parse(text);
   if (!Array.isArray(arr)) throw new Error('bad format');
-  return arr.filter(i => i && typeof i === 'object' && i.name).map((i, n) => ({
+  const items = arr.filter(i => i && typeof i === 'object' && i.name).map((i, n) => ({
     id: String(i.id ?? (Date.now() + '_' + n)), name: String(i.name), code: String(i.code || ''),
     url: String(i.url || ''), img: String(i.img || ''),
     tags: Array.isArray(i.tags) ? i.tags.map(String) : [],
     actor: typeof i.actor === 'string' ? i.actor : undefined
   }));
+  return { items, ts: g.updated_at || '' };
 }
 function writeCloud(id) {
   const files = { [GIST_FILE]: { content: JSON.stringify(collections, null, 2) } };
@@ -752,8 +841,9 @@ function writeCloud(id) {
 }
 function scheduleBackup() {
   if (!lsGet(K_TOKEN) || !lsGet(K_ID)) return;
+  lsSet(K_DIRTY, '1');
   clearTimeout(backupTimer);
-  backupTimer = setTimeout(() => runBackup(), 3000);
+  backupTimer = setTimeout(() => { backupTimer = null; runBackup(); }, 3000);
 }
 async function runBackup(forceId) {
   if (!lsGet(K_TOKEN)) return false;
@@ -763,6 +853,8 @@ async function runBackup(forceId) {
   try {
     const g = await writeCloud(forceId || lsGet(K_ID));
     lsSet(K_ID, g.id); lsSet(K_LAST, new Date().toISOString());
+    lsSet(K_TS, g.updated_at || '');
+    if (!backupPending) lsSet(K_DIRTY, '');
     ok = true;
   } catch (e) {
     let msg = ghErrMsg(e);
@@ -780,14 +872,16 @@ function updateCloudUI() {
   const last = lsGet(K_LAST);
   if (!lsGet(K_TOKEN)) el.textContent = '尚未設定。貼上權杖後，每次儲存都會自動備份。';
   else if (!lsGet(K_ID)) el.textContent = '已有權杖，但尚未連結雲端備份。';
-  else el.textContent = '已開啟自動備份' + (last ? '・上次同步 ' + new Date(last).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+  else el.textContent = '已開啟自動備份' + (last ? '・上次同步 ' + new Date(last).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '') + (lsGet(K_DIRTY) ? '・有尚未同步的變更' : '');
 }
-function applyCloud(cloud, id) {
+function applyCloud(cloud, id, ts) {
   const prev = collections;
   collections = cloud;
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); }
   catch (e) { collections = prev; showToast('儲存失敗：空間不足或被禁用'); return; }
   lsSet(K_ID, id); lsSet(K_LAST, new Date().toISOString());
+  lsSet(K_TS, ts || ''); lsSet(K_DIRTY, '');
+  hideUndo();
   currentPage = 1; actorCurrentPage = 1; tagCurrentPage = 1;
   refreshAll(); updateCloudUI(); showToast(`已從雲端還原 ${cloud.length} 筆`);
 }
@@ -803,7 +897,7 @@ async function saveToken() {
     if (lsGet(K_ID)) showToast('權杖已更新');
     else if (g) {
       const cloud = await readCloud(g.id);
-      openConfirm(`雲端已有 ${cloud.length} 筆備份，本機有 ${collections.length} 筆。\n要用雲端覆蓋本機嗎？`, () => applyCloud(cloud, g.id));
+      openConfirm(`雲端已有 ${cloud.items.length} 筆備份，本機有 ${collections.length} 筆。\n要用雲端覆蓋本機嗎？`, () => applyCloud(cloud.items, g.id, cloud.ts));
     } else if (collections.length) {
       if (await runBackup()) showToast('已建立雲端備份，之後會自動備份');
     } else showToast('權杖已儲存，雲端還沒有備份');
@@ -817,7 +911,7 @@ async function restoreFromCloud() {
     let id = lsGet(K_ID);
     if (!id) { const g = await findCloudGist(); if (!g) { showToast('雲端還沒有備份'); return; } id = g.id; }
     const cloud = await readCloud(id);
-    openConfirm(`用雲端的 ${cloud.length} 筆覆蓋本機的 ${collections.length} 筆？`, () => applyCloud(cloud, id));
+    openConfirm(`用雲端的 ${cloud.items.length} 筆覆蓋本機的 ${collections.length} 筆？`, () => applyCloud(cloud.items, id, cloud.ts));
   } catch (e) { showToast('還原失敗：' + ghErrMsg(e)); }
 }
 async function backupToCloudNow() {
@@ -827,20 +921,48 @@ async function backupToCloudNow() {
       const g = await findCloudGist();
       if (g) {
         const cloud = await readCloud(g.id);
-        openConfirm(`雲端已有 ${cloud.length} 筆備份。\n要用本機的 ${collections.length} 筆覆蓋雲端嗎？`, async () => { if (await runBackup(g.id)) showToast('已備份'); });
+        openConfirm(`雲端已有 ${cloud.items.length} 筆備份。\n要用本機的 ${collections.length} 筆覆蓋雲端嗎？`, async () => { if (await runBackup(g.id)) showToast('已備份'); });
         return;
       }
     }
-    clearTimeout(backupTimer);
+    clearTimeout(backupTimer); backupTimer = null;
     if (await runBackup()) showToast(`已備份 ${collections.length} 筆`);
   } catch (e) { showToast('備份失敗：' + ghErrMsg(e)); }
 }
 function removeToken() {
   openConfirm('移除權杖並停止自動備份？\n（雲端的備份不會被刪除）', () => {
-    lsSet(K_TOKEN, ''); lsSet(K_ID, ''); lsSet(K_LAST, '');
-    clearTimeout(backupTimer); updateCloudUI(); showToast('已移除');
+    lsSet(K_TOKEN, ''); lsSet(K_ID, ''); lsSet(K_LAST, ''); lsSet(K_TS, ''); lsSet(K_DIRTY, '');
+    clearTimeout(backupTimer); backupTimer = null; updateCloudUI(); showToast('已移除');
   });
 }
+
+/* 開啟 app / 回到前景時，比對雲端是否有另一台裝置的較新備份 */
+let lastCloudCheck = 0, cloudChecking = false, declinedTs = '';
+const canon = arr => JSON.stringify(arr.map(i => [i.id, i.name, i.actor || '', i.code || '', i.url || '', i.img || '', (i.tags || []).join('\u0001')]));
+async function checkCloud(force) {
+  const id = lsGet(K_ID);
+  if (!lsGet(K_TOKEN) || !id || cloudChecking || backupBusy || backupTimer || navigator.onLine === false) return;
+  if (!force && Date.now() - lastCloudCheck < 60000) return;
+  if (!$('confirmModal').classList.contains('hidden')) return;
+  lastCloudCheck = Date.now(); cloudChecking = true;
+  try {
+    const cloud = await readCloud(id);
+    const dirty = !!lsGet(K_DIRTY);
+    if (cloud.ts && cloud.ts === lsGet(K_TS)) { if (dirty) runBackup(); return; }
+    if (canon(cloud.items) === canon(collections)) { lsSet(K_TS, cloud.ts); lsSet(K_DIRTY, ''); updateCloudUI(); return; }
+    if (declinedTs === cloud.ts) return;
+    if (!$('confirmModal').classList.contains('hidden')) return;
+    const n = cloud.items.length, m = collections.length;
+    const msg = dirty
+      ? `雲端有另一台裝置的備份（${n} 筆），但本機也有尚未同步的變更（${m} 筆）。\n要用雲端覆蓋本機嗎？\n（取消會保留本機，下次儲存時覆蓋雲端）`
+      : `雲端有較新的備份（${n} 筆），本機 ${m} 筆。\n要用雲端更新本機嗎？\n（取消會保留本機，下次儲存時覆蓋雲端）`;
+    openConfirm(msg, () => applyCloud(cloud.items, id, cloud.ts));
+    declinedTs = cloud.ts;
+  } catch (e) { /* 靜默：背景檢查失敗不打擾使用者 */ }
+  finally { cloudChecking = false; }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkCloud(); });
+window.addEventListener('online', () => checkCloud(true));
 
 /* 長按「帳戶設定」標題 1 秒，顯示 / 隱藏雲端備份區塊 */
 (function () {
@@ -862,6 +984,7 @@ function removeToken() {
 function refreshAndHome() { clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 ['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
 
+/* 離線與封面快取（需要同資料夾的 sw.js，並以 http(s) 開啟） */
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   navigator.serviceWorker.addEventListener('message', e => {
@@ -889,12 +1012,14 @@ window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
 window.onload = () => {
+  updateAppearanceUI();
   updateLayout(currentLayout);
   updatePageSize(pageSize);
   renderActorList();
   handleHash();
   updateCloudUI();
   setTimeout(() => { const s = $('splashScreen'); if (s) s.classList.add('fade-out'); }, 1200);
+  setTimeout(() => checkCloud(true), 2500);
 };
 </script>
 </body>
