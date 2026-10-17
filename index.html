@@ -572,7 +572,7 @@ function renderFilterRow() {
   const none = !favOnly && !selectedTags.length;
   row.innerHTML =
     `<button class="chip${none ? ' active' : ''}" data-chip="all">全部</button>` +
-    `<button class="chip${favOnly ? ' active' : ''}" data-chip="fav">${heartSvg(favOnly || favN > 0, 14)}<span>最愛 ${favN}</span></button>` +
+    `<button class="chip${favOnly ? ' active' : ''}" data-chip="fav" aria-label="只看最愛">${heartSvg(favOnly || favN > 0, 14)}<span>${favN}</span></button>` +
     selectedTags.map(t => `<button class="chip active" data-chip-tag="${esc(t)}"><span>${esc(t)}</span><span aria-label="移除">✕</span></button>`).join('');
 }
 function resetFilters() { favOnly = false; selectedTags = []; updateTagBar(); renderTagCloud(); }
