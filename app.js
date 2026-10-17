@@ -787,6 +787,8 @@ function writeCloud(id) {
     ? gh('/gists/' + id, { method: 'PATCH', body: JSON.stringify({ description: GIST_DESC, files }) })
     : gh('/gists', { method: 'POST', body: JSON.stringify({ description: GIST_DESC, public: false, files }) });
 }
+/* 通知用的時間，例如 14:32:05 */
+const clockTime = () => new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 const BACKUP_DELAY = 1200;      // 最後一次修改後多久開始備份（毫秒）
 let lastCloudSync = 0;          // 最近一次確認雲端內容的時間（讀取或寫入成功）
 function scheduleBackup() {
@@ -819,6 +821,7 @@ async function runBackup(forceId, overwrite, manual) {
     lastCloudSync = Date.now();
     if (!backupPending) lsSet(K_DIRTY, '');
     ok = true;
+    showToast(`已備份 ${collections.length} 筆・${clockTime()}`);
   } catch (e) {
     let msg = ghErrMsg(e);
     if (e && e.status === 404 && lsGet(K_ID)) { lsSet(K_ID, ''); msg = '找不到雲端備份，請重新連結'; }
@@ -833,7 +836,7 @@ async function runBackup(forceId, overwrite, manual) {
 function backupConflict(cloud, id, manual) {
   const n = cloud.items.length, m = collections.length;
   if (manual) {
-    openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆。\n要用本機覆蓋雲端嗎？\n（會蓋掉雲端那份）`, async () => { if (await runBackup(undefined, true)) showToast(`已備份 ${collections.length} 筆`); });
+    openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆。\n要用本機覆蓋雲端嗎？\n（會蓋掉雲端那份）`, async () => { await runBackup(undefined, true); });
     return;
   }
   if (declinedTs === cloud.ts) return; // 已選擇保留本機：不再自動打擾，要覆蓋雲端請按「立即備份」
@@ -877,7 +880,7 @@ async function saveToken() {
       const cloud = await readCloud(g.id);
       openConfirm(`雲端已有 ${cloud.items.length} 筆備份，本機有 ${collections.length} 筆。\n要用雲端覆蓋本機嗎？`, () => applyCloud(cloud, g.id));
     } else if (collections.length) {
-      if (await runBackup()) showToast('已建立雲端備份，之後會自動備份');
+      if (await runBackup()) showToast(`已建立雲端備份，之後會自動備份・${clockTime()}`);
     } else showToast('權杖已儲存，雲端還沒有備份');
   } catch (e) { lsSet(K_TOKEN, old); showToast('無法連線：' + ghErrMsg(e)); }
   updateCloudUI();
@@ -899,12 +902,12 @@ async function backupToCloudNow() {
       const g = await findCloudGist();
       if (g) {
         const cloud = await readCloud(g.id);
-        openConfirm(`雲端已有 ${cloud.items.length} 筆備份。\n要用本機的 ${collections.length} 筆覆蓋雲端嗎？`, async () => { if (await runBackup(g.id)) showToast('已備份'); });
+        openConfirm(`雲端已有 ${cloud.items.length} 筆備份。\n要用本機的 ${collections.length} 筆覆蓋雲端嗎？`, async () => { await runBackup(g.id); });
         return;
       }
     }
     clearTimeout(backupTimer); backupTimer = null;
-    if (await runBackup(undefined, false, true)) showToast(`已備份 ${collections.length} 筆`);
+    await runBackup(undefined, false, true);
   } catch (e) { showToast('備份失敗：' + ghErrMsg(e)); }
 }
 function removeToken() {
