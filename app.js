@@ -987,7 +987,30 @@ function precacheCovers() {
 window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
+/* 啟動畫面：模擬 Netflix 首頁；點「播放」才進入 app（內容都是假的，不會用到你的資料） */
+let fakeHomeOn = (() => { try { return localStorage.getItem('NF_FAKE') !== 'off'; } catch (e) { return true; } })();
+function enterApp() {
+  document.documentElement.classList.remove('fake-home');
+  try { sessionStorage.setItem('NF_ENTERED', '1'); } catch (e) {}
+  switchTab(0); window.scrollTo(0, 0);
+}
+function setFakeHome(on) {
+  fakeHomeOn = !!on;
+  try { localStorage.setItem('NF_FAKE', fakeHomeOn ? 'on' : 'off'); } catch (e) {}
+  updateFakeUI();
+}
+function updateFakeUI() {
+  $('fakeBtnOn').classList.toggle('active', fakeHomeOn);
+  $('fakeBtnOff').classList.toggle('active', !fakeHomeOn);
+}
+function previewFakeHome() {
+  toggleFilterDrawer(false);
+  setTimeout(() => { $('fakeHome').scrollTop = 0; document.documentElement.classList.add('fake-home'); }, 250);
+}
+$('fakePlay').addEventListener('click', enterApp);
+
 window.onload = () => {
+  updateFakeUI();
   updateAppearanceUI();
   updateLayout(currentLayout);
   updatePageSize(pageSize);
