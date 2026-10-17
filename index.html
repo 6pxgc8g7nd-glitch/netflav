@@ -96,7 +96,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.drawer::-webkit-scrollbar{displ
 .page-nav-info b{color:var(--fg);font-size:inherit}
 .drawer{position:fixed;inset:0;background:var(--nf-black);transform:translateY(100%);transition:transform .4s;z-index:2000;overflow-y:auto;padding:25px}
 .drawer.open{transform:translateY(0)}
-.search-container{position:relative;margin-bottom:1.5rem}
+.search-container{position:relative;margin-bottom:.75rem}
 .search-icon{position:absolute;left:1rem;top:50%;transform:translateY(-50%);width:var(--icon-size);height:var(--icon-size);color:#71717a;pointer-events:none}
 .clear-search-btn{position:absolute;right:1rem;top:50%;transform:translateY(-50%);width:20px;height:20px;color:#71717a;cursor:pointer;display:none}
 .search-input{width:100%;background:var(--z900);border:none;border-radius:8px;padding:.85rem 3rem;font-size:16px;color:var(--fg);outline:none}
@@ -239,6 +239,24 @@ html[data-theme=light] #toast,html[data-theme=light] #undoBar{color:#0f0f0f}
 .tag-count{flex:none;min-width:26px;text-align:center;font-size:12px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;color:var(--fg);background:rgba(255,255,255,.18)}
 html[data-theme=light] .tag-count{background:rgba(0,0,0,.08)}
 #itemCount{color:var(--fg)}
+.filter-row{display:flex;gap:8px;overflow-x:auto;margin-bottom:1rem;padding:2px 0;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;background:var(--glass-bg);border:1px solid var(--glass-bd);color:var(--fg);box-shadow:inset 0 1px 0 var(--glass-hi)}
+.chip.active{background:var(--nf-red);color:#fff;border-color:transparent}
+.chip:active{transform:scale(.96)}
+.fav-btn{position:absolute;top:8px;right:8px;z-index:12;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.22);color:#fff}
+.fav-btn.on{color:var(--nf-red);background:rgba(255,255,255,.92);border-color:transparent}
+.fav-btn:active{transform:scale(.88)}
+.layout-cols-3 .fav-btn,.layout-cols-4 .fav-btn{width:24px;height:24px;top:5px;right:5px}
+.layout-cols-3 .fav-btn svg,.layout-cols-4 .fav-btn svg{width:12px;height:12px}
+.tag-pill.selected{background:var(--nf-red);color:#fff;border-color:transparent}
+.tag-pill.selected .tag-count{background:rgba(255,255,255,.28);color:#fff}
+.tag-bar{position:fixed;left:16px;right:16px;bottom:calc(max(2px,var(--safe-bottom) - 18px) + 78px);z-index:1200;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 18px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;visibility:hidden;transform:translateY(12px);transition:all .3s var(--spring)}
+.tag-bar.show{opacity:1;visibility:visible;transform:translateY(0)}
+#tagBarText{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag-bar-clear{padding:8px 12px;border-radius:999px;color:var(--t300)}
+.tag-bar-go{padding:9px 18px;border-radius:999px;background:var(--nf-red);color:#fff}
+#page2{padding-bottom:calc(190px + var(--safe-bottom))}
 /* 設定頁：灰字一律改成近白（淺色模式為深色），按鈕未選中也看得清楚 */
 .drawer .text-zinc-400,.drawer .text-zinc-500,.drawer .text-zinc-600{color:var(--t200)}
 .layout-option{color:var(--fg)}
@@ -283,6 +301,7 @@ applyGlass();
         <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="搜尋標題、女優或番號..." class="search-input">
         <svg id="clearSearchBtn" class="clear-search-btn" onclick="clearSearch()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </div>
+      <div id="filterRow" class="filter-row"></div>
       <div id="gallery" class="grid gap-3"></div>
       <div id="paginationContainer" class="page-dot-container mt-6"></div>
     </div>
@@ -340,6 +359,7 @@ applyGlass();
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">連結</label><input type="text" id="urlInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">標籤（空白分隔）</label><input type="text" id="tagsInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
     <div><label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">封面圖片</label><input type="text" id="imgInput" class="w-full bg-zinc-900 p-4 rounded-lg text-white outline-none"></div>
+    <button id="favToggle" onclick="toggleDrawerFav()" class="w-full py-3 bg-zinc-900 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2"></button>
     <div class="pt-10 space-y-4">
       <button onclick="saveItem()" class="w-full bg-red-600 py-4 font-bold rounded-lg shadow-lg text-white">儲存內容</button>
       <button id="drawerDeleteBtn" onclick="requestDelete()" class="w-full py-2 text-zinc-600 text-xs font-bold hidden">刪除此項目</button>
@@ -405,6 +425,11 @@ applyGlass();
   </div>
 </div>
 
+<div id="tagBar" class="tag-bar glassy keep-dark">
+  <span id="tagBarText"></span>
+  <button onclick="clearTags()" class="tag-bar-clear">清除</button>
+  <button onclick="applyTags()" class="tag-bar-go">查看</button>
+</div>
 <div id="pageModal" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this)closePagePicker()">
   <div class="keep-dark glassy w-full" style="border-radius:28px 28px 0 0;padding:20px 16px calc(24px + var(--safe-bottom))">
     <p class="text-center text-sm font-bold">跳到第幾頁</p>
@@ -438,7 +463,7 @@ function persist() {
 
 let collections = loadCollections();
 const PAGE_SIZES = [6, 12, 24, 48];
-let currentId = null, currentPage = 1;
+let currentId = null, currentPage = 1, drawerFav = false;
 let pageSize = (n => PAGE_SIZES.includes(n) ? n : 12)(parseInt(localStorage.getItem('NF_PAGE_SIZE')));
 function updatePageSize(n) {
   pageSize = n; currentPage = 1;
@@ -450,6 +475,11 @@ let actorCurrentPage = 1, actorPageSize = 18;
 let tagCurrentPage = 1, tagPageSize = 20;
 let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 2;
 let lastRandomId = null, activeTab = 0;
+let favOnly = false, selectedTags = [];
+const HEART = '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>';
+const heartSvg = (filled, size = 14) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${HEART}</svg>`;
+const hasTag = (i, t) => (i.tags || []).some(x => String(x).toLowerCase() === t.toLowerCase());
+const matchTags = i => selectedTags.every(t => hasTag(i, t));
 
 /* 外觀：深色 / 淺色 */
 function currentTheme() { return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
@@ -508,10 +538,12 @@ function renderGallery() {
   const gallery = $('gallery');
   const q = $('searchInput').value.trim().toLowerCase();
   const filtered = collections.filter(i =>
-    String(i.name || '').toLowerCase().includes(q) ||
-    String(i.actor || '').toLowerCase().includes(q) ||
-    String(i.code || '').toLowerCase().includes(q) ||
-    (i.tags || []).some(t => String(t).toLowerCase().includes(q)));
+    (!favOnly || i.fav) && matchTags(i) && (
+      String(i.name || '').toLowerCase().includes(q) ||
+      String(i.actor || '').toLowerCase().includes(q) ||
+      String(i.code || '').toLowerCase().includes(q) ||
+      (i.tags || []).some(t => String(t).toLowerCase().includes(q))));
+  renderFilterRow();
   $('itemCount').innerText = `${filtered.length} ITEMS`;
 
   if (filtered.length === 0) {
@@ -529,6 +561,7 @@ function renderGallery() {
 
   gallery.innerHTML = paginated.map(item => `
     <div class="poster-card" data-card="${esc(item.id)}">
+      <button class="fav-btn${item.fav ? ' on' : ''}" data-fav="${esc(item.id)}" aria-label="${item.fav ? '取消最愛' : '加入最愛'}">${heartSvg(item.fav, 16)}</button>
       <img src="${esc(item.img) || NO_IMG}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=NO_IMG">
       <div class="card-overlay">
         <p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p>
@@ -538,6 +571,38 @@ function renderGallery() {
   renderPagination(total, currentPage, 'changePage', 'paginationContainer');
   updateContainerHeight();
 }
+
+function renderFilterRow() {
+  const row = $('filterRow'); if (!row) return;
+  const favN = collections.filter(i => i.fav).length;
+  const none = !favOnly && !selectedTags.length;
+  row.innerHTML =
+    `<button class="chip${none ? ' active' : ''}" data-chip="all">全部</button>` +
+    `<button class="chip${favOnly ? ' active' : ''}" data-chip="fav">${heartSvg(favOnly || favN > 0, 14)}<span>最愛 ${favN}</span></button>` +
+    selectedTags.map(t => `<button class="chip active" data-chip-tag="${esc(t)}"><span>${esc(t)}</span><span aria-label="移除">✕</span></button>`).join('');
+}
+function resetFilters() { favOnly = false; selectedTags = []; updateTagBar(); renderTagCloud(); }
+function toggleFav(id) {
+  const it = collections.find(i => String(i.id) === String(id)); if (!it) return;
+  const prev = !!it.fav;
+  it.fav = !prev;
+  if (!persist()) { it.fav = prev; return; }
+  renderGallery();
+  showToast(it.fav ? '已加入最愛' : '已取消最愛');
+}
+function toggleTag(tag) {
+  const i = selectedTags.findIndex(t => t.toLowerCase() === tag.toLowerCase());
+  if (i >= 0) selectedTags.splice(i, 1); else selectedTags.push(tag);
+  renderTagCloud(); updateTagBar();
+}
+function updateTagBar() {
+  const bar = $('tagBar'); if (!bar) return;
+  const show = activeTab === 1 && selectedTags.length > 0;
+  bar.classList.toggle('show', show);
+  if (show) $('tagBarText').textContent = `已選 ${selectedTags.length} 個標籤・${collections.filter(matchTags).length} 部符合`;
+}
+function clearTags() { selectedTags = []; renderTagCloud(); updateTagBar(); }
+function applyTags() { $('searchInput').value = ''; $('clearSearchBtn').style.display = 'none'; currentPage = 1; switchTab(0); renderGallery(); }
 
 function renderPagination(total, cur, fn, containerId) {
   const container = $(containerId);
@@ -579,7 +644,7 @@ function renderTagCloud() {
   if (tagCurrentPage > total) tagCurrentPage = Math.max(total, 1);
   const paginated = sorted.slice((tagCurrentPage - 1) * tagPageSize, tagCurrentPage * tagPageSize);
   $('tagCloud').innerHTML = paginated.map(([tag, count]) => `
-    <div data-q="${esc(tag)}" class="tag-pill"><span class="truncate pr-2">${esc(tag)}</span>
+    <div data-tag="${esc(tag)}" class="tag-pill${selectedTags.some(t => t.toLowerCase() === tag.toLowerCase()) ? ' selected' : ''}"><span class="truncate pr-2">${esc(tag)}</span>
     <span class="tag-count">${count}</span></div>`).join('');
   renderPagination(total, tagCurrentPage, 'changeTagPage', 'tagPaginationContainer');
   updateContainerHeight();
@@ -618,6 +683,7 @@ const LONG_PRESS_MS = 500, MOVE_TOL = 10;
 function cancelLongPress() { clearTimeout(lpTimer); lpTimer = null; }
 
 document.addEventListener('pointerdown', e => {
+  if (e.target.closest('[data-fav]')) return;
   const card = e.target.closest('[data-card]');
   if (!card) return;
   lpFired = false; lpX = e.clientX; lpY = e.clientY;
@@ -638,6 +704,17 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('contextmenu', e => { if (e.target.closest('[data-card]')) e.preventDefault(); });
 
 document.addEventListener('click', e => {
+  const fav = e.target.closest('[data-fav]');
+  if (fav) { e.stopPropagation(); if (!lpFired) toggleFav(fav.dataset.fav); return; }
+  const chipTag = e.target.closest('[data-chip-tag]');
+  if (chipTag) { toggleTag(chipTag.dataset.chipTag); currentPage = 1; renderGallery(); return; }
+  const chip = e.target.closest('[data-chip]');
+  if (chip) {
+    if (chip.dataset.chip === 'all') resetFilters(); else favOnly = !favOnly;
+    currentPage = 1; renderGallery(); return;
+  }
+  const tagEl = e.target.closest('[data-tag]');
+  if (tagEl) { toggleTag(tagEl.dataset.tag); return; }
   const card = e.target.closest('[data-card]');
   if (card) {
     if (lpFired) return;
@@ -667,6 +744,12 @@ function openRandomRecommendation() {
 }
 function closeRandomModal() { const m = $('randomModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
 
+function renderFavToggle() {
+  const b = $('favToggle'); if (!b) return;
+  b.innerHTML = heartSvg(drawerFav, 18) + `<span>${drawerFav ? '已加入最愛' : '加入最愛'}</span>`;
+  b.style.color = drawerFav ? 'var(--nf-red)' : '';
+}
+function toggleDrawerFav() { drawerFav = !drawerFav; renderFavToggle(); }
 function openDrawer(id = null) {
   currentId = id;
   $('drawer').classList.add('open');
@@ -676,11 +759,14 @@ function openDrawer(id = null) {
     f.name.value = item.name || ""; f.actor.value = item.actor || ""; f.code.value = item.code || ""; f.url.value = item.url || "";
     f.tags.value = (item.tags || []).join(' '); f.img.value = item.img || "";
     $('drawerDeleteBtn').classList.remove('hidden');
+    drawerFav = !!item.fav;
   } else {
     currentId = null;
     Object.values(f).forEach(x => { x.value = ""; x.style.color = ""; });
     $('drawerDeleteBtn').classList.add('hidden');
+    drawerFav = false;
   }
+  renderFavToggle();
   $('pasteBtn').classList.toggle('hidden', !!item);
   ['codeInput', 'urlInput', 'imgInput'].forEach(fid => checkDuplicate($(fid)));
 }
@@ -695,7 +781,8 @@ function saveItem() {
     code: $('codeInput').value.trim().toUpperCase(),
     url: $('urlInput').value.trim(),
     tags: $('tagsInput').value.trim().split(/\s+/).filter(Boolean),
-    img: $('imgInput').value.trim()
+    img: $('imgInput').value.trim(),
+    fav: drawerFav
   };
   const backup = collections.slice();
   const idx = currentId ? collections.findIndex(i => String(i.id) === String(currentId)) : -1;
@@ -712,11 +799,13 @@ function switchTab(index) {
   document.querySelectorAll('.page-content').forEach((p, i) => p.classList.toggle('active-page', i === index));
   window.scrollTo(0, 0);
   if (index === 1) renderTagCloud();
+  updateTagBar();
   if (index === 2) renderActorList();
   updateContainerHeight();
 }
 
 function filterBySearch(val) {
+  favOnly = false; selectedTags = [];
   $('searchInput').value = val;
   $('clearSearchBtn').style.display = val ? 'block' : 'none';
   currentPage = 1;
@@ -819,7 +908,8 @@ function importData(e) {
         return {
           id, name: String(i.name), code: String(i.code || ''), url: String(i.url || ''), img: String(i.img || ''),
           tags: Array.isArray(i.tags) ? i.tags.map(String) : [],
-          actor: typeof i.actor === 'string' ? i.actor : undefined
+          actor: typeof i.actor === 'string' ? i.actor : undefined,
+          fav: i.fav === true
         };
       });
       if (data.length === 0) throw new Error('empty');
@@ -914,7 +1004,8 @@ async function readCloud(id) {
     id: String(i.id ?? (Date.now() + '_' + n)), name: String(i.name), code: String(i.code || ''),
     url: String(i.url || ''), img: String(i.img || ''),
     tags: Array.isArray(i.tags) ? i.tags.map(String) : [],
-    actor: typeof i.actor === 'string' ? i.actor : undefined
+    actor: typeof i.actor === 'string' ? i.actor : undefined,
+    fav: i.fav === true
   }));
   return { items, ts: g.updated_at || '' };
 }
@@ -1047,7 +1138,7 @@ function removeToken() {
 
 /* 開啟 app / 回到前景時，比對雲端是否有另一台裝置的較新備份 */
 let lastCloudCheck = 0, cloudChecking = false, declinedTs = '';
-const canon = arr => JSON.stringify(arr.map(i => [i.id, i.name, i.actor || '', i.code || '', i.url || '', i.img || '', (i.tags || []).join('\u0001')]));
+const canon = arr => JSON.stringify(arr.map(i => [i.id, i.name, i.actor || '', i.code || '', i.url || '', i.img || '', (i.tags || []).join('\u0001'), i.fav ? 1 : 0]));
 async function checkCloud(force) {
   const id = lsGet(K_ID);
   if (!lsGet(K_TOKEN) || !id || cloudChecking || backupBusy || backupTimer || navigator.onLine === false) return;
