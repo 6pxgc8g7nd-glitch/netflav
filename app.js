@@ -605,8 +605,7 @@ function pickRandomItem() {
 }
 function openRandomRecommendation() {
   if (collections.length === 0) { showToast("目前尚無收藏內容可推薦"); return; }
-  const { item, newRound } = pickRandomItem();
-  $('randomProgress').textContent = (newRound ? '新的一輪開始・' : '') + `這一輪已抽 ${randomSeen.size} / ${collections.length} 部`;
+  const { item } = pickRandomItem();
   $('randomCardPreview').innerHTML = `
     ${coverHtml(item, false)}
     <div class="card-overlay"><p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p></div>`;
