@@ -629,16 +629,10 @@ function executeDelete() {
   });
 }
 function closeDrawer() { $('drawer').classList.remove('open'); setTimeout(() => checkCloud(), 800); }
-function toggleAdvanced(open) {
-  const box = $('advancedBox');
-  const show = open === undefined ? box.classList.contains('hidden') : open;
-  box.classList.toggle('hidden', !show);
-  $('advArrow').style.transform = show ? 'rotate(180deg)' : '';
-}
 function toggleFilterDrawer(open) {
   $('filterDrawer').classList.toggle('open', open);
   if (open) { updateCloudUI(); renderDiag(); }
-  else { $('cloudBox').classList.add('hidden'); toggleAdvanced(false); } // 關閉設定時一律收起
+  else { $('cloudBox').classList.add('hidden'); $('diagDetails').open = false; } // 關閉設定時，隱藏的雲端備份區和診斷資訊都收起
 }
 
 async function exportData() {
@@ -969,7 +963,7 @@ window.addEventListener('online', () => checkCloud(true));
       timer = null;
       const box = $('cloudBox');
       box.classList.toggle('hidden');
-      if (!box.classList.contains('hidden')) { toggleAdvanced(true); updateCloudUI(); box.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      if (!box.classList.contains('hidden')) { updateCloudUI(); box.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     }, 1000);
   });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => t.addEventListener(ev, cancel));
