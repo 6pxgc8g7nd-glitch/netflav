@@ -244,11 +244,6 @@ html[data-theme=light] .tag-count{background:rgba(0,0,0,.08)}
 .chip{flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;background:var(--glass-bg);border:1px solid var(--glass-bd);color:var(--fg);box-shadow:inset 0 1px 0 var(--glass-hi)}
 .chip.active{background:var(--nf-red);color:#fff;border-color:transparent}
 .chip:active{transform:scale(.96)}
-.fav-btn{position:absolute;top:8px;right:8px;z-index:12;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.22);color:#fff}
-.fav-btn.on{color:var(--nf-red);background:rgba(255,255,255,.92);border-color:transparent}
-.fav-btn:active{transform:scale(.88)}
-.layout-cols-3 .fav-btn,.layout-cols-4 .fav-btn{width:24px;height:24px;top:5px;right:5px}
-.layout-cols-3 .fav-btn svg,.layout-cols-4 .fav-btn svg{width:12px;height:12px}
 .tag-pill.selected{background:var(--nf-red);color:#fff;border-color:transparent}
 .tag-pill.selected .tag-count{background:rgba(255,255,255,.28);color:#fff}
 .tag-bar{position:fixed;left:16px;right:16px;bottom:calc(max(2px,var(--safe-bottom) - 18px) + 78px);z-index:1200;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 18px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;visibility:hidden;transform:translateY(12px);transition:all .3s var(--spring)}
@@ -561,7 +556,6 @@ function renderGallery() {
 
   gallery.innerHTML = paginated.map(item => `
     <div class="poster-card" data-card="${esc(item.id)}">
-      <button class="fav-btn${item.fav ? ' on' : ''}" data-fav="${esc(item.id)}" aria-label="${item.fav ? '取消最愛' : '加入最愛'}">${heartSvg(item.fav, 16)}</button>
       <img src="${esc(item.img) || NO_IMG}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=NO_IMG">
       <div class="card-overlay">
         <p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p>
@@ -582,14 +576,6 @@ function renderFilterRow() {
     selectedTags.map(t => `<button class="chip active" data-chip-tag="${esc(t)}"><span>${esc(t)}</span><span aria-label="移除">✕</span></button>`).join('');
 }
 function resetFilters() { favOnly = false; selectedTags = []; updateTagBar(); renderTagCloud(); }
-function toggleFav(id) {
-  const it = collections.find(i => String(i.id) === String(id)); if (!it) return;
-  const prev = !!it.fav;
-  it.fav = !prev;
-  if (!persist()) { it.fav = prev; return; }
-  renderGallery();
-  showToast(it.fav ? '已加入最愛' : '已取消最愛');
-}
 function toggleTag(tag) {
   const i = selectedTags.findIndex(t => t.toLowerCase() === tag.toLowerCase());
   if (i >= 0) selectedTags.splice(i, 1); else selectedTags.push(tag);
@@ -683,7 +669,6 @@ const LONG_PRESS_MS = 500, MOVE_TOL = 10;
 function cancelLongPress() { clearTimeout(lpTimer); lpTimer = null; }
 
 document.addEventListener('pointerdown', e => {
-  if (e.target.closest('[data-fav]')) return;
   const card = e.target.closest('[data-card]');
   if (!card) return;
   lpFired = false; lpX = e.clientX; lpY = e.clientY;
@@ -704,8 +689,6 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('contextmenu', e => { if (e.target.closest('[data-card]')) e.preventDefault(); });
 
 document.addEventListener('click', e => {
-  const fav = e.target.closest('[data-fav]');
-  if (fav) { e.stopPropagation(); if (!lpFired) toggleFav(fav.dataset.fav); return; }
   const chipTag = e.target.closest('[data-chip-tag]');
   if (chipTag) { toggleTag(chipTag.dataset.chipTag); currentPage = 1; renderGallery(); return; }
   const chip = e.target.closest('[data-chip]');
