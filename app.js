@@ -994,10 +994,7 @@ function precacheCovers() {
 window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
-/* 隱私遮蓋：切到別的 app / 進入多工畫面時，先蓋住畫面，避免縮圖露出封面
-   （iOS 何時拍縮圖由系統決定，這是盡力而為的做法） */
-let coverOn = (() => { try { return localStorage.getItem('NF_COVER') !== 'off'; } catch (e) { return true; } })();
-const isTouch = () => window.matchMedia && matchMedia('(hover: none)').matches;
+/* 封面模糊（隱私模式）：切到別的 app / 鎖螢幕時，一律先把「暫時顯示」的封面重新模糊 */
 function applyBlur() { document.body.classList.toggle('blur-covers', privacyBlur && !revealed); }
 function setRevealed(v) { revealed = !!v; applyBlur(); renderFilterRow(); }
 function setPrivacyBlur(on) {
@@ -1009,30 +1006,12 @@ function updateBlurUI() {
   $('blurBtnOn').classList.toggle('active', privacyBlur);
   $('blurBtnOff').classList.toggle('active', !privacyBlur);
 }
-function showCover() {
-  if (revealed) { revealed = false; applyBlur(); renderFilterRow(); } // 切走時先重新模糊，不管遮蓋有沒有來得及蓋上
-  if (coverOn) $('privacyCover').classList.add('show');
-}
-function hideCover() { $('privacyCover').classList.remove('show'); }
-function setCover(on) {
-  coverOn = !!on;
-  try { localStorage.setItem('NF_COVER', coverOn ? 'on' : 'off'); } catch (e) {}
-  if (!coverOn) hideCover();
-  updateCoverUI();
-}
-function updateCoverUI() {
-  $('coverBtnOn').classList.toggle('active', coverOn);
-  $('coverBtnOff').classList.toggle('active', !coverOn);
-}
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') showCover(); else hideCover(); });
-window.addEventListener('pagehide', showCover);
-window.addEventListener('pageshow', hideCover);
-window.addEventListener('focus', hideCover);
-window.addEventListener('blur', () => { if (isTouch()) showCover(); }); // 電腦上點到別的視窗不必遮蓋
-$('privacyCover').addEventListener('pointerdown', hideCover);
+function reBlurOnLeave() { if (revealed) { revealed = false; applyBlur(); renderFilterRow(); } }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') reBlurOnLeave(); });
+window.addEventListener('pagehide', reBlurOnLeave);
+window.addEventListener('blur', reBlurOnLeave);
 
 window.onload = () => {
-  updateCoverUI();
   updateBlurUI();
   applyBlur();
   updateAppearanceUI();

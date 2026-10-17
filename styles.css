@@ -218,8 +218,4 @@ html[data-theme=light] .tag-count{background:rgba(0,0,0,.08)}
 .dup-keep{padding:8px 14px;border-radius:999px;background:var(--nf-red);color:#fff;font-size:12px;font-weight:700}
 /* 封面模糊（隱私模式）：圖片在卡片內縮放後被裁切，邊緣不會透出 */
 body.blur-covers .poster-card img,body.blur-covers .actor-badge img,body.blur-covers #randomCardPreview img{filter:blur(16px) saturate(.85);transform:scale(1.2)}
-/* 隱私遮蓋：切走 app 時蓋住畫面 */
-#privacyCover{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:var(--nf-black)}
-#privacyCover.show{display:flex}
-#privacyCover .brand-logo{font-size:34px;letter-spacing:.08em;pointer-events:none}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
