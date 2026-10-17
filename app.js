@@ -955,7 +955,12 @@ window.addEventListener('online', () => checkCloud(true));
   t.addEventListener('contextmenu', e => e.preventDefault());
 })();
 
-function refreshAndHome() { clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+let logoTaps = [];
+function refreshAndHome() {
+  const now = Date.now(); logoTaps = logoTaps.filter(t => now - t < 700); logoTaps.push(now);
+  if (fakeProfileOn && logoTaps.length >= 3) { logoTaps = []; showProfiles(); return; } // 快速連點標誌三下 → 回到「誰在看？」
+  clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 ['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
 
 /* 離線與封面快取（需要同資料夾的 sw.js，並以 http(s) 開啟） */
@@ -1098,11 +1103,13 @@ function pickProfile(i) {
     el.classList.remove('out');
   }, 230);
 }
-function backToProfiles() { // 在假的首頁點「我的 Netflix」回到選擇個人檔案
-  try { sessionStorage.removeItem('NF_DECOY'); } catch (e) {}
+function showProfiles() { // 回到「誰在看？」（重新載入也維持在這個畫面，直到再選一次頭像）
+  try { sessionStorage.removeItem('NF_DECOY'); sessionStorage.removeItem('NF_ENTERED'); } catch (e) {}
   document.documentElement.classList.remove('fake-home');
   document.documentElement.classList.add('fake-profile');
+  window.scrollTo(0, 0);
 }
+const backToProfiles = showProfiles; // 在假的首頁點「我的 Netflix」也是回到這裡
 document.querySelectorAll('#fakeProfile [data-profile]').forEach(b => b.addEventListener('click', () => pickProfile(+b.dataset.profile)));
 $('fhMe').addEventListener('click', backToProfiles);
 (() => { let i = 0; try { i = parseInt(sessionStorage.getItem('NF_PROFILE')); } catch (e) {} applyProfile(i >= 0 && i < PROFILE_ART.length && i !== KIDS ? i : 0); })();
