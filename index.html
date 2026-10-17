@@ -325,7 +325,11 @@ applyGlass();
   </div>
 </div>
 <div id="toast"></div>
-<div id="undoBar"><span id="undoMsg"></span><button id="undoBtn" onclick="doUndo()">復原</button></div>
+<div id="undoBar" role="status" aria-live="polite">
+  <span id="undoMsg"></span>
+  <button id="undoBtn" onclick="doUndo()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg><span>復原</span></button>
+  <i id="undoTimer" aria-hidden="true"></i>
+</div>
 
 <script src="app.js"></script>
 </body>

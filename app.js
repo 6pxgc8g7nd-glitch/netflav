@@ -657,15 +657,21 @@ function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeo
 function showToast(msg) { const t = $('toast'); t.innerText = msg; t.style.opacity = "1"; clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => { t.style.opacity = "0"; }, 2000); }
 
 /* 復原：刪除後 7 秒內可以還原 */
-let undoFn = null, undoTimer = null;
+let undoFn = null, undoTimer = null, undoRemain = 0, undoStart = 0;
+const UNDO_MS = 7000;
 function showUndo(msg, fn) {
   clearTimeout(undoTimer);
   undoFn = fn;
   $('undoMsg').textContent = msg;
-  $('undoBar').classList.add('show');
-  undoTimer = setTimeout(hideUndo, 7000);
+  $('undoBar').classList.add('show'); document.body.classList.add('undo-open');
+  // 倒數條：從滿慢慢縮短到 0，按住提示條時暫停，放開再繼續
+  undoRemain = UNDO_MS; undoStart = Date.now(); undoTimer = setTimeout(hideUndo, UNDO_MS);
+  const t = $('undoTimer'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = `undoShrink ${UNDO_MS}ms linear forwards`;
 }
-function hideUndo() { clearTimeout(undoTimer); undoFn = null; $('undoBar').classList.remove('show'); }
+function pauseUndo() { if (!undoFn) return; clearTimeout(undoTimer); undoRemain -= Date.now() - undoStart; $('undoTimer').style.animationPlayState = 'paused'; }
+function resumeUndo() { if (!undoFn) return; undoStart = Date.now(); undoTimer = setTimeout(hideUndo, Math.max(undoRemain, 400)); $('undoTimer').style.animationPlayState = 'running'; }
+function hideUndo() { clearTimeout(undoTimer); undoFn = null; $('undoBar').classList.remove('show'); document.body.classList.remove('undo-open'); }
+(() => { const b = $('undoBar'); b.addEventListener('pointerdown', pauseUndo); ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => b.addEventListener(t, resumeUndo)); })();
 function doUndo() { const f = undoFn; hideUndo(); if (f) f(); }
 
 function openConfirm(title, fn) {
