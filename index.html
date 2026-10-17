@@ -434,12 +434,15 @@ applyGlass();
   <div class="keep-dark glassy w-full" style="border-radius:28px 28px 0 0;padding:20px 16px calc(24px + var(--safe-bottom));max-height:90vh;overflow-y:auto">
     <p id="avatarTitle" class="text-center text-sm font-bold mb-4"></p>
     <div id="avatarPreview" class="actor-badge overflow-hidden" style="width:96px;height:96px;margin:0 auto 16px"></div>
+    <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">別名（空白或逗號分隔）</label>
+    <input type="text" id="avatarAliases" placeholder="例如：另一種寫法、日文名、中文名" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full bg-zinc-900 p-3 rounded-lg text-white outline-none mb-1" style="font-size:16px">
+    <p class="text-[11px] text-zinc-400 mb-4 leading-relaxed">這些名字的作品會合併顯示在這位女優底下，搜尋也找得到。</p>
     <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">圖片網址（選填）</label>
     <input type="text" id="avatarUrl" oninput="updateAvatarPreview()" placeholder="https://..." autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full bg-zinc-900 p-3 rounded-lg text-white outline-none mb-4" style="font-size:16px">
     <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">預設造型</label>
     <div id="avatarStyles" class="avatar-styles"></div>
     <div class="grid grid-cols-2 gap-3 mt-6">
-      <button onclick="resetAvatar()" class="py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">恢復預設</button>
+      <button onclick="resetAvatar()" class="py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">清除設定</button>
       <button onclick="saveAvatar()" class="py-3 bg-red-600 rounded-lg text-xs font-bold text-white">儲存</button>
     </div>
   </div>
@@ -489,7 +492,7 @@ let actorCurrentPage = 1, actorPageSize = 18;
 let tagCurrentPage = 1, tagPageSize = 20;
 let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 2;
 let lastRandomId = null, activeTab = 0;
-let favOnly = false, selectedTags = [];
+let favOnly = false, selectedTags = [], actorFilter = '';
 const HEART = '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>';
 const heartSvg = (filled, size = 14) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${HEART}</svg>`;
 const hasTag = (i, t) => (i.tags || []).some(x => String(x).toLowerCase() === t.toLowerCase());
@@ -551,10 +554,12 @@ function clearSearch() {
 function renderGallery() {
   const gallery = $('gallery');
   const q = $('searchInput').value.trim().toLowerCase();
+  const am = aliasMap();
   const filtered = collections.filter(i =>
-    (!favOnly || i.fav) && matchTags(i) && (
+    (!favOnly || i.fav) && matchTags(i) && (!actorFilter || canonActors(i, am).includes(actorFilter)) && (
       String(i.name || '').toLowerCase().includes(q) ||
       String(i.actor || '').toLowerCase().includes(q) ||
+      aliasText(i, am).includes(q) ||
       String(i.code || '').toLowerCase().includes(q) ||
       (i.tags || []).some(t => String(t).toLowerCase().includes(q))));
   renderFilterRow();
@@ -588,13 +593,14 @@ function renderGallery() {
 function renderFilterRow() {
   const row = $('filterRow'); if (!row) return;
   const favN = collections.filter(i => i.fav).length;
-  const none = !favOnly && !selectedTags.length;
+  const none = !favOnly && !selectedTags.length && !actorFilter;
   row.innerHTML =
     `<button class="chip${none ? ' active' : ''}" data-chip="all">全部</button>` +
     `<button class="chip${favOnly ? ' active' : ''}" data-chip="fav" aria-label="只看最愛">${heartSvg(favOnly || favN > 0, 14)}<span>${favN}</span></button>` +
+    (actorFilter ? `<button class="chip active" data-chip-actor><span>${esc(actorFilter)}</span><span aria-label="移除">✕</span></button>` : '') +
     selectedTags.map(t => `<button class="chip active" data-chip-tag="${esc(t)}"><span>${esc(t)}</span><span aria-label="移除">✕</span></button>`).join('');
 }
-function resetFilters() { favOnly = false; selectedTags = []; updateTagBar(); renderTagCloud(); }
+function resetFilters() { favOnly = false; selectedTags = []; actorFilter = ''; updateTagBar(); renderTagCloud(); }
 function toggleTag(tag) {
   const i = selectedTags.findIndex(t => t.toLowerCase() === tag.toLowerCase());
   if (i >= 0) selectedTags.splice(i, 1); else selectedTags.push(tag);
@@ -665,8 +671,7 @@ function actorsOf(i) {
 function nameHash(name) { let h = 2166136261; for (const c of String(name)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; }
 const AVATAR_KEY = 'NF_ACTOR_AVATARS';
 let actorAvatars = {};
-try { actorAvatars = JSON.parse(localStorage.getItem(AVATAR_KEY)) || {}; } catch (e) { actorAvatars = {}; }
-if (typeof actorAvatars !== 'object' || Array.isArray(actorAvatars)) actorAvatars = {};
+try { actorAvatars = sanitizeAvatars(JSON.parse(localStorage.getItem(AVATAR_KEY))) || {}; } catch (e) { actorAvatars = {}; }
 /* 只留下合法欄位：{ 名字: { img?: http(s)/data:image 網址, style?: 0–3 } }；格式不對回傳 null */
 function sanitizeAvatars(obj) {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
@@ -676,11 +681,15 @@ function sanitizeAvatars(obj) {
     const e = {};
     if (typeof v.img === 'string' && /^(https?:\/\/|data:image\/)/i.test(v.img.trim())) e.img = v.img.trim();
     if (Number.isInteger(v.style) && v.style >= 0 && v.style < 4) e.style = v.style;
+    if (Array.isArray(v.aliases)) {
+      const al = [...new Set(v.aliases.map(a => String(a).trim()).filter(a => a && a.length <= 40 && a !== k))].slice(0, 30);
+      if (al.length) e.aliases = al;
+    }
     if (Object.keys(e).length) out[k] = e;
   });
   return out;
 }
-const canonAv = o => JSON.stringify(Object.keys(o || {}).sort().map(k => [k, o[k].img || '', Number.isInteger(o[k].style) ? o[k].style : -1]));
+const canonAv = o => JSON.stringify(Object.keys(o || {}).sort().map(k => [k, o[k].img || '', Number.isInteger(o[k].style) ? o[k].style : -1, (o[k].aliases || []).join('\u0001')]));
 function saveAvatars() { try { localStorage.setItem(AVATAR_KEY, JSON.stringify(actorAvatars)); scheduleBackup(); return true; } catch (e) { showToast('儲存失敗：空間不足或被禁用'); return false; } }
 const defaultStyle = name => (nameHash(name) >>> 4) % 4;
 function avatarSvgFor(style) {
@@ -705,7 +714,8 @@ let avName = '', avStyle = null;
 function openAvatarEditor(name) {
   const a = actorAvatars[name] || {};
   avName = name; avStyle = Number.isInteger(a.style) ? a.style : null;
-  $('avatarTitle').textContent = '編輯頭像・' + name;
+  $('avatarTitle').textContent = '編輯女優・' + name;
+  $('avatarAliases').value = (a.aliases || []).join(' ');
   $('avatarUrl').value = a.img || '';
   renderAvatarEditor();
   const m = $('avatarModal'); m.classList.remove('hidden'); m.classList.add('flex');
@@ -723,21 +733,41 @@ function saveAvatar() {
   const url = $('avatarUrl').value.trim();
   if (url && !/^(https?:\/\/|data:image\/)/i.test(url)) { showToast('圖片網址要以 http 或 https 開頭'); return; }
   const entry = {};
+  const aliases = [...new Set($('avatarAliases').value.split(/[\s,，、\/／]+/).map(a => a.trim()).filter(a => a && a !== avName))].slice(0, 30);
+  const am = aliasMap();
+  for (const a of aliases) {
+    const owner = am.get(normName(a));
+    if (owner && owner !== avName) { showToast(`「${a}」已經是「${owner}」的別名`); return; }
+    if (actorAvatars[a] && (actorAvatars[a].aliases || []).length) { showToast(`「${a}」本身已有別名，請先到它那邊清除`); return; }
+  }
+  if (aliases.length) entry.aliases = aliases;
   if (url) entry.img = url;
   if (avStyle !== null && avStyle !== defaultStyle(avName)) entry.style = avStyle;
   const prev = actorAvatars[avName];
   if (Object.keys(entry).length) actorAvatars[avName] = entry; else delete actorAvatars[avName];
   if (!saveAvatars()) { if (prev) actorAvatars[avName] = prev; else delete actorAvatars[avName]; return; }
-  closeAvatarEditor(); renderActorList(); showToast('已儲存頭像');
+  closeAvatarEditor(); renderActorList(); renderGallery(); showToast('已儲存');
 }
 function resetAvatar() {
   const prev = actorAvatars[avName]; delete actorAvatars[avName];
   if (!saveAvatars()) { if (prev) actorAvatars[avName] = prev; return; }
-  closeAvatarEditor(); renderActorList(); showToast('已恢復預設頭像');
+  closeAvatarEditor(); renderActorList(); renderGallery(); showToast('已清除設定');
 }
+/* 別名合併：{ 標準名字: { aliases: [別名…] } } → 別名對照表；同一個別名被多人佔用時，依名字排序先到先得 */
+const normName = n => String(n).normalize('NFKC').trim().toLowerCase();
+function aliasMap() {
+  const m = new Map();
+  Object.keys(actorAvatars).sort().forEach(k => (actorAvatars[k].aliases || []).forEach(a => {
+    const n = normName(a); if (n && n !== normName(k) && !m.has(n)) m.set(n, k);
+  }));
+  return m;
+}
+const canonActors = (i, am) => [...new Set(actorsOf(i).map(n => am.get(normName(n)) || n))];
+const aliasText = (i, am) => canonActors(i, am).map(c => [c, ...((actorAvatars[c] && actorAvatars[c].aliases) || [])].join(' ')).join(' ').toLowerCase();
 function renderActorList() {
   const map = {};
-  collections.forEach(i => actorsOf(i).forEach(n => map[n] = (map[n] || 0) + 1));
+  const am = aliasMap();
+  collections.forEach(i => canonActors(i, am).forEach(n => map[n] = (map[n] || 0) + 1));
   const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
   const total = Math.ceil(sorted.length / actorPageSize);
   if (actorCurrentPage > total) actorCurrentPage = Math.max(total, 1);
@@ -779,6 +809,7 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('contextmenu', e => { if (e.target.closest('[data-card],[data-actor]')) e.preventDefault(); });
 
 document.addEventListener('click', e => {
+  if (e.target.closest('[data-chip-actor]')) { actorFilter = ''; currentPage = 1; renderGallery(); return; }
   const chipTag = e.target.closest('[data-chip-tag]');
   if (chipTag) { toggleTag(chipTag.dataset.chipTag); currentPage = 1; renderGallery(); return; }
   const chip = e.target.closest('[data-chip]');
@@ -797,7 +828,7 @@ document.addEventListener('click', e => {
     return;
   }
   const q = e.target.closest('[data-q]');
-  if (q) { if (lpFired) return; filterBySearch(q.dataset.q); }
+  if (q) { if (lpFired) return; setActorFilter(q.dataset.q); }
 });
 
 function openRandomRecommendation() {
@@ -877,10 +908,9 @@ function switchTab(index) {
   updateContainerHeight();
 }
 
-function filterBySearch(val) {
-  favOnly = false; selectedTags = [];
-  $('searchInput').value = val;
-  $('clearSearchBtn').style.display = val ? 'block' : 'none';
+function setActorFilter(name) {
+  favOnly = false; selectedTags = []; actorFilter = name;
+  $('searchInput').value = ''; $('clearSearchBtn').style.display = 'none';
   currentPage = 1;
   switchTab(0);
   renderGallery();
