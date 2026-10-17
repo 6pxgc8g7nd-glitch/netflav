@@ -970,24 +970,26 @@ function refreshAndHome() {
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   navigator.serviceWorker.addEventListener('message', e => {
-    if (e.data && e.data.type === 'precache-done') showToast(`封面已存好 ${e.data.ok} / ${e.data.total} 張`);
+    if (e.data && e.data.type === 'precache-done') showToast(`封面和頭像已存好 ${e.data.ok} / ${e.data.total} 張`);
   });
 }
 async function clearCoverCache() {
   const KEY = 'netflav-img-v1';
   let n = 0;
   try { if ('caches' in window && await caches.has(KEY)) n = (await (await caches.open(KEY)).keys()).length; } catch (e) {}
-  if (!n) { showToast('目前沒有已存的封面'); return; }
-  openConfirm(`清除已存的 ${n} 張封面？\n（收藏資料不會刪除，封面之後會重新載入）`, async () => {
-    try { await caches.delete(KEY); showToast('已清除封面快取'); } catch (e) { showToast('清除失敗'); }
+  if (!n) { showToast('目前沒有已存的封面或頭像'); return; }
+  openConfirm(`清除已存的 ${n} 張封面和頭像？\n（收藏資料不會刪除，之後會重新載入）`, async () => {
+    try { await caches.delete(KEY); showToast('已清除封面和頭像快取'); } catch (e) { showToast('清除失敗'); }
   });
 }
 function precacheCovers() {
   const sw = 'serviceWorker' in navigator && navigator.serviceWorker.controller;
   if (!sw) { showToast('離線功能尚未啟用，請重新開啟 app 再試'); return; }
-  const urls = [...new Set(collections.map(i => i.img).filter(u => /^https?:\/\//i.test(u || '')))];
-  if (!urls.length) { showToast('沒有封面可以下載'); return; }
-  showToast(`開始下載 ${urls.length} 張封面…`);
+  // 影片封面 + 女優自訂頭像（預設的卡通頭像是程式畫的，不用下載；data: 圖片本來就在資料裡）
+  const imgs = [...collections.map(i => i.img), ...Object.values(actorAvatars).map(a => a && a.img)];
+  const urls = [...new Set(imgs.filter(u => /^https?:\/\//i.test(u || '')))];
+  if (!urls.length) { showToast('沒有封面或頭像可以下載'); return; }
+  showToast(`開始下載 ${urls.length} 張封面和頭像…`);
   sw.postMessage({ type: 'precache', urls });
 }
 /* 禁止雙指縮放（iOS）；雙擊放大由 CSS touch-action: manipulation 處理 */
