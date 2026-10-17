@@ -664,8 +664,24 @@ function actorsOf(i) {
 /* 虛擬頭像：依名字挑固定的髮型剪影（單色、不是真人照片，同一個名字永遠長一樣） */
 function nameHash(name) { let h = 2166136261; for (const c of String(name)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; }
 const AVATAR_KEY = 'NF_ACTOR_AVATARS';
-let actorAvatars = (() => { try { const d = JSON.parse(localStorage.getItem(AVATAR_KEY)); return d && typeof d === 'object' && !Array.isArray(d) ? d : {}; } catch (e) { return {}; } })();
-function saveAvatars() { try { localStorage.setItem(AVATAR_KEY, JSON.stringify(actorAvatars)); return true; } catch (e) { showToast('儲存失敗：空間不足或被禁用'); return false; } }
+let actorAvatars = {};
+try { actorAvatars = JSON.parse(localStorage.getItem(AVATAR_KEY)) || {}; } catch (e) { actorAvatars = {}; }
+if (typeof actorAvatars !== 'object' || Array.isArray(actorAvatars)) actorAvatars = {};
+/* 只留下合法欄位：{ 名字: { img?: http(s)/data:image 網址, style?: 0–3 } }；格式不對回傳 null */
+function sanitizeAvatars(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+  const out = {};
+  Object.keys(obj).forEach(k => {
+    const v = obj[k]; if (!v || typeof v !== 'object') return;
+    const e = {};
+    if (typeof v.img === 'string' && /^(https?:\/\/|data:image\/)/i.test(v.img.trim())) e.img = v.img.trim();
+    if (Number.isInteger(v.style) && v.style >= 0 && v.style < 4) e.style = v.style;
+    if (Object.keys(e).length) out[k] = e;
+  });
+  return out;
+}
+const canonAv = o => JSON.stringify(Object.keys(o || {}).sort().map(k => [k, o[k].img || '', Number.isInteger(o[k].style) ? o[k].style : -1]));
+function saveAvatars() { try { localStorage.setItem(AVATAR_KEY, JSON.stringify(actorAvatars)); scheduleBackup(); return true; } catch (e) { showToast('儲存失敗：空間不足或被禁用'); return false; } }
 const defaultStyle = name => (nameHash(name) >>> 4) % 4;
 function avatarSvgFor(style) {
   const hair = '#4a4a50';
@@ -932,7 +948,7 @@ function toggleFilterDrawer(open) {
 
 async function exportData() {
   const EXPORT_NAME = 'netflav.json';
-  const text = JSON.stringify(collections, null, 2);
+  const text = JSON.stringify({ version: 2, items: collections, avatars: actorAvatars }, null, 2);
   try {
     const file = new File([text], EXPORT_NAME, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -955,8 +971,11 @@ function importData(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      const raw = JSON.parse(ev.target.result);
-      if (!Array.isArray(raw)) throw new Error('not array');
+      const parsed = JSON.parse(ev.target.result);
+      // 新格式 { items, avatars }；舊格式是單純的陣列
+      const raw = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.items) ? parsed.items : null);
+      if (!raw) throw new Error('bad format');
+      const importedAv = Array.isArray(parsed) ? null : sanitizeAvatars(parsed.avatars);
       const seen = new Set();
       const data = raw.filter(i => i && typeof i === 'object' && i.name).map((i, n) => {
         let id = String(i.id ?? (Date.now() + '_' + n));
@@ -971,9 +990,11 @@ function importData(e) {
       });
       if (data.length === 0) throw new Error('empty');
       openConfirm(`匯入 ${data.length} 筆，將覆蓋現有 ${collections.length} 筆資料。確定嗎？`, () => {
-        const backup = collections;
+        const backup = collections, backupAv = actorAvatars;
         collections = data;
-        if (!persist()) { collections = backup; return; }
+        if (importedAv) actorAvatars = importedAv;
+        try { if (importedAv) localStorage.setItem(AVATAR_KEY, JSON.stringify(actorAvatars)); } catch (err) { collections = backup; actorAvatars = backupAv; showToast('儲存失敗：空間不足或被禁用'); return; }
+        if (!persist()) { collections = backup; actorAvatars = backupAv; return; }
         hideUndo();
         currentPage = 1; actorCurrentPage = 1; tagCurrentPage = 1;
         refreshAll(); toggleFilterDrawer(false); showToast("匯入成功");
@@ -1021,7 +1042,7 @@ function handleHash() {
 window.addEventListener('hashchange', handleHash);
 
 /* 雲端自動備份：GitHub Gist（私人） */
-const GIST_FILE = 'netflav.json', GIST_DESC = 'Netflav backup';
+const GIST_FILE = 'netflav.json', AVATAR_FILE = 'avatars.json', GIST_DESC = 'Netflav backup';
 const K_TOKEN = 'NF_GIST_TOKEN', K_ID = 'NF_GIST_ID', K_LAST = 'NF_GIST_LAST';
 const K_TS = 'NF_GIST_TS';        // 本機最後一次看到的雲端 updated_at
 const K_DIRTY = 'NF_GIST_DIRTY';  // 本機有尚未同步到雲端的變更
@@ -1064,10 +1085,16 @@ async function readCloud(id) {
     actor: typeof i.actor === 'string' ? i.actor : undefined,
     fav: i.fav === true
   }));
-  return { items, ts: g.updated_at || '' };
+  // 頭像放在同一個 Gist 的另一個檔案；舊備份沒有這個檔案時是 null（還原時不動本機頭像）
+  let avatars = null;
+  const af = g.files && g.files[AVATAR_FILE];
+  if (af) {
+    try { avatars = sanitizeAvatars(JSON.parse(af.truncated ? await (await fetch(af.raw_url)).text() : af.content)); } catch (e) { avatars = null; }
+  }
+  return { items, avatars, ts: g.updated_at || '' };
 }
 function writeCloud(id) {
-  const files = { [GIST_FILE]: { content: JSON.stringify(collections, null, 2) } };
+  const files = { [GIST_FILE]: { content: JSON.stringify(collections, null, 2) }, [AVATAR_FILE]: { content: JSON.stringify(actorAvatars, null, 2) } };
   return id
     ? gh('/gists/' + id, { method: 'PATCH', body: JSON.stringify({ description: GIST_DESC, files }) })
     : gh('/gists', { method: 'POST', body: JSON.stringify({ description: GIST_DESC, public: false, files }) });
@@ -1090,7 +1117,7 @@ async function runBackup(forceId, overwrite, manual) {
     if (id && !forceId && !overwrite && lsGet(K_TS)) {
       let cloud = null;
       try { cloud = await readCloud(id); } catch (e) { if (e && e.status) throw e; }
-      if (cloud && cloud.ts && cloud.ts !== lsGet(K_TS) && canon(cloud.items) !== canon(collections)) {
+      if (cloud && cloud.ts && cloud.ts !== lsGet(K_TS) && !sameContent(cloud)) {
         backupPending = false;
         backupConflict(cloud, id, manual);
         return false;
@@ -1121,7 +1148,7 @@ function backupConflict(cloud, id, manual) {
   if (declinedTs === cloud.ts) return; // 已選擇保留本機：不再自動打擾，要覆蓋雲端請按「立即備份」
   declinedTs = cloud.ts;
   closeConfirmIfOpen();
-  openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆（含剛才的變更）。\n為避免互相覆蓋，這次沒有備份。\n要用雲端覆蓋本機嗎？\n（取消會保留本機；到「立即備份」可改用本機覆蓋雲端）`, () => applyCloud(cloud.items, id, cloud.ts));
+  openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆（含剛才的變更）。\n為避免互相覆蓋，這次沒有備份。\n要用雲端覆蓋本機嗎？\n（取消會保留本機；到「立即備份」可改用本機覆蓋雲端）`, () => applyCloud(cloud, id));
 }
 function closeConfirmIfOpen() { if (!$('confirmModal').classList.contains('hidden')) closeConfirm(); }
 function updateCloudUI() {
@@ -1131,16 +1158,19 @@ function updateCloudUI() {
   else if (!lsGet(K_ID)) el.textContent = '已有權杖，但尚未連結雲端備份。';
   else el.textContent = '已開啟自動備份' + (last ? '・上次同步 ' + new Date(last).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '') + (lsGet(K_DIRTY) ? '・有尚未同步的變更' : '');
 }
-function applyCloud(cloud, id, ts) {
-  const prev = collections;
-  collections = cloud;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); }
-  catch (e) { collections = prev; showToast('儲存失敗：空間不足或被禁用'); return; }
+function applyCloud(cloud, id) {
+  const prev = collections, prevAv = actorAvatars;
+  collections = cloud.items;
+  if (cloud.avatars) actorAvatars = cloud.avatars;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collections));
+    if (cloud.avatars) localStorage.setItem(AVATAR_KEY, JSON.stringify(actorAvatars));
+  } catch (e) { collections = prev; actorAvatars = prevAv; showToast('儲存失敗：空間不足或被禁用'); return; }
   lsSet(K_ID, id); lsSet(K_LAST, new Date().toISOString());
-  lsSet(K_TS, ts || ''); lsSet(K_DIRTY, '');
+  lsSet(K_TS, cloud.ts || ''); lsSet(K_DIRTY, '');
   hideUndo(); $('drawer').classList.remove('open');
   currentPage = 1; actorCurrentPage = 1; tagCurrentPage = 1;
-  refreshAll(); updateCloudUI(); showToast(`已從雲端還原 ${cloud.length} 筆`);
+  refreshAll(); updateCloudUI(); showToast(`已從雲端還原 ${cloud.items.length} 筆`);
 }
 async function saveToken() {
   const t = $('tokenInput').value.trim();
@@ -1154,7 +1184,7 @@ async function saveToken() {
     if (lsGet(K_ID)) showToast('權杖已更新');
     else if (g) {
       const cloud = await readCloud(g.id);
-      openConfirm(`雲端已有 ${cloud.items.length} 筆備份，本機有 ${collections.length} 筆。\n要用雲端覆蓋本機嗎？`, () => applyCloud(cloud.items, g.id, cloud.ts));
+      openConfirm(`雲端已有 ${cloud.items.length} 筆備份，本機有 ${collections.length} 筆。\n要用雲端覆蓋本機嗎？`, () => applyCloud(cloud, g.id));
     } else if (collections.length) {
       if (await runBackup()) showToast('已建立雲端備份，之後會自動備份');
     } else showToast('權杖已儲存，雲端還沒有備份');
@@ -1168,7 +1198,7 @@ async function restoreFromCloud() {
     let id = lsGet(K_ID);
     if (!id) { const g = await findCloudGist(); if (!g) { showToast('雲端還沒有備份'); return; } id = g.id; }
     const cloud = await readCloud(id);
-    openConfirm(`用雲端的 ${cloud.items.length} 筆覆蓋本機的 ${collections.length} 筆？`, () => applyCloud(cloud.items, id, cloud.ts));
+    openConfirm(`用雲端的 ${cloud.items.length} 筆覆蓋本機的 ${collections.length} 筆？`, () => applyCloud(cloud, id));
   } catch (e) { showToast('還原失敗：' + ghErrMsg(e)); }
 }
 async function backupToCloudNow() {
@@ -1195,6 +1225,7 @@ function removeToken() {
 
 /* 開啟 app / 回到前景時，比對雲端是否有另一台裝置的較新備份 */
 let lastCloudCheck = 0, cloudChecking = false, declinedTs = '';
+const sameContent = c => canon(c.items) === canon(collections) && (c.avatars === null || canonAv(c.avatars) === canonAv(actorAvatars));
 const canon = arr => JSON.stringify(arr.map(i => [i.id, i.name, i.actor || '', i.code || '', i.url || '', i.img || '', (i.tags || []).join('\u0001'), i.fav ? 1 : 0]));
 async function checkCloud(force) {
   const id = lsGet(K_ID);
@@ -1207,14 +1238,14 @@ async function checkCloud(force) {
     const cloud = await readCloud(id);
     const dirty = !!lsGet(K_DIRTY);
     if (cloud.ts && cloud.ts === lsGet(K_TS)) { if (dirty) runBackup(); return; }
-    if (canon(cloud.items) === canon(collections)) { lsSet(K_TS, cloud.ts); lsSet(K_DIRTY, ''); updateCloudUI(); return; }
+    if (sameContent(cloud)) { lsSet(K_TS, cloud.ts); lsSet(K_DIRTY, ''); updateCloudUI(); return; }
     if (declinedTs === cloud.ts) return;
     if (!$('confirmModal').classList.contains('hidden')) return;
     const n = cloud.items.length, m = collections.length;
     const msg = dirty
       ? `雲端有另一台裝置的備份（${n} 筆），但本機也有尚未同步的變更（${m} 筆）。\n要用雲端覆蓋本機嗎？\n（取消會保留本機，下次儲存時覆蓋雲端）`
       : `雲端有較新的備份（${n} 筆），本機 ${m} 筆。\n要用雲端更新本機嗎？\n（取消會保留本機，下次儲存時覆蓋雲端）`;
-    openConfirm(msg, () => applyCloud(cloud.items, id, cloud.ts));
+    openConfirm(msg, () => applyCloud(cloud, id));
     declinedTs = cloud.ts;
   } catch (e) { /* 靜默：背景檢查失敗不打擾使用者 */ }
   finally { cloudChecking = false; }
