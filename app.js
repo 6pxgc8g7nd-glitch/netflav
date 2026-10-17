@@ -958,7 +958,7 @@ window.addEventListener('online', () => checkCloud(true));
 let logoTaps = [];
 function refreshAndHome() {
   const now = Date.now(); logoTaps = logoTaps.filter(t => now - t < 700); logoTaps.push(now);
-  if (fakeProfileOn && logoTaps.length >= 3) { logoTaps = []; showProfiles(); return; } // 快速連點標誌三下 → 回到「誰在看？」
+  if (logoTaps.length >= 3) { logoTaps = []; showProfiles(); return; } // 快速連點標誌三下 → 回到「誰在看？」
   clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 ['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
@@ -1115,28 +1115,13 @@ $('fhMe').addEventListener('click', backToProfiles);
 (() => { let i = 0; try { i = parseInt(sessionStorage.getItem('NF_PROFILE')); } catch (e) {} applyProfile(i >= 0 && i < PROFILE_ART.length && i !== KIDS ? i : 0); })();
 
 /* 啟動畫面：開 app 先顯示「誰在看？」，點頭像就進入（名字和頭像都是裝飾，不會用到你的資料） */
-let fakeProfileOn = (() => { try { return localStorage.getItem('NF_FAKE') !== 'off'; } catch (e) { return true; } })();
 function enterApp() {
   document.documentElement.classList.remove('fake-profile', 'fake-home');
   try { sessionStorage.setItem('NF_ENTERED', '1'); sessionStorage.removeItem('NF_DECOY'); } catch (e) {}
   switchTab(0); window.scrollTo(0, 0);
 }
-function setFakeProfile(on) {
-  fakeProfileOn = !!on;
-  try { localStorage.setItem('NF_FAKE', fakeProfileOn ? 'on' : 'off'); } catch (e) {}
-  updateFakeUI();
-}
-function updateFakeUI() {
-  $('profBtnOn').classList.toggle('active', fakeProfileOn);
-  $('profBtnOff').classList.toggle('active', !fakeProfileOn);
-}
-function previewFakeProfile() {
-  toggleFilterDrawer(false);
-  setTimeout(() => { try { sessionStorage.removeItem('NF_ENTERED'); sessionStorage.removeItem('NF_DECOY'); } catch (e) {} document.documentElement.classList.remove('fake-home'); document.documentElement.classList.add('fake-profile'); }, 250);
-}
 
 window.onload = () => {
-  updateFakeUI();
   updateAppearanceUI();
   updateLayout(currentLayout);
   updatePageSize(pageSize);

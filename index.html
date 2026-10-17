@@ -17,7 +17,7 @@
     var t = localStorage.getItem('NF_THEME') === 'light' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', t);
     /* 啟動畫面：每次開啟 app 先顯示「誰在看？」，點頭像就進入（本次開啟已進入過就不再顯示） */
-    if (localStorage.getItem('NF_FAKE') !== 'off' && sessionStorage.getItem('NF_ENTERED') !== '1') document.documentElement.classList.add(sessionStorage.getItem('NF_DECOY') === '1' ? 'fake-home' : 'fake-profile');
+    if (sessionStorage.getItem('NF_ENTERED') !== '1') document.documentElement.classList.add(sessionStorage.getItem('NF_DECOY') === '1' ? 'fake-home' : 'fake-profile');
     /* 深色 = Netflix 紅，淺色 = YouTube 紅 */
     document.documentElement.style.setProperty('--nf-red', t === 'light' ? '#FF0000' : '#E50914');
     var m = document.querySelector('meta[name="theme-color"]');
@@ -162,15 +162,6 @@ applyGlass();
           <button id="themeBtnLight" onclick="setTheme('light')" class="layout-option">淺色</button>
         </div>        <label class="block text-[10px] text-zinc-500 font-bold mt-4 mb-2 uppercase tracking-widest">玻璃透明度</label>
         <input type="range" id="glassRange" min="0" max="100" step="1" oninput="setGlass(this.value)">
-      </div>
-      <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
-        <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">啟動畫面（誰在看？／Netflix）</label>
-        <div class="layout-grid" style="grid-template-columns:repeat(2,1fr)">
-          <button id="profBtnOn" onclick="setFakeProfile(true)" class="layout-option">開啟</button>
-          <button id="profBtnOff" onclick="setFakeProfile(false)" class="layout-option">關閉</button>
-        </div>
-        <button onclick="previewFakeProfile()" class="w-full mt-3 py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">預覽啟動畫面</button>
-        <p class="text-[11px] text-zinc-400 mt-3 leading-relaxed">開啟時，每次開 app 會先看到「誰在看？」。點「兒童」進入你的收藏；點其他頭像只會進到模擬的 Netflix 首頁（點右下角「我的 Netflix」可以回到選擇畫面）。進入收藏後，快速連點首頁上方的 Netflav 標誌三下，也會回到「誰在看？」。畫面上的名字、片名和封面都是假的，不會用到你的資料。</p>
       </div>
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
         <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">顯示佈局</label>
