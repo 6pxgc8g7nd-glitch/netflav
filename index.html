@@ -87,7 +87,8 @@ applyGlass();
       <div id="paginationContainer" class="page-dot-container mt-6"></div>
     </div>
     <div id="page2" class="page-content">
-      <h2 class="text-2xl font-bold mb-6 px-2">影片標籤</h2>
+      <h2 class="text-2xl font-bold mb-2 px-2">影片標籤</h2>
+      <p class="text-[11px] text-zinc-400 mb-5 px-2">長按標籤可以改名、合併或刪除</p>
       <div id="tagCloud" class="flex flex-wrap gap-3 px-2"></div>
       <div id="tagPaginationContainer" class="page-dot-container mt-6"></div>
     </div>
@@ -251,6 +252,24 @@ applyGlass();
     <p class="text-[11px] text-zinc-400 text-center mt-2 mb-4 leading-relaxed">這些名字使用同一張頭像，可能是同一個人。選一個當主要名字，其他會變成它的別名並合併顯示。</p>
     <div id="dupList" onclick="const b=event.target.closest('[data-g]'); if(b) mergeDupGroup(+b.dataset.g, +b.dataset.n)"></div>
     <button onclick="closeDupModal()" class="w-full mt-4 py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">關閉</button>
+  </div>
+</div>
+<div id="tagSheet" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this)closeTagSheet()">
+  <div class="keep-dark glassy w-full" style="border-radius:28px 28px 0 0;padding:20px 16px calc(24px + var(--safe-bottom));max-height:88vh;overflow-y:auto">
+    <p id="tagSheetTitle" class="text-center text-sm font-bold"></p>
+    <p id="tagSheetSub" class="text-[11px] text-zinc-400 text-center mt-1 mb-4"></p>
+    <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">改名</label>
+    <div class="flex gap-2">
+      <input type="text" id="tagRenameInput" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" class="flex-1 bg-zinc-900 p-3 rounded-lg text-white outline-none" style="font-size:16px;min-width:0">
+      <button onclick="applyTagRename()" class="px-4 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">改名</button>
+    </div>
+    <label class="block text-[10px] text-zinc-500 font-bold mt-4 mb-2 uppercase tracking-widest">合併到其他標籤</label>
+    <div class="flex gap-2">
+      <select id="tagMergeSelect" class="flex-1 bg-zinc-900 p-3 rounded-lg text-white outline-none" style="font-size:16px;min-width:0"></select>
+      <button id="tagMergeBtn" onclick="applyTagMerge()" class="px-4 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">合併</button>
+    </div>
+    <button onclick="requestTagDelete()" class="w-full py-3 bg-red-600 rounded-lg text-xs font-bold text-white" style="margin-top:22px">刪除這個標籤</button>
+    <button onclick="closeTagSheet()" class="w-full py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200" style="margin-top:10px">關閉</button>
   </div>
 </div>
 <div id="pageModal" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this)closePagePicker()">

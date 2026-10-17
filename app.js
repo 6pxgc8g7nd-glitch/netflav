@@ -436,6 +436,69 @@ function renderActorList() {
   updateContainerHeight();
 }
 
+/* 標籤管理：長按標籤 → 改名 / 合併 / 刪除（影片本身不會被刪，只是標籤被改掉或拿掉）。
+   改完會換成新的影片物件（搜尋快取才不會用到舊的標籤），並提供 7 秒內復原 */
+let tagSheetTag = '';
+const sameTag = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
+const tagCount = t => collections.filter(i => hasTag(i, t)).length;
+function openTagSheet(tag) {
+  tagSheetTag = tag;
+  $('tagSheetTitle').textContent = '標籤・' + tag;
+  $('tagSheetSub').textContent = `${tagCount(tag)} 部影片使用這個標籤`;
+  $('tagRenameInput').value = tag;
+  const counts = {}; collections.forEach(i => (i.tags || []).forEach(t => { if (!sameTag(t, tag)) counts[t] = (counts[t] || 0) + 1; }));
+  const others = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  $('tagMergeSelect').innerHTML = others.length ? others.map(([t, n]) => `<option value="${esc(t)}">${esc(t)}（${n}）</option>`).join('') : '<option value="">沒有其他標籤</option>';
+  $('tagMergeBtn').disabled = !others.length;
+  const m = $('tagSheet'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeTagSheet() { const m = $('tagSheet'); m.classList.add('hidden'); m.classList.remove('flex'); }
+/* 把 from 改成 to（to 為空字串 = 刪除）；同一部影片若已有 to，不會重複 */
+function rewriteTag(from, to, doneMsg) {
+  const prev = collections;
+  const affected = prev.filter(i => hasTag(i, from)).length;
+  if (!affected) { showToast('沒有影片使用這個標籤'); return false; }
+  const next = prev.map(i => {
+    if (!hasTag(i, from)) return i;
+    const out = []; (i.tags || []).forEach(t => { const nt = sameTag(t, from) ? to : t; if (nt && !out.some(x => sameTag(x, nt))) out.push(nt); });
+    return { ...i, tags: out };
+  });
+  collections = next;
+  if (!persist()) { collections = prev; return false; }
+  const wasSelected = selectedTags.some(t => sameTag(t, from));
+  selectedTags = selectedTags.filter(t => !sameTag(t, from));
+  if (wasSelected && to && !selectedTags.some(t => sameTag(t, to))) selectedTags.push(to);
+  updateTagBar(); markStale(); renderGallery();
+  showUndo(`${doneMsg}（${affected} 部）`, () => {
+    if (collections !== next) { showToast('資料已有其他變動，無法復原'); return; } // 復原後會蓋掉之後的修改，所以有改過就不給復原
+    collections = prev;
+    if (!persist()) { collections = next; return; }
+    markStale(); renderGallery(); showToast('已復原');
+  });
+  return true;
+}
+function applyTagRename() {
+  const to = $('tagRenameInput').value.trim();
+  if (!to) { showToast('請輸入標籤名稱'); return; }
+  if (/\s/.test(to)) { showToast('標籤不能有空白'); return; }
+  if (to.length > 30) { showToast('標籤太長了（最多 30 字）'); return; }
+  if (to === tagSheetTag) { showToast('名稱沒有變'); return; }
+  const merging = collections.some(i => hasTag(i, to)) && !sameTag(to, tagSheetTag);
+  closeTagSheet();
+  rewriteTag(tagSheetTag, to, merging ? `已併入「${to}」` : `已改名為「${to}」`);
+}
+function applyTagMerge() {
+  const to = $('tagMergeSelect').value;
+  if (!to) { showToast('沒有可以併入的標籤'); return; }
+  closeTagSheet();
+  rewriteTag(tagSheetTag, to, `已併入「${to}」`);
+}
+function requestTagDelete() {
+  const tag = tagSheetTag, n = tagCount(tag);
+  closeTagSheet();
+  openConfirm(`從 ${n} 部影片移除標籤「${tag}」？\n（影片不會被刪除）`, () => rewriteTag(tag, '', `已刪除標籤「${tag}」`));
+}
+
 /* 標籤頁、女優頁只有切過去才需要畫；資料有變時先標記，切過去再更新 */
 const staleTabs = { 1: true, 2: true };
 function renderTab(i) {
@@ -455,14 +518,14 @@ const LONG_PRESS_MS = 500, MOVE_TOL = 10;
 function cancelLongPress() { clearTimeout(lpTimer); lpTimer = null; }
 
 document.addEventListener('pointerdown', e => {
-  const card = e.target.closest('[data-card]'), actor = card ? null : e.target.closest('[data-actor]');
-  if (!card && !actor) return;
+  const card = e.target.closest('[data-card]'), actor = card ? null : e.target.closest('[data-actor]'), tagEl = (card || actor) ? null : e.target.closest('[data-tag]');
+  if (!card && !actor && !tagEl) return;
   lpFired = false; lpX = e.clientX; lpY = e.clientY;
   cancelLongPress();
   lpTimer = setTimeout(() => {
     lpTimer = null; lpFired = true;
     if (navigator.vibrate) navigator.vibrate(15);
-    if (card) openDrawer(card.dataset.card); else openAvatarEditor(actor.dataset.actor);
+    if (card) openDrawer(card.dataset.card); else if (actor) openAvatarEditor(actor.dataset.actor); else openTagSheet(tagEl.dataset.tag);
   }, LONG_PRESS_MS);
 });
 document.addEventListener('pointermove', e => {
@@ -472,7 +535,7 @@ document.addEventListener('pointermove', e => {
   cancelLongPress();
   if (lpFired) setTimeout(() => { lpFired = false; }, 400); // 吃掉長按放開後的 click
 }));
-document.addEventListener('contextmenu', e => { if (e.target.closest('[data-card],[data-actor]')) e.preventDefault(); });
+document.addEventListener('contextmenu', e => { if (e.target.closest('[data-card],[data-actor],[data-tag]')) e.preventDefault(); });
 
 document.addEventListener('click', e => {
   if (e.target.closest('[data-chip-actor]')) { actorFilter = ''; currentPage = 1; renderGallery(); return; }
@@ -484,7 +547,7 @@ document.addEventListener('click', e => {
     currentPage = 1; renderGallery(); return;
   }
   const tagEl = e.target.closest('[data-tag]');
-  if (tagEl) { toggleTag(tagEl.dataset.tag); return; }
+  if (tagEl) { if (lpFired) return; toggleTag(tagEl.dataset.tag); return; }
   const card = e.target.closest('[data-card]');
   if (card) {
     if (lpFired) return;

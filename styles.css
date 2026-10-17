@@ -315,6 +315,8 @@ html.fake-profile body{overflow:hidden}
 .set-row:active{background:var(--glass-active)}
 .set-details summary::-webkit-details-marker{display:none}
 .set-details[open]>summary i{transform:rotate(90deg)}
+.tag-pill{-webkit-touch-callout:none}
+#tagMergeSelect option{color:#000}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
 .fh-av svg{width:100%;height:100%;display:block}
 .fh-av{overflow:hidden}
