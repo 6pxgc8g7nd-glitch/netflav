@@ -1086,7 +1086,7 @@ function pickProfile(i) {
   try { sessionStorage.setItem('NF_PICKED', '1'); sessionStorage.setItem('NF_PROFILE', String(i)); } catch (e) {}
   applyProfile(i);
   const el = $('fakeProfile'); el.classList.add('out');
-  setTimeout(() => { document.documentElement.classList.remove('fake-profile'); el.classList.remove('out'); $('fakeHome').scrollTop = 0; }, 230);
+  setTimeout(() => { document.documentElement.classList.remove('fake-profile'); el.classList.remove('out'); enterApp(); }, 230); // 點頭像就直接進入 app
 }
 document.querySelectorAll('#fakeProfile [data-profile]').forEach(b => b.addEventListener('click', () => pickProfile(+b.dataset.profile)));
 (() => { let i = 0; try { i = parseInt(sessionStorage.getItem('NF_PROFILE')); } catch (e) {} applyProfile(i >= 0 && i < PROFILE_ART.length ? i : 0); })();
