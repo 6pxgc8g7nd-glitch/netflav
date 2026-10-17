@@ -119,7 +119,8 @@ applyGlass();
   <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl overflow-hidden p-6 text-center relative shadow-2xl">
     <h3 class="text-xs font-bold text-red-600 tracking-widest uppercase mb-4">✨ Today隨機推薦 ✨</h3>
     <div id="randomCardPreview" class="poster-card mb-4"></div>
-    <p id="randomCardTitle" class="text-sm font-bold truncate text-white mb-6 px-1"></p>
+    <p id="randomCardTitle" class="text-sm font-bold truncate text-white mb-1 px-1"></p>
+    <p id="randomProgress" class="text-[11px] text-zinc-400 mb-5"></p>
     <div class="flex gap-3">
       <button onclick="openRandomRecommendation()" class="flex-1 bg-zinc-800 py-3 rounded-lg font-bold text-xs text-zinc-300">換一部</button>
       <button id="randomPlayBtn" class="flex-1 bg-red-600 py-3 rounded-lg font-bold text-xs text-white shadow-lg">立即觀看</button>
@@ -269,6 +270,15 @@ applyGlass();
     </div>
     <button onclick="requestTagDelete()" class="w-full py-3 bg-red-600 rounded-lg text-xs font-bold text-white" style="margin-top:22px">刪除這個標籤</button>
     <button onclick="closeTagSheet()" class="w-full py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200" style="margin-top:10px">關閉</button>
+  </div>
+</div>
+<div id="importSheet" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this){closeImportSheet();importPending=null}">
+  <div class="keep-dark glassy w-full" style="border-radius:28px 28px 0 0;padding:20px 16px calc(24px + var(--safe-bottom))">
+    <p class="text-center text-sm font-bold">匯入備份</p>
+    <p id="importSummary" class="text-[11px] text-zinc-400 text-center mt-2 mb-4"></p>
+    <button id="importMergeBtn" onclick="applyImportMerge()" class="imp-btn imp-primary"><b>合併匯入</b><small>只加入新的，已經有的（同 id、番號或連結）會略過</small></button>
+    <button id="importOverwriteBtn" onclick="applyImportOverwrite()" class="imp-btn"><b>覆蓋全部</b><small></small></button>
+    <button onclick="closeImportSheet();importPending=null" class="w-full py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200" style="margin-top:10px">取消</button>
   </div>
 </div>
 <div id="pageModal" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this)closePagePicker()">

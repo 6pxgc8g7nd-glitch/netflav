@@ -584,12 +584,29 @@ document.addEventListener('click', e => {
   if (q) { if (lpFired) return; setActorFilter(q.dataset.q); }
 });
 
+/* 隨機推薦：像洗牌一樣，抽過的這一輪不會再抽到，全部抽完才開始新的一輪；新一輪的第一部也不會是剛抽的那部。
+   抽過的紀錄存在手機上，重開 app 也接著這一輪 */
+const RAND_KEY = 'NF_RANDOM_SEEN';
+let randomSeen = (() => { try { const a = JSON.parse(localStorage.getItem(RAND_KEY)); return new Set(Array.isArray(a) ? a.map(String) : []); } catch (e) { return new Set(); } })();
+function pickRandomItem() {
+  const ids = new Set(collections.map(i => String(i.id)));
+  [...randomSeen].forEach(id => { if (!ids.has(id)) randomSeen.delete(id); }); // 已刪除的影片不算
+  let pool = collections.filter(i => !randomSeen.has(String(i.id))), newRound = false;
+  if (!pool.length) {
+    randomSeen.clear(); newRound = true;
+    pool = collections.filter(i => String(i.id) !== String(lastRandomId));
+    if (!pool.length) pool = collections;
+  }
+  const item = pool[Math.floor(Math.random() * pool.length)];
+  randomSeen.add(String(item.id));
+  try { localStorage.setItem(RAND_KEY, JSON.stringify([...randomSeen])); } catch (e) {}
+  lastRandomId = item.id;
+  return { item, newRound };
+}
 function openRandomRecommendation() {
   if (collections.length === 0) { showToast("目前尚無收藏內容可推薦"); return; }
-  let pool = collections.filter(i => String(i.id) !== String(lastRandomId));
-  if (pool.length === 0) pool = collections;
-  const item = pool[Math.floor(Math.random() * pool.length)];
-  lastRandomId = item.id;
+  const { item, newRound } = pickRandomItem();
+  $('randomProgress').textContent = (newRound ? '新的一輪開始・' : '') + `這一輪已抽 ${randomSeen.size} / ${collections.length} 部`;
   $('randomCardPreview').innerHTML = `
     ${coverHtml(item, false)}
     <div class="card-overlay"><p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p></div>`;
@@ -747,6 +764,76 @@ async function exportData() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/* 匯入備份：先看檔案和現有資料的重複情況，再選「合併」（只加新的）或「覆蓋」（整份取代）。兩種都能在 7 秒內復原。
+   重複的判斷：id 相同、番號相同（不分大小寫）或連結相同，只要有一項就算同一部 */
+let importPending = null;
+function planMerge(data) {
+  const ids = new Set(collections.map(i => String(i.id))), codes = new Set(collections.map(i => (i.code || '').toUpperCase()).filter(Boolean)), urls = new Set(collections.map(i => (i.url || '').trim()).filter(Boolean));
+  const add = []; let dup = 0;
+  data.forEach(i => {
+    const code = (i.code || '').toUpperCase(), url = (i.url || '').trim();
+    if (ids.has(String(i.id)) || (code && codes.has(code)) || (url && urls.has(url))) { dup++; return; }
+    add.push(i); ids.add(String(i.id)); if (code) codes.add(code); if (url) urls.add(url); // 檔案裡自己重複的也只算一次
+  });
+  return { add, dup };
+}
+function mergeAvatarSets(local, imported) {
+  if (!imported) return local;
+  const out = { ...local };
+  Object.keys(imported).forEach(k => {
+    const a = imported[k], b = out[k];
+    if (!b) { out[k] = a; return; }
+    const m = { ...b };
+    if (!m.img && a.img) m.img = a.img;
+    if (m.style === undefined && a.style !== undefined) m.style = a.style;
+    const al = [...new Set([...(b.aliases || []), ...(a.aliases || [])])].slice(0, 30);
+    if (al.length) m.aliases = al;
+    out[k] = m;
+  });
+  return out;
+}
+function openImportSheet(data, av) {
+  const plan = planMerge(data);
+  importPending = { data, av, plan };
+  $('importSummary').textContent = `檔案共 ${data.length} 筆・與現有重複 ${plan.dup} 筆・新的 ${plan.add.length} 筆`;
+  const mb = $('importMergeBtn');
+  mb.disabled = !plan.add.length;
+  mb.querySelector('b').textContent = plan.add.length ? `合併匯入（新增 ${plan.add.length} 筆）` : '沒有新的資料可以合併';
+  $('importOverwriteBtn').querySelector('small').textContent = `用檔案的 ${data.length} 筆取代現有的 ${collections.length} 筆`;
+  const m = $('importSheet'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeImportSheet() { const m = $('importSheet'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function commitImport(nextItems, nextAv, doneMsg) {
+  const prevC = collections, prevA = actorAvatars;
+  collections = nextItems; actorAvatars = nextAv;
+  let ok = persist();
+  if (ok) { try { localStorage.setItem(AVATAR_KEY, JSON.stringify(actorAvatars)); } catch (e) { ok = false; showToast('儲存失敗：空間不足或被禁用'); } }
+  if (!ok) { collections = prevC; actorAvatars = prevA; try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prevC)); localStorage.setItem(AVATAR_KEY, JSON.stringify(prevA)); } catch (e) {} return false; }
+  currentPage = 1; actorCurrentPage = 1; tagCurrentPage = 1;
+  toggleFilterDrawer(false); refreshAll();
+  const after = collections;
+  showUndo(doneMsg, () => {
+    if (collections !== after) { showToast('資料已有其他變動，無法復原'); return; } // 復原會蓋掉之後的修改，所以有改過就不給復原
+    collections = prevC; actorAvatars = prevA;
+    persist(); try { localStorage.setItem(AVATAR_KEY, JSON.stringify(prevA)); } catch (e) {}
+    refreshAll(); showToast('已復原匯入');
+  });
+  return true;
+}
+function applyImportMerge() {
+  if (!importPending) return;
+  const { av, plan } = importPending; importPending = null; closeImportSheet();
+  if (!plan.add.length) return;
+  commitImport([...collections, ...plan.add], mergeAvatarSets(actorAvatars, av), `已合併匯入 ${plan.add.length} 筆（略過 ${plan.dup} 筆重複）`);
+}
+function applyImportOverwrite() {
+  if (!importPending) return;
+  const { data, av } = importPending; closeImportSheet();
+  openConfirm(`用檔案的 ${data.length} 筆取代現有的 ${collections.length} 筆？\n（匯入後 7 秒內可以復原）`, () => {
+    commitImport(data, av || actorAvatars, `已覆蓋匯入 ${data.length} 筆`); importPending = null;
+  });
+}
+
 function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -771,16 +858,7 @@ function importData(e) {
         };
       });
       if (data.length === 0) throw new Error('empty');
-      openConfirm(`匯入 ${data.length} 筆，將覆蓋現有 ${collections.length} 筆資料。確定嗎？`, () => {
-        const backup = collections, backupAv = actorAvatars;
-        collections = data;
-        if (importedAv) actorAvatars = importedAv;
-        try { if (importedAv) localStorage.setItem(AVATAR_KEY, JSON.stringify(actorAvatars)); } catch (err) { collections = backup; actorAvatars = backupAv; showToast('儲存失敗：空間不足或被禁用'); return; }
-        if (!persist()) { collections = backup; actorAvatars = backupAv; return; }
-        hideUndo();
-        currentPage = 1; actorCurrentPage = 1; tagCurrentPage = 1;
-        refreshAll(); toggleFilterDrawer(false); showToast("匯入成功");
-      });
+      openImportSheet(data, importedAv);
     } catch (err) { showToast("格式錯誤"); }
     e.target.value = '';
   };
