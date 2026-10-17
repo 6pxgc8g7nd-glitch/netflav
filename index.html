@@ -16,10 +16,6 @@
   try {
     var t = localStorage.getItem('NF_THEME') === 'light' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', t);
-    /* 快速隱藏：手動隱藏過的、或「啟動時隱藏」且這次開啟還沒解鎖的，一開始就是全黑（在畫面畫出來之前生效） */
-    var startHidden = localStorage.getItem('NF_QH_START') !== 'off' && sessionStorage.getItem('NF_UNLOCKED') !== '1';
-    if (location.hash === '#unlock') startHidden = false;
-    if (startHidden || sessionStorage.getItem('NF_HIDDEN') === '1') document.documentElement.classList.add('quick-hidden');
     /* 深色 = Netflix 紅，淺色 = YouTube 紅 */
     document.documentElement.style.setProperty('--nf-red', t === 'light' ? '#FF0000' : '#E50914');
     var m = document.querySelector('meta[name="theme-color"]');
@@ -166,20 +162,6 @@ applyGlass();
         <input type="range" id="glassRange" min="0" max="100" step="1" oninput="setGlass(this.value)">
       </div>
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
-        <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">快速隱藏</label>
-        <div class="layout-grid" style="grid-template-columns:repeat(2,1fr)">
-          <button id="qhBtnOn" onclick="setQuickHideEnabled(true)" class="layout-option">手勢開啟</button>
-          <button id="qhBtnOff" onclick="setQuickHideEnabled(false)" class="layout-option">手勢關閉</button>
-        </div>
-        <label class="block text-[10px] text-zinc-500 font-bold mt-4 mb-3 uppercase tracking-widest">啟動 app 時</label>
-        <div class="layout-grid" style="grid-template-columns:repeat(2,1fr)">
-          <button id="qhStartOn" onclick="setStartHidden(true)" class="layout-option">先隱藏</button>
-          <button id="qhStartOff" onclick="setStartHidden(false)" class="layout-option">直接顯示</button>
-        </div>
-        <button onclick="quickHideNow()" class="w-full mt-3 py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">立即隱藏</button>
-        <p class="text-[11px] text-zinc-400 mt-3 leading-relaxed">三根手指同時快速點一下螢幕，或快速連點首頁上方的 Netflav 標誌三下，立刻切成全黑畫面。在全黑畫面要用三指點兩下才會回來，避免誤觸。選「先隱藏」的話，每次開啟 app 都是全黑，要先解鎖才看得到內容。若解不開，用瀏覽器開啟網址後面加上 #unlock 即可。</p>
-      </div>
-      <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
         <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">顯示佈局</label>
         <div class="layout-grid">
           <button id="layoutBtn1" onclick="updateLayout(1)" class="layout-option">1 欄</button>
@@ -262,7 +244,6 @@ applyGlass();
   </div>
 </div>
 <div id="toast"></div>
-<div id="hideScreen" aria-hidden="true"></div>
 <div id="undoBar"><span id="undoMsg"></span><button id="undoBtn" onclick="doUndo()">復原</button></div>
 
 <script src="app.js"></script>
