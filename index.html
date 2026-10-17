@@ -72,7 +72,10 @@ applyGlass();
     <div id="page1" class="page-content active-page">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-bold">為您推薦</h2>
-        <span id="itemCount" class="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-1 rounded tracking-tighter">0 ITEMS</span>
+        <div class="flex items-center gap-2">
+          <span id="itemCount" class="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-1 rounded tracking-tighter">0 ITEMS</span>
+          <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" aria-label="切換深色或淺色模式"></button>
+        </div>
       </div>
       <div class="search-container">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -156,11 +159,7 @@ applyGlass();
     <button id="advBtn" onclick="toggleAdvanced()" class="w-full py-4 bg-zinc-900 rounded font-bold flex items-center justify-center gap-2 text-white"><span>進階</span><svg id="advArrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
     <div id="advancedBox" class="hidden space-y-4">
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
-        <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">外觀</label>
-        <div class="layout-grid">
-          <button id="themeBtnDark" onclick="setTheme('dark')" class="layout-option">深色</button>
-          <button id="themeBtnLight" onclick="setTheme('light')" class="layout-option">淺色</button>
-        </div>        <label class="block text-[10px] text-zinc-500 font-bold mt-4 mb-2 uppercase tracking-widest">玻璃透明度</label>
+        <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">玻璃透明度</label>
         <input type="range" id="glassRange" min="0" max="100" step="1" oninput="setGlass(this.value)">
       </div>
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">

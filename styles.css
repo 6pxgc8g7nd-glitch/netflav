@@ -281,6 +281,8 @@ html.fake-profile body{overflow:hidden}
 .fp-av svg{width:100%;height:100%;display:block}
 .fp-name{font-size:15px;font-weight:500;color:#b3b3b3}
 .fp-add .fp-av{background:#2a2a2a}
+.theme-btn{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--glass-bg);border:1px solid var(--glass-bd);color:var(--fg);box-shadow:inset 0 1px 0 var(--glass-hi);transition:transform .25s var(--pop)}
+.theme-btn:active{transform:scale(.88)}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
 .fh-av svg{width:100%;height:100%;display:block}
 .fh-av{overflow:hidden}
