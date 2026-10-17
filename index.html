@@ -642,21 +642,17 @@ function actorsOf(i) {
     : String(i.name || '').split(/[\s,\[\]【】，、\/]+/).filter(n => n.trim() && n.length > 1); // 舊資料
   return [...new Set(list)];
 }
-/* 虛擬頭像：依名字產生固定的漸層底色與髮型剪影（不是真人照片，同一個名字永遠長一樣） */
+/* 虛擬頭像：依名字挑固定的髮型剪影（單色、不是真人照片，同一個名字永遠長一樣） */
 function nameHash(name) { let h = 2166136261; for (const c of String(name)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; }
-function avatarBg(name) {
-  const h = nameHash(name), a = h % 360, b = (a + 40 + ((h >>> 8) % 70)) % 360;
-  return `linear-gradient(150deg,hsl(${a} 72% 62%),hsl(${b} 70% 38%))`;
-}
 function avatarSvg(name) {
-  const h = nameHash(name), hue = h % 360, hair = `hsl(${hue} 35% ${14 + (h >>> 12) % 10}%)`, style = (h >>> 4) % 4;
+  const h = nameHash(name), hair = '#4a4a50', style = (h >>> 4) % 4;
   const back = [
     `<path d="M24 36c0-17 7-25 16-25s16 8 16 25v22c-4-7-9-9-16-9s-12 2-16 9z" fill="${hair}"/>`,                                  // 長髮
     `<path d="M25 33c0-14 6-21 15-21s15 7 15 21c0 6-1 11-3 14H28c-2-3-3-8-3-14z" fill="${hair}"/>`,                               // 鮑伯頭
     `<circle cx="40" cy="11" r="8" fill="${hair}"/><path d="M26 34c0-13 6-20 14-20s14 7 14 20z" fill="${hair}"/>`,                // 丸子頭
     `<path d="M26 34c0-14 6-21 14-21s14 7 14 21v6c0 6 4 10 8 12-8 4-14 0-16-6H34c-2 6-8 10-16 6 4-2 8-6 8-12z" fill="${hair}"/>`   // 雙馬尾
   ][style];
-  return `<svg viewBox="0 0 80 80" width="100%" height="100%" aria-hidden="true">${back}<path d="M12 82c0-16 12-24 28-24s28 8 28 24z" fill="rgba(255,255,255,.88)"/><rect x="35" y="44" width="10" height="16" rx="4" fill="rgba(255,235,225,.95)"/><ellipse cx="40" cy="34" rx="12.5" ry="14" fill="rgba(255,235,225,.97)"/><path d="M26 33c1-10 8-15 14-15s13 5 14 15c-5-5-9-7-14-7s-9 2-14 7z" fill="${hair}"/></svg>`;
+  return `<svg viewBox="0 0 80 80" width="100%" height="100%" aria-hidden="true">${back}<path d="M12 82c0-16 12-24 28-24s28 8 28 24z" fill="#8e8e93"/><rect x="35" y="44" width="10" height="16" rx="4" fill="#c7c7cc"/><ellipse cx="40" cy="34" rx="12.5" ry="14" fill="#d1d1d6"/><path d="M26 33c1-10 8-15 14-15s13 5 14 15c-5-5-9-7-14-7s-9 2-14 7z" fill="${hair}"/></svg>`;
 }
 function renderActorList() {
   const map = {};
@@ -665,7 +661,7 @@ function renderActorList() {
   const total = Math.ceil(sorted.length / actorPageSize);
   if (actorCurrentPage > total) actorCurrentPage = Math.max(total, 1);
   const paginated = sorted.slice((actorCurrentPage - 1) * actorPageSize, actorCurrentPage * actorPageSize);
-  $('actorList').innerHTML = paginated.map(([name, count]) => `<div data-q="${esc(name)}" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden" style="background:${avatarBg(name)}">${avatarSvg(name)}</div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${esc(name)}</span><span class="block text-[11px] text-zinc-400 mt-0.5">${count} 作品</span></div>`).join('');
+  $('actorList').innerHTML = paginated.map(([name, count]) => `<div data-q="${esc(name)}" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden">${avatarSvg(name)}</div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${esc(name)}</span><span class="block text-[11px] text-zinc-400 mt-0.5">${count} 作品</span></div>`).join('');
   renderPagination(total, actorCurrentPage, 'changeActorPage', 'actorPaginationContainer');
   updateContainerHeight();
 }
