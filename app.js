@@ -719,6 +719,7 @@ async function pasteFromClipboard() {
   } catch (e) { showToast("無法讀取剪貼簿"); }
 }
 function handleHash() {
+  if (location.hash === '#unlock') { setQuickHidden(false); setStartHidden(false); history.replaceState(null, '', location.pathname + location.search); return; }
   if (!location.hash.startsWith('#add?')) return;
   const d = parseAddParams(location.hash);
   history.replaceState(null, '', location.pathname + location.search);
@@ -996,7 +997,16 @@ let quickHideOn = (() => { try { return localStorage.getItem('NF_QH') !== 'off';
 const isQuickHidden = () => document.documentElement.classList.contains('quick-hidden');
 function setQuickHidden(v) {
   document.documentElement.classList.toggle('quick-hidden', !!v);
-  try { v ? sessionStorage.setItem('NF_HIDDEN', '1') : sessionStorage.removeItem('NF_HIDDEN'); } catch (e) {}
+  try {
+    if (v) sessionStorage.setItem('NF_HIDDEN', '1');
+    else { sessionStorage.removeItem('NF_HIDDEN'); sessionStorage.setItem('NF_UNLOCKED', '1'); } // 這次開啟已解鎖，頁面被重新載入也不再先隱藏
+  } catch (e) {}
+}
+let startHidden = (() => { try { return localStorage.getItem('NF_QH_START') !== 'off'; } catch (e) { return true; } })();
+function setStartHidden(on) {
+  startHidden = !!on;
+  try { localStorage.setItem('NF_QH_START', startHidden ? 'on' : 'off'); } catch (e) {}
+  updateQuickHideUI();
 }
 const tapTimes = {};
 function tripleTap(key) { // 700 毫秒內連續三次
@@ -1013,6 +1023,8 @@ function setQuickHideEnabled(on) {
 function updateQuickHideUI() {
   $('qhBtnOn').classList.toggle('active', quickHideOn);
   $('qhBtnOff').classList.toggle('active', !quickHideOn);
+  $('qhStartOn').classList.toggle('active', startHidden);
+  $('qhStartOff').classList.toggle('active', !startHidden);
 }
 function quickHideNow() { toggleFilterDrawer(false); setTimeout(() => setQuickHidden(true), 250); }
 document.addEventListener('touchstart', e => {
