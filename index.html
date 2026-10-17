@@ -88,6 +88,7 @@ applyGlass();
     </div>
     <div id="page3" class="page-content">
       <h2 class="text-2xl font-bold mb-6 px-2">所有女優</h2>
+      <div id="dupBanner"></div>
       <div id="actorList" class="grid grid-cols-3 gap-y-6 gap-x-2 text-center"></div>
       <div id="actorPaginationContainer" class="page-dot-container mt-6"></div>
     </div>
@@ -223,13 +224,21 @@ applyGlass();
     </div>
   </div>
 </div>
+<div id="dupModal" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this)closeDupModal()">
+  <div class="keep-dark glassy w-full" style="border-radius:28px 28px 0 0;padding:20px 16px calc(24px + var(--safe-bottom));max-height:85vh;overflow-y:auto">
+    <p class="text-center text-sm font-bold">可能重複的女優</p>
+    <p class="text-[11px] text-zinc-400 text-center mt-2 mb-4 leading-relaxed">這些名字使用同一張頭像，可能是同一個人。選一個當主要名字，其他會變成它的別名並合併顯示。</p>
+    <div id="dupList" onclick="const b=event.target.closest('[data-g]'); if(b) mergeDupGroup(+b.dataset.g, +b.dataset.n)"></div>
+    <button onclick="closeDupModal()" class="w-full mt-4 py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">關閉</button>
+  </div>
+</div>
 <div id="pageModal" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this)closePagePicker()">
   <div class="keep-dark glassy w-full" style="border-radius:28px 28px 0 0;padding:20px 16px calc(24px + var(--safe-bottom))">
     <p class="text-center text-sm font-bold">跳到第幾頁</p>
     <div id="pageGrid" class="page-grid"></div>
   </div>
 </div>
-<div id="confirmModal" class="keep-dark fixed inset-0 bg-black/95 z-[6000] hidden items-center justify-center p-8">
+<div id="confirmModal" class="keep-dark fixed inset-0 bg-black/95 z-[7500] hidden items-center justify-center p-8">
   <div class="text-center"><h4 id="confirmTitle" class="text-xl font-bold mb-8 leading-relaxed">確定要刪除嗎？</h4>
     <div class="flex flex-col items-center gap-4"><button id="confirmOkBtn" class="w-64 bg-red-600 py-4 font-bold rounded-lg text-white">確定</button><button onclick="closeConfirm()" class="w-64 py-4 font-bold rounded-lg bg-zinc-800 text-zinc-300">取消</button></div>
   </div>

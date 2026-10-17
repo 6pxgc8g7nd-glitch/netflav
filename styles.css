@@ -89,7 +89,7 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
 /* 工具類別（只含這個頁面用到的；顏色改用主題變數） */
 .fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}
 .inset-0{inset:0}.right-4{right:1rem}.top-4{top:1rem}
-.z-\[6000\]{z-index:6000}.z-\[7000\]{z-index:7000}
+.z-\[7500\]{z-index:7500}.z-\[7000\]{z-index:7000}
 .block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}
 .flex-1{flex:1 1 0%}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}
 .items-center{align-items:center}.items-end{align-items:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}
@@ -209,4 +209,11 @@ html[data-theme=light] .tag-count{background:rgba(0,0,0,.08)}
 .page-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-height:46vh;overflow-y:auto;margin-top:14px}
 .page-chip{height:44px;border-radius:14px;background:var(--glass-bg);border:1px solid var(--glass-bd);font-weight:700;font-size:14px;color:var(--fg)}
 .page-chip.active{background:var(--nf-red);color:#fff;border-color:transparent}
+/* 重複女優提示 */
+.dup-banner{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin:0 0 1rem;padding:10px 14px;border-radius:16px;background:var(--glass-bg);border:1px solid var(--glass-bd);color:var(--fg);font-size:12px;font-weight:600;text-align:left;box-shadow:inset 0 1px 0 var(--glass-hi)}
+.dup-banner b{flex:none;color:var(--nf-red)}
+.dup-group{margin-bottom:12px;padding:12px;border-radius:16px;background:var(--glass-bg);border:1px solid var(--glass-bd)}
+.dup-names{font-size:14px;font-weight:700;margin-bottom:10px;word-break:break-all}
+.dup-actions{display:flex;flex-wrap:wrap;gap:8px}
+.dup-keep{padding:8px 14px;border-radius:999px;background:var(--nf-red);color:#fff;font-size:12px;font-weight:700}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}

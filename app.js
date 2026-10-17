@@ -283,10 +283,10 @@ function avatarInner(name, img, style) {
 const avatarOf = name => { const a = actorAvatars[name] || {}; return avatarInner(name, a.img, a.style); };
 
 /* 長按頭像 → 編輯 */
-let avName = '', avStyle = null;
+let avName = '', avStyle = null, avDupAsked = '';
 function openAvatarEditor(name) {
   const a = actorAvatars[name] || {};
-  avName = name; avStyle = Number.isInteger(a.style) ? a.style : null;
+  avName = name; avStyle = Number.isInteger(a.style) ? a.style : null; avDupAsked = '';
   $('avatarTitle').textContent = '編輯女優・' + name;
   $('avatarAliases').value = (a.aliases || []).join(' ');
   $('avatarUrl').value = a.img || '';
@@ -308,17 +308,34 @@ function saveAvatar() {
   const entry = {};
   const aliases = [...new Set($('avatarAliases').value.split(/[\s,，、\/／]+/).map(a => a.trim()).filter(a => a && a !== avName))].slice(0, 30);
   const am = aliasMap();
+  const inList = new Set(aliases);
   for (const a of aliases) {
     const owner = am.get(normName(a));
-    if (owner && owner !== avName) { showToast(`「${a}」已經是「${owner}」的別名`); return; }
-    if (actorAvatars[a] && (actorAvatars[a].aliases || []).length) { showToast(`「${a}」本身已有別名，請先到它那邊清除`); return; }
+    if (owner && owner !== avName && !inList.has(owner)) { showToast(`「${a}」已經是「${owner}」的別名`); return; }
+    const sub = actorAvatars[a] && actorAvatars[a].aliases || [];
+    if (sub.some(x => !inList.has(x))) { showToast(`「${a}」本身已有別名，請先到它那邊清除，或一併填進別名`); return; }
+  }
+  if (url && avDupAsked !== url) {
+    const key = normImg(url), am2 = aliasMap();
+    const hit = Object.keys(actorAvatars).find(k => k !== avName && !am2.has(normName(k)) && !aliases.includes(k) && actorAvatars[k].img && normImg(actorAvatars[k].img) === key);
+    if (hit) {
+      avDupAsked = url;
+      openConfirm(`這張圖片已經被「${hit}」使用，可能是同一位女優。\n要把「${hit}」併進「${avName}」當別名嗎？\n（取消的話，再按一次儲存就會照原樣存成兩位）`, () => {
+        const sub = (actorAvatars[hit] && actorAvatars[hit].aliases) || [];
+        $('avatarAliases').value = [...new Set([...$('avatarAliases').value.split(/[\s,，、\/／]+/).filter(Boolean), hit, ...sub])].join(' ');
+        saveAvatar();
+      });
+      return;
+    }
   }
   if (aliases.length) entry.aliases = aliases;
   if (url) entry.img = url;
   if (avStyle !== null && avStyle !== defaultStyle(avName)) entry.style = avStyle;
-  const prev = actorAvatars[avName];
+  const prevAll = JSON.stringify(actorAvatars);
+  // 被併進來的名字不再需要自己的設定：頭像沒填就沿用對方的，然後清掉
+  aliases.forEach(a => { const e = actorAvatars[a]; if (e) { if (!entry.img && e.img) entry.img = e.img; delete actorAvatars[a]; } });
   if (Object.keys(entry).length) actorAvatars[avName] = entry; else delete actorAvatars[avName];
-  if (!saveAvatars()) { if (prev) actorAvatars[avName] = prev; else delete actorAvatars[avName]; return; }
+  if (!saveAvatars()) { actorAvatars = JSON.parse(prevAll); return; }
   closeAvatarEditor(); markStale(); renderGallery(); showToast('已儲存');
 }
 function resetAvatar() {
@@ -337,6 +354,64 @@ function aliasMap() {
 }
 const canonActors = (i, am) => [...new Set(actorsOf(i).map(n => am.get(normName(n)) || n))];
 const aliasText = (i, am) => canonActors(i, am).map(c => [c, ...((actorAvatars[c] && actorAvatars[c].aliases) || [])].join(' ')).join(' ').toLowerCase();
+/* 重複頭像偵測：兩位以上的女優用了同一張圖片，多半是同一個人（例如日文名與中文名） */
+const normImg = u => {
+  const t = String(u || '').trim();
+  if (!t || /^data:/i.test(t)) return t;
+  try { const x = new URL(t); return x.protocol.toLowerCase() + '//' + x.host.toLowerCase() + x.pathname + x.search; } catch (e) { return t; }
+};
+function presentActors() { const am = aliasMap(), set = new Set(); collections.forEach(i => canonActors(i, am).forEach(n => set.add(n))); return set; }
+function findDupAvatars() {
+  const am = aliasMap(), present = presentActors(), by = new Map();
+  Object.keys(actorAvatars).sort().forEach(k => {
+    const e = actorAvatars[k];
+    if (!e.img || am.has(normName(k)) || !present.has(k)) return; // 已被合併成別名的、資料裡已經沒有的不算
+    const key = normImg(e.img);
+    if (!by.has(key)) by.set(key, []);
+    by.get(key).push(k);
+  });
+  return [...by.values()].filter(g => g.length > 1);
+}
+function renderDupBanner() {
+  const el = $('dupBanner'); if (!el) return;
+  const n = findDupAvatars().length;
+  setHtml(el, n ? `<button class="dup-banner" onclick="openDupModal()"><span>⚠ 有 ${n} 組女優使用同一張頭像，可能是同一個人</span><b>查看</b></button>` : '');
+}
+function openDupModal() {
+  const groups = findDupAvatars();
+  if (!groups.length) { closeDupModal(); return; }
+  $('dupList').innerHTML = groups.map((g, gi) => `<div class="dup-group">
+      <div class="dup-names">${g.map(esc).join('　＝　')}</div>
+      <div class="dup-actions">${g.map((n, ni) => `<button class="dup-keep" data-g="${gi}" data-n="${ni}">以「${esc(n)}」為主</button>`).join('')}</div>
+    </div>`).join('');
+  $('dupList')._groups = groups;
+  const m = $('dupModal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeDupModal() { const m = $('dupModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+/* 把 others 全部併進 keep：名字與它們的別名都變成 keep 的別名，keep 沒有頭像就沿用對方的 */
+function mergeActors(keep, others) {
+  const k = Object.assign({}, actorAvatars[keep] || {});
+  const aliases = new Set(k.aliases || []);
+  others.forEach(o => {
+    aliases.add(o);
+    const e = actorAvatars[o];
+    if (e) { (e.aliases || []).forEach(a => aliases.add(a)); if (!k.img && e.img) k.img = e.img; delete actorAvatars[o]; }
+  });
+  aliases.delete(keep);
+  if (aliases.size) k.aliases = [...aliases].slice(0, 30);
+  actorAvatars[keep] = k;
+}
+function mergeDupGroup(gi, ni) {
+  const g = ($('dupList')._groups || [])[gi]; if (!g) return;
+  const keep = g[ni], others = g.filter((_, i) => i !== ni);
+  const backup = JSON.stringify(actorAvatars);
+  mergeActors(keep, others);
+  if (!saveAvatars()) { actorAvatars = JSON.parse(backup); return; }
+  markStale(); renderGallery(); renderDupBanner();
+  showToast(`已合併到「${keep}」`);
+  openDupModal(); // 還有其他組就留在清單，沒有就自動關閉
+}
+
 function renderActorList() {
   const map = {};
   const am = aliasMap();
@@ -346,6 +421,7 @@ function renderActorList() {
   if (actorCurrentPage > total) actorCurrentPage = Math.max(total, 1);
   const paginated = sorted.slice((actorCurrentPage - 1) * actorPageSize, actorCurrentPage * actorPageSize);
   setHtml($('actorList'), paginated.map(([name, count]) => `<div data-q="${esc(name)}" data-actor="${esc(name)}" class="active:opacity-70 flex flex-col items-center"><div class="actor-badge overflow-hidden">${avatarOf(name)}</div><span class="text-xs font-bold block truncate px-2 mt-2 w-full text-center">${esc(name)}</span><span class="block text-[11px] text-zinc-400 mt-0.5">${count} 作品</span></div>`).join(''));
+  renderDupBanner();
   renderPagination(total, actorCurrentPage, 'changeActorPage', 'actorPaginationContainer');
   updateContainerHeight();
 }
