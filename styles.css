@@ -216,6 +216,55 @@ html[data-theme=light] .tag-count{background:rgba(0,0,0,.08)}
 .dup-names{font-size:14px;font-weight:700;margin-bottom:10px;word-break:break-all}
 .dup-actions{display:flex;flex-wrap:wrap;gap:8px}
 .dup-keep{padding:8px 14px;border-radius:999px;background:var(--nf-red);color:#fff;font-size:12px;font-weight:700}
+/* 啟動畫面：模擬 Netflix 首頁，點「播放」進入 app（內容全是假的） */
+#fakeHome{position:fixed;inset:0;z-index:9000;display:none;background:#000;color:#fff;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(104px + env(safe-area-inset-bottom,0px));-webkit-user-select:none;user-select:none;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC','Heiti TC','Microsoft JhengHei',sans-serif}
+html.fake-home #fakeHome{display:block}
+html.fake-home body{overflow:hidden}
+#fakeHome *{box-sizing:border-box}
+#fakeHome p{margin:0}
+.fh-head{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 6px;background:linear-gradient(#000 55%,rgba(0,0,0,0))}
+.fh-icons{display:flex;gap:20px}
+.fh-chips{display:flex;gap:8px;padding:2px 16px 12px}
+.fh-chips span{border:1px solid #6d6d6e;border-radius:16px;padding:5px 14px;font-size:14px;color:#e5e5e5;white-space:nowrap;background:rgba(40,40,40,.5)}
+.fh-hero{margin:0 14px;height:min(58vh,440px);border-radius:12px;position:relative;overflow:hidden;background:radial-gradient(circle at 72% 22%,rgba(255,255,255,.2),transparent 42%),radial-gradient(circle at 20% 60%,rgba(255,120,140,.12),transparent 50%),linear-gradient(165deg,#8a3346,#3a1420 55%,#0b0306)}
+.fh-hero-in{position:absolute;left:0;right:0;bottom:0;padding:90px 14px 14px;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.55) 45%,rgba(0,0,0,.88));text-align:center}
+.fh-rank{display:flex;align-items:center;justify-content:center;gap:7px;font-size:15px;font-weight:700;margin-bottom:8px}
+.fh-t10{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;font-style:normal;background:#e50914;border-radius:2px;width:19px;height:21px;line-height:1}
+.fh-t10 b{font-size:8px;font-weight:900;line-height:1;letter-spacing:0}
+.fh-title{font-size:34px;font-weight:900;letter-spacing:.14em;margin-bottom:6px;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+.fh-tags{font-size:13px;color:#e5e5e5;margin-bottom:14px}
+.fh-btns{display:flex;gap:8px}
+#fakePlay{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:#fff;color:#000;border-radius:5px;padding:11px 0;font-size:17px;font-weight:700}
+#fakePlay:active{background:#d9d9d9}
+.fh-ghost{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(109,109,110,.7);border-radius:5px;padding:11px 0;font-size:17px;font-weight:700}
+.fh-dots{display:flex;justify-content:center;gap:6px;padding:10px 0 2px}
+.fh-dots i{width:6px;height:6px;border-radius:50%;background:#555}
+.fh-dots i.on{background:#fff}
+.fh-h{font-size:18px;font-weight:700;padding:18px 14px 8px}
+.fh-scroll{display:flex;gap:7px;overflow-x:auto;padding:0 14px;scrollbar-width:none;scroll-snap-type:x proximity}
+.fh-scroll::-webkit-scrollbar{display:none}
+.fh-scroll>*{scroll-snap-align:start}
+.fh-tile{flex:none;border-radius:4px;position:relative;overflow:hidden}
+.fh-art{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.fh-tile::after{content:'';position:absolute;left:0;right:0;bottom:0;height:55%;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.62));pointer-events:none;z-index:1}
+.fh-hero-in{z-index:2}
+.fh-tile span{z-index:2;position:absolute;left:8px;right:8px;bottom:9px;font-size:14px;font-weight:900;line-height:1.2;letter-spacing:.06em;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.fh-tile span.fh-pl{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(255,255,255,.9);background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;text-shadow:none}
+.fh-tile:has(.fh-new) span:not(.fh-pl){bottom:26px}
+.fh-new{z-index:3;position:absolute;left:50%;bottom:0;transform:translateX(-50%);background:#e50914;color:#fff;font-style:normal;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px 2px 0 0;white-space:nowrap}
+.fh-tile .fh-t10{z-index:3;position:absolute;top:0;right:5px;border-radius:0 0 2px 2px;width:20px;height:24px}
+.fh-cw{flex:none;width:156px}
+.fh-bar{height:3px;background:#404040;margin-top:0;overflow:hidden}
+.fh-bar i{display:block;height:3px;background:#e50914}
+.fh-cwi{display:flex;align-items:center;justify-content:space-between;background:#1a1a1a;border-radius:0 0 4px 4px;padding:6px 8px;font-size:12px;color:#d2d2d2}
+.fh-ci{display:flex;gap:10px;color:#fff}
+.fh-top10{display:flex;align-items:flex-end;flex:none}
+.fh-top10>b{font-size:104px;font-weight:900;line-height:.8;color:#000;-webkit-text-stroke:3px #5e5e5e;margin-right:-6px;min-width:70px;text-align:right;position:relative;z-index:0;letter-spacing:-.04em}
+.fh-top10 .fh-tile{z-index:1}
+.fh-nav{position:fixed;left:0;right:0;bottom:0;z-index:4;display:flex;justify-content:space-around;background:#000;border-top:1px solid #1f1f1f;padding:9px 0 calc(8px + env(safe-area-inset-bottom,0px));font-size:11px;color:#8c8c8c;text-align:center}
+.fh-nav span{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.fh-nav .on{color:#fff}
+.fh-av{display:block;width:24px;height:24px;border-radius:5px;background:linear-gradient(160deg,#2a8ae0,#1a4f99)}
 /* 啟動畫面：選擇個人檔案（原創的小插畫頭像） */
 #fakeProfile{position:fixed;inset:0;z-index:9100;display:none;flex-direction:column;align-items:center;background:#000;color:#fff;-webkit-user-select:none;user-select:none;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC','Heiti TC','Microsoft JhengHei',sans-serif;transition:opacity .22s}
 html.fake-profile #fakeProfile{display:flex}
@@ -233,3 +282,5 @@ html.fake-profile body{overflow:hidden}
 .fp-name{font-size:15px;font-weight:500;color:#b3b3b3}
 .fp-add .fp-av{background:#2a2a2a}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
+.fh-av svg{width:100%;height:100%;display:block}
+.fh-av{overflow:hidden}
