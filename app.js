@@ -214,7 +214,7 @@ function updateTagBar() {
   if (show) $('tagBarText').textContent = `已選 ${selectedTags.length} 個標籤・${collections.filter(matchTags).length} 部符合`;
 }
 function clearTags() { selectedTags = []; markStale(); updateTagBar(); }
-function applyTags() { $('searchInput').value = ''; $('clearSearchBtn').style.display = 'none'; currentPage = 1; switchTab(0); renderGallery(); }
+function applyTags() { $('searchInput').value = ''; $('clearSearchBtn').style.display = 'none'; currentPage = 1; switchTab(0, true); renderGallery(); }
 
 function renderPagination(total, cur, fn, containerId) {
   const container = $(containerId);
@@ -479,7 +479,7 @@ function rewriteTag(from, to, doneMsg) {
   const next = prev.map(i => {
     if (!hasTag(i, from)) return i;
     const out = []; (i.tags || []).forEach(t => { const nt = sameTag(t, from) ? to : t; if (nt && !out.some(x => sameTag(x, nt))) out.push(nt); });
-    return { ...i, tags: out };
+    return { ...i, tags: out, m: Date.now() };
   });
   collections = next;
   if (!persist()) { collections = prev; return false; }
@@ -655,7 +655,8 @@ function saveItem() {
     url: $('urlInput').value.trim(),
     tags: $('tagsInput').value.trim().split(/\s+/).filter(Boolean),
     img: $('imgInput').value.trim(),
-    fav: drawerFav
+    fav: drawerFav,
+    m: Date.now() // 最後修改時間：雲端合併時，同一部影片以較新的為準
   };
   const backup = collections.slice();
   const idx = currentId ? collections.findIndex(i => String(i.id) === String(currentId)) : -1;
@@ -664,23 +665,49 @@ function saveItem() {
   refreshAll(); closeDrawer(); showToast("已儲存");
 }
 
-function switchTab(index) {
+/* 各頁籤各自記住捲動位置：切走再回來會回到原本看到的地方。
+   點目前所在的頁籤 = 捲回頂端（和 iOS 習慣一致）；從篩選、進入 app 等程式切換時 top = true，一律從頂端開始 */
+const tabScroll = [0, 0, 0];
+function switchTab(index, top) {
+  const same = index === activeTab;
+  tabScroll[activeTab] = window.scrollY;      // 離開前記住這一頁看到哪
   activeTab = index;
   $('fabBtn').style.display = index === 0 ? 'flex' : 'none';
   $('pageContainer').style.transform = `translateX(-${index * (100 / 3)}%)`;
   document.querySelectorAll('.nav-item').forEach((el, i) => { if (i < 3) el.classList.toggle('active', i === index); });
   document.querySelectorAll('.page-content').forEach((p, i) => p.classList.toggle('active-page', i === index));
-  window.scrollTo(0, 0);
+  const y = (top || same) ? 0 : (tabScroll[index] || 0);
+  if (y === 0) tabScroll[index] = 0;
+  if (same && !top && window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'smooth' }); else window.scrollTo(0, y);
   if (index === 1 || index === 2) { if (staleTabs[index]) renderTab(index); }
   updateTagBar();
   updateContainerHeight();
+  if (y) setTimeout(() => window.scrollTo(0, y), 120); // 頁面高度在稍後才更新，之後再對一次位置
 }
+/* 重新載入（例如按「立即更新」）也維持原本的頁籤、頁碼和捲動位置；只在同一次開啟內有效 */
+function saveView() {
+  try { tabScroll[activeTab] = window.scrollY; sessionStorage.setItem('NF_VIEW', JSON.stringify({ tab: activeTab, scroll: tabScroll, pages: [currentPage, tagCurrentPage, actorCurrentPage] })); } catch (e) {}
+}
+function restoreView() {
+  let v = null; try { v = JSON.parse(sessionStorage.getItem('NF_VIEW')); } catch (e) {}
+  if (!v || sessionStorage.getItem('NF_ENTERED') !== '1') return;
+  const num = x => (Number.isInteger(x) && x >= 1 ? x : 1);
+  currentPage = num(v.pages && v.pages[0]); tagCurrentPage = num(v.pages && v.pages[1]); actorCurrentPage = num(v.pages && v.pages[2]);
+  renderGallery(); staleTabs[1] = staleTabs[2] = true;
+  const tab = [0, 1, 2].includes(v.tab) ? v.tab : 0;
+  if (tab) switchTab(tab, true);
+  [0, 1, 2].forEach(i => { tabScroll[i] = Number(v.scroll && v.scroll[i]) || 0; });
+  const y = tabScroll[tab];
+  if (y) { setTimeout(() => window.scrollTo(0, y), 150); setTimeout(() => window.scrollTo(0, y), 700); }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveView(); });
+window.addEventListener('pagehide', saveView);
 
 function setActorFilter(name) {
   favOnly = false; selectedTags = []; actorFilter = name;
   $('searchInput').value = ''; $('clearSearchBtn').style.display = 'none';
   currentPage = 1;
-  switchTab(0);
+  switchTab(0, true);
   renderGallery();
 }
 
@@ -853,7 +880,8 @@ function importData(e) {
           id, name: String(i.name), code: String(i.code || ''), url: String(i.url || ''), img: String(i.img || ''),
           tags: Array.isArray(i.tags) ? i.tags.map(String) : [],
           actor: typeof i.actor === 'string' ? i.actor : undefined,
-          fav: i.fav === true
+          fav: i.fav === true,
+          m: Number(i.m) || 0
         };
       });
       if (data.length === 0) throw new Error('empty');
@@ -942,7 +970,8 @@ async function readCloud(id) {
     url: String(i.url || ''), img: String(i.img || ''),
     tags: Array.isArray(i.tags) ? i.tags.map(String) : [],
     actor: typeof i.actor === 'string' ? i.actor : undefined,
-    fav: i.fav === true
+    fav: i.fav === true,
+    m: Number(i.m) || 0
   }));
   // 頭像放在同一個 Gist 的另一個檔案；舊備份沒有這個檔案時是 null（還原時不動本機頭像）
   let avatars = null;
@@ -970,29 +999,82 @@ function scheduleBackup() {
 }
 /* 備份前先看雲端有沒有另一台裝置的新內容，有的話不直接覆蓋，改問使用者
    overwrite = true：使用者已確認要用本機覆蓋雲端；manual = 使用者手動按「立即備份」 */
+/* 雲端衝突時自動合併（取代以前的「用雲端覆蓋 / 保留本機」二選一）。
+   做法是「三方合併」：拿上次同步成功時的清單（base）當基準，分別看本機和雲端各改了什麼：
+   - 兩邊都有、內容不同 → 看每部影片的最後修改時間 m，較新的贏
+   - 只有一邊有 → 如果基準裡有，代表另一邊把它刪了：刪除生效，除非這一邊刪除之後又改過它
+   - 只有一邊有、基準裡沒有 → 是新增，兩邊都留
+   沒有基準時（第一次連結）只取聯集，不會刪任何東西。 */
+const K_BASE = 'NF_SYNC_BASE';
+function loadBase() { try { const o = JSON.parse(localStorage.getItem(K_BASE)); return o && typeof o === 'object' && !Array.isArray(o) ? o : null; } catch (e) { return null; } }
+function saveBase() { const o = {}; collections.forEach(i => { o[String(i.id)] = Number(i.m) || 0; }); try { localStorage.setItem(K_BASE, JSON.stringify(o)); } catch (e) {} }
+function mergeItems(local, cloudItems, base) {
+  const L = new Map(local.map(i => [String(i.id), i])), C = new Map(cloudItems.map(i => [String(i.id), i]));
+  const inBase = id => !!base && Object.prototype.hasOwnProperty.call(base, id);
+  const mt = x => Number(x && x.m) || 0, out = [], stat = { added: 0, updated: 0, removed: 0 };
+  local.forEach(l => {
+    const id = String(l.id), c = C.get(id);
+    if (c) {
+      if (canon([l]) === canon([c])) out.push(l);
+      else if (mt(c) > mt(l)) { out.push(c); stat.updated++; }   // 雲端那份較新
+      else out.push(l);                                           // 本機較新（或一樣新）：留本機，之後會上傳
+    } else if (inBase(id)) {
+      if (mt(l) > base[id]) out.push(l);                          // 雲端刪了，但本機之後又改過它：保留
+      else stat.removed++;                                        // 雲端刪了、本機沒動：跟著刪
+    } else out.push(l);                                           // 本機新增
+  });
+  cloudItems.forEach(c => {
+    const id = String(c.id); if (L.has(id)) return;
+    if (inBase(id)) { if (mt(c) > base[id]) { out.push(c); stat.added++; } } // 本機刪了：除非雲端之後又改過它
+    else { out.push(c); stat.added++; }                                       // 雲端新增
+  });
+  return { items: out, stat };
+}
+function mergeWithCloud(cloud) {
+  const res = mergeItems(collections, cloud.items, loadBase());
+  const nextAv = cloud.avatars ? mergeAvatarSets(actorAvatars, cloud.avatars) : actorAvatars;
+  const prevC = collections, prevA = actorAvatars;
+  collections = res.items; actorAvatars = nextAv;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collections)); localStorage.setItem(AVATAR_KEY, JSON.stringify(actorAvatars)); }
+  catch (e) { collections = prevC; actorAvatars = prevA; throw new Error('storage'); }
+  hideUndo(); refreshAll();
+  return res;
+}
+function mergeNote(stat) {
+  if (!stat) return '';
+  const p = []; if (stat.added) p.push(`新增 ${stat.added}`); if (stat.updated) p.push(`更新 ${stat.updated}`); if (stat.removed) p.push(`刪除 ${stat.removed}`);
+  return p.length ? `已合併雲端的變更（${p.join('、')}）` : '';
+}
+
 async function runBackup(forceId, overwrite, manual) {
   if (!lsGet(K_TOKEN)) return false;
   if (backupBusy) { backupPending = true; return false; }
   backupBusy = true;
-  let ok = false;
+  let ok = false, mergedStat = null, skipWrite = false;
   try {
     const id = forceId || lsGet(K_ID);
     if (id && !forceId && !overwrite && lsGet(K_TS) && Date.now() - lastCloudSync > 120000) {
       let cloud = null;
       try { cloud = await readCloud(id); } catch (e) { if (e && e.status) throw e; }
       if (cloud && cloud.ts && cloud.ts !== lsGet(K_TS) && !sameContent(cloud)) {
-        backupPending = false;
-        backupConflict(cloud, id, manual);
-        return false;
+        mergedStat = mergeWithCloud(cloud).stat;   // 另一台裝置也改過：先合併，再把合併後的結果寫回雲端
+        lsSet(K_TS, cloud.ts);
+        if (sameContent(cloud)) skipWrite = true;  // 合併後和雲端一模一樣，不用再寫
       }
     }
-    const g = await writeCloud(id);
-    lsSet(K_ID, g.id); lsSet(K_LAST, new Date().toISOString());
-    lsSet(K_TS, g.updated_at || '');
-    lastCloudSync = Date.now();
+    if (skipWrite) { lastCloudSync = Date.now(); lsSet(K_LAST, new Date().toISOString()); }
+    else {
+      const g = await writeCloud(id);
+      lsSet(K_ID, g.id); lsSet(K_LAST, new Date().toISOString());
+      lsSet(K_TS, g.updated_at || '');
+      lastCloudSync = Date.now();
+    }
     if (!backupPending) lsSet(K_DIRTY, '');
+    saveBase();
     ok = true;
-    if (manual) showToast(`已備份 ${collections.length} 筆・${clockTime()}`); // 只有手動備份才通知；自動備份靜悄悄，結果看設定頁的上次同步時間
+    const note = mergeNote(mergedStat);
+    if (manual) showToast(`已備份 ${collections.length} 筆・${clockTime()}` + (note ? '\n' + note : '')); // 手動備份才通知備份結果；自動備份靜悄悄
+    else if (note) showToast(note);                                                                       // 但有合併到別台裝置的變更時，要讓你知道
   } catch (e) {
     let msg = ghErrMsg(e);
     if (e && e.status === 404 && lsGet(K_ID)) { lsSet(K_ID, ''); msg = '找不到雲端備份，請重新連結'; }
@@ -1004,18 +1086,6 @@ async function runBackup(forceId, overwrite, manual) {
   }
   return ok;
 }
-function backupConflict(cloud, id, manual) {
-  const n = cloud.items.length, m = collections.length;
-  if (manual) {
-    openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆。\n要用本機覆蓋雲端嗎？\n（會蓋掉雲端那份）`, async () => { await runBackup(undefined, true, true); });
-    return;
-  }
-  if (declinedTs === cloud.ts) return; // 已選擇保留本機：不再自動打擾，要覆蓋雲端請按「立即備份」
-  declinedTs = cloud.ts;
-  closeConfirmIfOpen();
-  openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆（含剛才的變更）。\n為避免互相覆蓋，這次沒有備份。\n要用雲端覆蓋本機嗎？\n（取消會保留本機；到「立即備份」可改用本機覆蓋雲端）`, () => applyCloud(cloud, id));
-}
-function closeConfirmIfOpen() { if (!$('confirmModal').classList.contains('hidden')) closeConfirm(); }
 function updateCloudUI() {
   const el = $('cloudStatus'); if (!el) return;
   const last = lsGet(K_LAST);
@@ -1032,7 +1102,7 @@ function applyCloud(cloud, id) {
     if (cloud.avatars) localStorage.setItem(AVATAR_KEY, JSON.stringify(actorAvatars));
   } catch (e) { collections = prev; actorAvatars = prevAv; showToast('儲存失敗：空間不足或被禁用'); return; }
   lsSet(K_ID, id); lsSet(K_LAST, new Date().toISOString());
-  lsSet(K_TS, cloud.ts || ''); lsSet(K_DIRTY, '');
+  lsSet(K_TS, cloud.ts || ''); lsSet(K_DIRTY, ''); saveBase();
   hideUndo(); $('drawer').classList.remove('open');
   currentPage = 1; actorCurrentPage = 1; tagCurrentPage = 1;
   refreshAll(); updateCloudUI(); showToast(`已從雲端還原 ${cloud.items.length} 筆`);
@@ -1083,13 +1153,13 @@ async function backupToCloudNow() {
 }
 function removeToken() {
   openConfirm('移除權杖並停止自動備份？\n（雲端的備份不會被刪除）', () => {
-    lsSet(K_TOKEN, ''); lsSet(K_ID, ''); lsSet(K_LAST, ''); lsSet(K_TS, ''); lsSet(K_DIRTY, '');
+    lsSet(K_TOKEN, ''); lsSet(K_ID, ''); lsSet(K_LAST, ''); lsSet(K_TS, ''); lsSet(K_DIRTY, ''); lsSet(K_BASE, '');
     clearTimeout(backupTimer); backupTimer = null; updateCloudUI(); showToast('已移除');
   });
 }
 
 /* 開啟 app / 回到前景時，比對雲端是否有另一台裝置的較新備份 */
-let lastCloudCheck = 0, cloudChecking = false, declinedTs = '';
+let lastCloudCheck = 0, cloudChecking = false;
 const sameContent = c => canon(c.items) === canon(collections) && (c.avatars === null || canonAv(c.avatars) === canonAv(actorAvatars));
 const canon = arr => JSON.stringify(arr.map(i => [i.id, i.name, i.actor || '', i.code || '', i.url || '', i.img || '', (i.tags || []).join('\u0001'), i.fav ? 1 : 0]));
 async function checkCloud(force) {
@@ -1104,15 +1174,13 @@ async function checkCloud(force) {
     lastCloudSync = Date.now();
     const dirty = !!lsGet(K_DIRTY);
     if (cloud.ts && cloud.ts === lsGet(K_TS)) { if (dirty) runBackup(); return; }
-    if (sameContent(cloud)) { lsSet(K_TS, cloud.ts); lsSet(K_DIRTY, ''); updateCloudUI(); return; }
-    if (declinedTs === cloud.ts) return;
-    if (!$('confirmModal').classList.contains('hidden')) return;
-    const n = cloud.items.length, m = collections.length;
-    const msg = dirty
-      ? `雲端有另一台裝置的備份（${n} 筆），但本機也有尚未同步的變更（${m} 筆）。\n要用雲端覆蓋本機嗎？\n（取消會保留本機，下次儲存時覆蓋雲端）`
-      : `雲端有較新的備份（${n} 筆），本機 ${m} 筆。\n要用雲端更新本機嗎？\n（取消會保留本機，下次儲存時覆蓋雲端）`;
-    openConfirm(msg, () => applyCloud(cloud, id));
-    declinedTs = cloud.ts;
+    if (sameContent(cloud)) { lsSet(K_TS, cloud.ts); lsSet(K_DIRTY, ''); saveBase(); updateCloudUI(); return; }
+    const res = mergeWithCloud(cloud);   // 雲端有別台裝置的變更：自動合併，不再跳出二選一
+    lsSet(K_TS, cloud.ts);
+    if (sameContent(cloud)) { lsSet(K_DIRTY, ''); saveBase(); }
+    else { lsSet(K_DIRTY, '1'); runBackup(); } // 本機也有雲端沒有的內容：把合併後的結果寫回雲端
+    const note = mergeNote(res.stat); if (note) showToast(note);
+    updateCloudUI();
   } catch (e) { /* 靜默：背景檢查失敗不打擾使用者 */ }
   finally { cloudChecking = false; }
 }
@@ -1144,7 +1212,7 @@ let logoTaps = [];
 function refreshAndHome() {
   const now = Date.now(); logoTaps = logoTaps.filter(t => now - t < 700); logoTaps.push(now);
   if (logoTaps.length >= 3) { logoTaps = []; showProfiles(); return; } // 快速連點標誌三下 → 回到「誰在看？」
-  clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' });
+  clearSearch(); switchTab(0, true); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 ['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
 
@@ -1305,7 +1373,7 @@ $('fhMe').addEventListener('click', backToProfiles);
 function enterApp() {
   document.documentElement.classList.remove('fake-profile', 'fake-home');
   try { sessionStorage.setItem('NF_ENTERED', '1'); sessionStorage.removeItem('NF_DECOY'); } catch (e) {}
-  switchTab(0); window.scrollTo(0, 0);
+  switchTab(0, true); window.scrollTo(0, 0);
 }
 
 /* 新版本提示：偵測網站檔案（index.html / styles.css / app.js）有沒有更新，有的話跳出「立即更新」 */
@@ -1402,16 +1470,16 @@ function openBrokenModal() {
 function closeBrokenModal() { const m = $('brokenModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
 function clearBrokenCover(id) {
   const it = collections.find(i => String(i.id) === String(id)); if (!it) return;
-  const prev = it.img; it.img = '';
-  if (!persist()) { it.img = prev; return; }
+  const prev = it.img, prevM = it.m; it.img = ''; it.m = Date.now();
+  if (!persist()) { it.img = prev; it.m = prevM; return; }
   brokenIds = brokenIds.filter(x => x !== String(id));
   renderGallery(); openBrokenModal(); showToast('已清除封面網址');
 }
 function clearAllBroken() {
   openConfirm(`清除 ${brokenIds.length} 筆失效封面的網址？\n（影片本身不會刪除，之後可以再補封面）`, () => {
-    const prev = collections.map(i => i.img);
-    brokenIds.forEach(id => { const it = collections.find(i => String(i.id) === id); if (it) it.img = ''; });
-    if (!persist()) { collections.forEach((i, k) => { i.img = prev[k]; }); return; }
+    const prev = collections.map(i => [i.img, i.m]), now = Date.now();
+    brokenIds.forEach(id => { const it = collections.find(i => String(i.id) === id); if (it) { it.img = ''; it.m = now; } });
+    if (!persist()) { collections.forEach((i, k) => { i.img = prev[k][0]; i.m = prev[k][1]; }); return; }
     brokenIds = []; renderGallery(); closeBrokenModal(); showToast('已清除失效封面');
   });
 }
@@ -1427,5 +1495,6 @@ window.onload = () => {
   updatePageSize(pageSize);
   handleHash();
   updateCloudUI();
+  restoreView();
   setTimeout(() => checkCloud(true), 2500);
 };
