@@ -177,7 +177,7 @@ const CHEV = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke
 function renderFilterRow() {
   const row = $('filterRow'); if (!row) return;
   const favN = collections.filter(i => i.fav).length;
-  const label = favOnly ? `${heartSvg(true, 14)}<span>(${favN})</span>` : '<span>全部</span>';
+  const label = favOnly ? `${heartSvg(true, 14)}<span>最愛(${favN})</span>` : '<span>全部</span>';
   setHtml(row,
     `<button class="chip chip-select${favOnly ? ' active' : ''}" data-chip="menu" aria-haspopup="menu" aria-expanded="false">${label}${CHEV}</button>` +
     (actorFilter ? `<button class="chip active" data-chip-actor><span>${esc(actorFilter)}</span><span aria-label="移除">✕</span></button>` : '') +
@@ -194,7 +194,7 @@ function openFilterMenu(trigger) {
   const favN = collections.filter(i => i.fav).length, m = $('filterMenu');
   m.innerHTML =
     `<button class="fm-item${favOnly ? '' : ' on'}" data-menu="all" role="menuitem"><span>全部</span>${favOnly ? '' : CHECK}</button>` +
-    `<button class="fm-item${favOnly ? ' on' : ''}" data-menu="fav" role="menuitem"><span class="fm-l">${heartSvg(true, 16)}(${favN})</span>${favOnly ? CHECK : ''}</button>`;
+    `<button class="fm-item${favOnly ? ' on' : ''}" data-menu="fav" role="menuitem"><span class="fm-l">${heartSvg(true, 16)}最愛(${favN})</span>${favOnly ? CHECK : ''}</button>`;
   m.classList.add('show');
   const r = trigger.getBoundingClientRect(), w = m.offsetWidth || 190;
   m.style.left = Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px';
