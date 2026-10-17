@@ -957,7 +957,7 @@ window.addEventListener('online', () => checkCloud(true));
 })();
 
 function refreshAndHome() {
-  if (quickHideOn && tripleTap('logo')) { setQuickHidden(true); return; } // 快速連點標誌三下 → 隱藏
+  if (quickHideOn && tapsWithin('logo', 3, 700)) { setQuickHidden(true); return; } // 快速連點標誌三下 → 隱藏
   clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 ['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
@@ -1009,10 +1009,10 @@ function setStartHidden(on) {
   updateQuickHideUI();
 }
 const tapTimes = {};
-function tripleTap(key) { // 700 毫秒內連續三次
-  const now = Date.now(), t = (tapTimes[key] || []).filter(x => now - x < 700);
+function tapsWithin(key, n, ms) { // ms 毫秒內連續 n 次
+  const now = Date.now(), t = (tapTimes[key] || []).filter(x => now - x < ms);
   t.push(now); tapTimes[key] = t;
-  if (t.length >= 3) { tapTimes[key] = []; return true; }
+  if (t.length >= n) { tapTimes[key] = []; return true; }
   return false;
 }
 function setQuickHideEnabled(on) {
@@ -1027,10 +1027,21 @@ function updateQuickHideUI() {
   $('qhStartOff').classList.toggle('active', !startHidden);
 }
 function quickHideNow() { toggleFilterDrawer(false); setTimeout(() => setQuickHidden(true), 250); }
+/* 三指點兩下：三根手指同時快速點一下（不拖動）算一次，700 毫秒內兩次就切換隱藏 / 解鎖 */
+let threeFinger = null;
+const centroid = list => { const a = [...list]; return { x: a.reduce((m, t) => m + t.clientX, 0) / a.length, y: a.reduce((m, t) => m + t.clientY, 0) / a.length }; };
 document.addEventListener('touchstart', e => {
-  if (e.touches && e.touches.length === 3 && (quickHideOn || isQuickHidden())) setQuickHidden(!isQuickHidden());
+  if (e.touches.length === 3) threeFinger = { t: Date.now(), c: centroid(e.touches) };
+  else if (e.touches.length > 3) threeFinger = null;
 }, { passive: true });
-$('hideScreen').addEventListener('pointerdown', e => { if (e.isPrimary && tripleTap('screen')) setQuickHidden(false); }); // 多指同時按只算一次，避免和三指手勢互相抵消
+document.addEventListener('touchend', e => {
+  if (!threeFinger || e.touches.length > 0) return;
+  const f = threeFinger; threeFinger = null;
+  const c = centroid(e.changedTouches);
+  const isTap = Date.now() - f.t < 400 && Math.hypot(c.x - f.c.x, c.y - f.c.y) < 30;
+  if (isTap && (quickHideOn || isQuickHidden()) && tapsWithin('3f', 2, 700)) setQuickHidden(!isQuickHidden());
+}, { passive: true });
+document.addEventListener('touchcancel', () => { threeFinger = null; }, { passive: true });
 
 window.onload = () => {
   updateQuickHideUI();
