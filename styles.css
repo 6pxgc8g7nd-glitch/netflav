@@ -299,6 +299,7 @@ html.fake-profile body{overflow:hidden}
 .set-h{font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--t400);margin:26px 6px 8px}
 .set-group{background:var(--glass-bg);border:1px solid var(--glass-bd);border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 var(--glass-hi)}
 .set-group>*+*{border-top:1px solid var(--glass-bd)}
+.set-group+.set-group{margin-top:14px}
 .set-item{padding:14px 16px}
 .set-label{font-size:13px;font-weight:600;color:var(--fg);margin:0 0 10px}
 .set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:14px 16px;text-align:left;cursor:pointer;color:var(--fg);list-style:none}
