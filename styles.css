@@ -116,7 +116,7 @@ input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}
 .bg-red-600.text-white{color:#fff}
 .text-xs{font-size:.75rem;line-height:1rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-lg{font-size:1.125rem;line-height:1.75rem}
 .text-xl{font-size:1.25rem;line-height:1.75rem}.text-2xl{font-size:1.5rem;line-height:2rem}
-.text-\[8px\]{font-size:8px}.text-\[10px\]{font-size:10px}.text-\[13px\]{font-size:13px}
+.text-\[8px\]{font-size:8px}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-\[13px\]{font-size:13px}
 .font-bold{font-weight:700}.font-black{font-weight:900}
 .leading-relaxed{line-height:1.625}
 .tracking-tighter{letter-spacing:-.05em}.tracking-wider{letter-spacing:.05em}.tracking-widest{letter-spacing:.1em}
@@ -216,4 +216,8 @@ html[data-theme=light] .tag-count{background:rgba(0,0,0,.08)}
 .dup-names{font-size:14px;font-weight:700;margin-bottom:10px;word-break:break-all}
 .dup-actions{display:flex;flex-wrap:wrap;gap:8px}
 .dup-keep{padding:8px 14px;border-radius:999px;background:var(--nf-red);color:#fff;font-size:12px;font-weight:700}
+/* 隱私遮蓋：切走 app 時蓋住畫面 */
+#privacyCover{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:var(--nf-black)}
+#privacyCover.show{display:flex}
+#privacyCover .brand-logo{font-size:34px;letter-spacing:.08em;pointer-events:none}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}

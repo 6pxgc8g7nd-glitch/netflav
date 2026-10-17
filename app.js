@@ -987,7 +987,31 @@ function precacheCovers() {
 window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
+/* 隱私遮蓋：切到別的 app / 進入多工畫面時，先蓋住畫面，避免縮圖露出封面
+   （iOS 何時拍縮圖由系統決定，這是盡力而為的做法） */
+let coverOn = (() => { try { return localStorage.getItem('NF_COVER') !== 'off'; } catch (e) { return true; } })();
+const isTouch = () => window.matchMedia && matchMedia('(hover: none)').matches;
+function showCover() { if (coverOn) $('privacyCover').classList.add('show'); }
+function hideCover() { $('privacyCover').classList.remove('show'); }
+function setCover(on) {
+  coverOn = !!on;
+  try { localStorage.setItem('NF_COVER', coverOn ? 'on' : 'off'); } catch (e) {}
+  if (!coverOn) hideCover();
+  updateCoverUI();
+}
+function updateCoverUI() {
+  $('coverBtnOn').classList.toggle('active', coverOn);
+  $('coverBtnOff').classList.toggle('active', !coverOn);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') showCover(); else hideCover(); });
+window.addEventListener('pagehide', showCover);
+window.addEventListener('pageshow', hideCover);
+window.addEventListener('focus', hideCover);
+window.addEventListener('blur', () => { if (isTouch()) showCover(); }); // 電腦上點到別的視窗不必遮蓋
+$('privacyCover').addEventListener('pointerdown', hideCover);
+
 window.onload = () => {
+  updateCoverUI();
   updateAppearanceUI();
   updateLayout(currentLayout);
   updatePageSize(pageSize);

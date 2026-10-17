@@ -162,6 +162,14 @@ applyGlass();
         <input type="range" id="glassRange" min="0" max="100" step="1" oninput="setGlass(this.value)">
       </div>
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
+        <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">切換 app 時遮蓋畫面</label>
+        <div class="layout-grid" style="grid-template-columns:repeat(2,1fr)">
+          <button id="coverBtnOn" onclick="setCover(true)" class="layout-option">開啟</button>
+          <button id="coverBtnOff" onclick="setCover(false)" class="layout-option">關閉</button>
+        </div>
+        <p class="text-[11px] text-zinc-400 mt-3 leading-relaxed">切到別的 app 或進入多工畫面時，用空白畫面蓋住內容，避免縮圖露出封面。</p>
+      </div>
+      <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
         <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">顯示佈局</label>
         <div class="layout-grid">
           <button id="layoutBtn1" onclick="updateLayout(1)" class="layout-option">1 欄</button>
@@ -244,6 +252,7 @@ applyGlass();
   </div>
 </div>
 <div id="toast"></div>
+<div id="privacyCover" aria-hidden="true"><span class="brand-logo">Netflav</span></div>
 <div id="undoBar"><span id="undoMsg"></span><button id="undoBtn" onclick="doUndo()">復原</button></div>
 
 <script src="app.js"></script>
