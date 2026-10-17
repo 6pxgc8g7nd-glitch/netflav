@@ -1027,7 +1027,7 @@ function updateQuickHideUI() {
   $('qhStartOff').classList.toggle('active', !startHidden);
 }
 function quickHideNow() { toggleFilterDrawer(false); setTimeout(() => setQuickHidden(true), 250); }
-/* 三指點兩下：三根手指同時快速點一下（不拖動）算一次，700 毫秒內兩次就切換隱藏 / 解鎖 */
+/* 三指手勢：三根手指同時快速點一下（不拖動）算一次。畫面顯示時點一次 → 隱藏；全黑畫面時 700 毫秒內點兩次 → 解鎖 */
 let threeFinger = null;
 const centroid = list => { const a = [...list]; return { x: a.reduce((m, t) => m + t.clientX, 0) / a.length, y: a.reduce((m, t) => m + t.clientY, 0) / a.length }; };
 document.addEventListener('touchstart', e => {
@@ -1039,7 +1039,9 @@ document.addEventListener('touchend', e => {
   const f = threeFinger; threeFinger = null;
   const c = centroid(e.changedTouches);
   const isTap = Date.now() - f.t < 400 && Math.hypot(c.x - f.c.x, c.y - f.c.y) < 30;
-  if (isTap && (quickHideOn || isQuickHidden()) && tapsWithin('3f', 2, 700)) setQuickHidden(!isQuickHidden());
+  if (!isTap) return;
+  if (isQuickHidden()) { if (tapsWithin('3f', 2, 700)) setQuickHidden(false); }
+  else if (quickHideOn) { tapTimes['3f'] = []; setQuickHidden(true); } // 剛隱藏的這一下不算進解鎖的次數
 }, { passive: true });
 document.addEventListener('touchcancel', () => { threeFinger = null; }, { passive: true });
 
