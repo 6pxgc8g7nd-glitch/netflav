@@ -955,7 +955,10 @@ window.addEventListener('online', () => checkCloud(true));
   t.addEventListener('contextmenu', e => e.preventDefault());
 })();
 
-function refreshAndHome() { clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function refreshAndHome() {
+  if (quickHideOn && tripleTap('logo')) { setQuickHidden(true); return; } // 快速連點標誌三下 → 隱藏
+  clearSearch(); switchTab(0); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 ['codeInput', 'urlInput', 'imgInput'].forEach(id => { const el = $(id); el.addEventListener('input', () => checkDuplicate(el)); });
 
 /* 離線與封面快取（需要同資料夾的 sw.js，並以 http(s) 開啟） */
@@ -987,7 +990,38 @@ function precacheCovers() {
 window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
+/* 快速隱藏：三指點一下，或連點標誌三下 → 全黑畫面；在全黑畫面連點三下或再三指點一下 → 回來。
+   隱藏狀態存在 sessionStorage，頁面被系統重新載入也維持隱藏 */
+let quickHideOn = (() => { try { return localStorage.getItem('NF_QH') !== 'off'; } catch (e) { return true; } })();
+const isQuickHidden = () => document.documentElement.classList.contains('quick-hidden');
+function setQuickHidden(v) {
+  document.documentElement.classList.toggle('quick-hidden', !!v);
+  try { v ? sessionStorage.setItem('NF_HIDDEN', '1') : sessionStorage.removeItem('NF_HIDDEN'); } catch (e) {}
+}
+const tapTimes = {};
+function tripleTap(key) { // 700 毫秒內連續三次
+  const now = Date.now(), t = (tapTimes[key] || []).filter(x => now - x < 700);
+  t.push(now); tapTimes[key] = t;
+  if (t.length >= 3) { tapTimes[key] = []; return true; }
+  return false;
+}
+function setQuickHideEnabled(on) {
+  quickHideOn = !!on;
+  try { localStorage.setItem('NF_QH', quickHideOn ? 'on' : 'off'); } catch (e) {}
+  updateQuickHideUI();
+}
+function updateQuickHideUI() {
+  $('qhBtnOn').classList.toggle('active', quickHideOn);
+  $('qhBtnOff').classList.toggle('active', !quickHideOn);
+}
+function quickHideNow() { toggleFilterDrawer(false); setTimeout(() => setQuickHidden(true), 250); }
+document.addEventListener('touchstart', e => {
+  if (e.touches && e.touches.length === 3 && (quickHideOn || isQuickHidden())) setQuickHidden(!isQuickHidden());
+}, { passive: true });
+$('hideScreen').addEventListener('pointerdown', e => { if (e.isPrimary && tripleTap('screen')) setQuickHidden(false); }); // 多指同時按只算一次，避免和三指手勢互相抵消
+
 window.onload = () => {
+  updateQuickHideUI();
   updateAppearanceUI();
   updateLayout(currentLayout);
   updatePageSize(pageSize);
