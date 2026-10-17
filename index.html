@@ -385,6 +385,13 @@ applyGlass();
         <input type="range" id="glassRange" min="0" max="100" step="1" oninput="setGlass(this.value)">
       </div>
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
+        <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">點擊卡片時</label>
+        <div class="layout-grid" style="grid-template-columns:repeat(2,1fr)">
+          <button id="playBtnEmbed" onclick="setPlayMode('embed')" class="layout-option">app 內播放</button>
+          <button id="playBtnTab" onclick="setPlayMode('tab')" class="layout-option">開新分頁</button>
+        </div>
+      </div>
+      <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
         <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">顯示佈局</label>
         <div class="layout-grid">
           <button id="layoutBtn1" onclick="updateLayout(1)" class="layout-option">1 欄</button>
@@ -446,6 +453,15 @@ applyGlass();
       <button onclick="saveAvatar()" class="py-3 bg-red-600 rounded-lg text-xs font-bold text-white">儲存</button>
     </div>
   </div>
+</div>
+<div id="playerModal" class="fixed inset-0 hidden flex-col keep-dark" style="z-index:8000;background:#000">
+  <div class="flex items-center gap-3" style="padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;background:rgba(20,20,20,.96);flex:none">
+    <button onclick="closePlayer()" class="p-3 rounded-lg bg-zinc-800 text-white" aria-label="關閉"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <p id="playerTitle" class="flex-1 text-sm font-bold truncate text-white"></p>
+    <button onclick="playerOpenExternal()" class="px-3 py-3 rounded-lg bg-zinc-800 text-xs font-bold text-white" style="white-space:nowrap;flex:none">瀏覽器開啟 ↗</button>
+  </div>
+  <p id="playerHint" class="text-xs text-center text-zinc-300" style="display:none;padding:8px 12px;background:rgba(229,9,20,.18);flex:none"></p>
+  <div id="playerStage" style="flex:1;min-height:0;background:#000"></div>
 </div>
 <div id="pageModal" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this)closePagePicker()">
   <div class="keep-dark glassy w-full" style="border-radius:28px 28px 0 0;padding:20px 16px calc(24px + var(--safe-bottom))">
@@ -824,7 +840,7 @@ document.addEventListener('click', e => {
     if (lpFired) return;
     const it = collections.find(i => String(i.id) === card.dataset.card);
     if (!it) return;
-    if (it.url) openExternalUrl(it.url, e); else openDrawer(it.id); // 沒有連結就直接開編輯
+    if (it.url) playItem(it, e); else openDrawer(it.id); // 沒有連結就直接開編輯
     return;
   }
   const q = e.target.closest('[data-q]');
@@ -842,7 +858,7 @@ function openRandomRecommendation() {
     <div class="card-overlay"><p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p></div>`;
   $('randomCardTitle').innerText = item.name;
   const btn = $('randomPlayBtn');
-  if (item.url) { btn.style.display = 'block'; btn.onclick = () => { openExternalUrl(item.url); closeRandomModal(); }; }
+  if (item.url) { btn.style.display = 'block'; btn.onclick = () => { closeRandomModal(); playItem(item); }; }
   else btn.style.display = 'none';
   const m = $('randomModal'); m.classList.remove('hidden'); m.classList.add('flex');
 }
@@ -924,6 +940,57 @@ function openExternalUrl(url, e) {
   if (!full) { showToast("不支援的連結格式"); return; }
   window.open(full, '_blank', 'noopener,noreferrer');
 }
+
+/* 播放：app 內嵌入 或 開新分頁（設定可切換） */
+let playMode = (() => { try { return localStorage.getItem('NF_PLAY_MODE') === 'tab' ? 'tab' : 'embed'; } catch (e) { return 'embed'; } })();
+function setPlayMode(m) {
+  playMode = m === 'tab' ? 'tab' : 'embed';
+  try { localStorage.setItem('NF_PLAY_MODE', playMode); } catch (e) {}
+  updatePlayModeUI();
+}
+function updatePlayModeUI() {
+  const a = $('playBtnEmbed'), b = $('playBtnTab');
+  if (a) a.classList.toggle('active', playMode === 'embed');
+  if (b) b.classList.toggle('active', playMode === 'tab');
+}
+const normUrl = url => { const u = String(url || '').trim(); return !u ? '' : /^https?:\/\//i.test(u) ? u : (/^[a-z][a-z0-9+.-]*:/i.test(u) ? '' : 'https://' + u); };
+const isVideoFile = u => /\.(mp4|m4v|webm|mov|m3u8)(\?|#|$)/i.test(u);
+let playerUrl = '', playerHintTimer = null;
+function playItem(item, e) {
+  if (e) e.stopPropagation();
+  if (playMode === 'tab') { openExternalUrl(item.url); return; }
+  openPlayer(item);
+}
+function openPlayer(item) {
+  const full = normUrl(item.url);
+  if (!full) { showToast('不支援的連結格式'); return; }
+  playerUrl = full;
+  $('playerTitle').textContent = item.name || '';
+  const stage = $('playerStage');
+  if (isVideoFile(full)) {
+    stage.innerHTML = `<video id="playerVideo" src="${esc(full)}" controls autoplay playsinline style="width:100%;height:100%;background:#000"></video>`;
+    const vid = $('playerVideo');
+    vid.addEventListener('error', () => { if ($('playerVideo') === vid) setPlayerHint('這個影片無法在 app 內播放，請按右上角用瀏覽器開啟', true); }); // 已關掉的舊影片晚到的錯誤不處理
+    setPlayerHint('', false);
+  } else {
+    stage.innerHTML = `<iframe id="playerFrame" src="${esc(full)}" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups" style="width:100%;height:100%;border:0;background:#000"></iframe>`;
+    // 網頁被對方禁止嵌入時，瀏覽器不會通知我們，所以固定提示一小段時間
+    setPlayerHint('如果畫面空白，代表對方網站不允許嵌入，請按右上角用瀏覽器開啟', false);
+  }
+  $('playerModal').classList.remove('hidden'); $('playerModal').classList.add('flex');
+}
+function setPlayerHint(msg, sticky) {
+  clearTimeout(playerHintTimer);
+  const h = $('playerHint'); h.textContent = msg; h.style.display = msg ? 'block' : 'none';
+  if (msg && !sticky) playerHintTimer = setTimeout(() => { h.style.display = 'none'; }, 7000);
+}
+function closePlayer() {
+  clearTimeout(playerHintTimer);
+  $('playerStage').innerHTML = ''; // 清掉 iframe / video，聲音才會停
+  $('playerModal').classList.add('hidden'); $('playerModal').classList.remove('flex');
+}
+function playerOpenExternal() { openExternalUrl(playerUrl); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('playerModal').classList.contains('hidden')) closePlayer(); });
 
 function debouncedRender() { clearTimeout(window.timer); window.timer = setTimeout(renderGallery, 300); }
 function showToast(msg) { const t = $('toast'); t.innerText = msg; t.style.opacity = "1"; clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => { t.style.opacity = "0"; }, 2000); }
@@ -1334,6 +1401,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateCont
 
 window.onload = () => {
   updateAppearanceUI();
+  updatePlayModeUI();
   updateLayout(currentLayout);
   updatePageSize(pageSize);
   renderActorList();
