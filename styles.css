@@ -327,6 +327,16 @@ html[data-theme=light] #undoBar{color:#0f0f0f}
 @keyframes undoShrink{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 body.undo-open .fab-btn{bottom:calc(max(2px,var(--safe-bottom) - 18px) + 146px)}
 .fab-btn{transition:transform .3s var(--pop),bottom .3s var(--spring)}
+/* 篩選下拉選單 */
+.chip-select{gap:7px}
+.chip-select svg:last-child{opacity:.8}
+#filterMenu{position:fixed;z-index:1300;min-width:190px;padding:6px;border-radius:16px;background:var(--card);border:1px solid var(--glass-bd);box-shadow:0 14px 40px rgba(0,0,0,.4),inset 0 1px 0 var(--glass-hi);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);opacity:0;visibility:hidden;transform:translateY(-6px) scale(.97);transform-origin:top left;transition:opacity .15s,transform .2s var(--spring),visibility .15s}
+#filterMenu.show{opacity:1;visibility:visible;transform:none}
+.fm-item{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;padding:12px 14px;border-radius:11px;font-size:15px;font-weight:600;color:var(--fg);text-align:left}
+.fm-item+.fm-item{margin-top:2px}
+.fm-item:active{background:var(--glass-active)}
+.fm-item.on{color:var(--nf-red)}
+.fm-l{display:flex;align-items:center;gap:8px}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
 .fh-av svg{width:100%;height:100%;display:block}
 .fh-av{overflow:hidden}

@@ -173,15 +173,33 @@ function renderGallery() {
   updateContainerHeight();
 }
 
+const CHEV = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 function renderFilterRow() {
   const row = $('filterRow'); if (!row) return;
   const favN = collections.filter(i => i.fav).length;
-  const none = !favOnly && !selectedTags.length && !actorFilter;
+  const label = favOnly ? `${heartSvg(true, 14)}<span>最愛 ${favN}</span>` : '<span>全部</span>';
   setHtml(row,
-    `<button class="chip${none ? ' active' : ''}" data-chip="all">全部</button>` +
-    `<button class="chip${favOnly ? ' active' : ''}" data-chip="fav" aria-label="只看最愛">${heartSvg(favOnly || favN > 0, 14)}<span>${favN}</span></button>` +
+    `<button class="chip chip-select${favOnly ? ' active' : ''}" data-chip="menu" aria-haspopup="menu" aria-expanded="false">${label}${CHEV}</button>` +
     (actorFilter ? `<button class="chip active" data-chip-actor><span>${esc(actorFilter)}</span><span aria-label="移除">✕</span></button>` : '') +
     selectedTags.map(t => `<button class="chip active" data-chip-tag="${esc(t)}"><span>${esc(t)}</span><span aria-label="移除">✕</span></button>`).join(''));
+}
+/* 下拉選單：全部 / 最愛。選單用 fixed 定位，才不會被橫向捲動的篩選列裁掉 */
+const CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+function closeFilterMenu() {
+  const m = $('filterMenu'); if (!m) return;
+  m.classList.remove('show');
+  const t = document.querySelector('[data-chip="menu"]'); if (t) t.setAttribute('aria-expanded', 'false');
+}
+function openFilterMenu(trigger) {
+  const favN = collections.filter(i => i.fav).length, m = $('filterMenu');
+  m.innerHTML =
+    `<button class="fm-item${favOnly ? '' : ' on'}" data-menu="all" role="menuitem"><span>全部</span>${favOnly ? '' : CHECK}</button>` +
+    `<button class="fm-item${favOnly ? ' on' : ''}" data-menu="fav" role="menuitem"><span class="fm-l">${heartSvg(true, 16)}最愛（${favN}）</span>${favOnly ? CHECK : ''}</button>`;
+  m.classList.add('show');
+  const r = trigger.getBoundingClientRect(), w = m.offsetWidth || 190;
+  m.style.left = Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px';
+  m.style.top = (r.bottom + 8) + 'px';
+  trigger.setAttribute('aria-expanded', 'true');
 }
 function resetFilters() { favOnly = false; selectedTags = []; actorFilter = ''; updateTagBar(); markStale(); }
 function toggleTag(tag) {
@@ -537,13 +555,19 @@ document.addEventListener('pointermove', e => {
 }));
 document.addEventListener('contextmenu', e => { if (e.target.closest('[data-card],[data-actor],[data-tag]')) e.preventDefault(); });
 
+document.addEventListener('click', e => { if (!e.target.closest('#filterMenu') && !e.target.closest('[data-chip="menu"]')) closeFilterMenu(); }, true);
+window.addEventListener('scroll', closeFilterMenu, { passive: true });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFilterMenu(); });
 document.addEventListener('click', e => {
   if (e.target.closest('[data-chip-actor]')) { actorFilter = ''; currentPage = 1; renderGallery(); return; }
   const chipTag = e.target.closest('[data-chip-tag]');
   if (chipTag) { toggleTag(chipTag.dataset.chipTag); currentPage = 1; renderGallery(); return; }
   const chip = e.target.closest('[data-chip]');
-  if (chip) {
-    if (chip.dataset.chip === 'all') resetFilters(); else favOnly = !favOnly;
+  if (chip) { if ($('filterMenu').classList.contains('show')) closeFilterMenu(); else openFilterMenu(chip); return; }
+  const mi = e.target.closest('[data-menu]');
+  if (mi) {
+    closeFilterMenu();
+    if (mi.dataset.menu === 'all') resetFilters(); else favOnly = true;   // 「全部」會一併清掉標籤和女優篩選
     currentPage = 1; renderGallery(); return;
   }
   const tagEl = e.target.closest('[data-tag]');
