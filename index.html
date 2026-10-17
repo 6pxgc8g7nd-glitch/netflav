@@ -771,7 +771,7 @@ function executeDelete() {
     refreshAll(); showToast("已復原");
   });
 }
-function closeDrawer() { $('drawer').classList.remove('open'); }
+function closeDrawer() { $('drawer').classList.remove('open'); setTimeout(() => checkCloud(), 800); }
 function toggleAdvanced(open) {
   const box = $('advancedBox');
   const show = open === undefined ? box.classList.contains('hidden') : open;
@@ -930,13 +930,25 @@ function scheduleBackup() {
   clearTimeout(backupTimer);
   backupTimer = setTimeout(() => { backupTimer = null; runBackup(); }, 3000);
 }
-async function runBackup(forceId) {
+/* 備份前先看雲端有沒有另一台裝置的新內容，有的話不直接覆蓋，改問使用者
+   overwrite = true：使用者已確認要用本機覆蓋雲端；manual = 使用者手動按「立即備份」 */
+async function runBackup(forceId, overwrite, manual) {
   if (!lsGet(K_TOKEN)) return false;
   if (backupBusy) { backupPending = true; return false; }
   backupBusy = true;
   let ok = false;
   try {
-    const g = await writeCloud(forceId || lsGet(K_ID));
+    const id = forceId || lsGet(K_ID);
+    if (id && !forceId && !overwrite && lsGet(K_TS)) {
+      let cloud = null;
+      try { cloud = await readCloud(id); } catch (e) { if (e && e.status) throw e; }
+      if (cloud && cloud.ts && cloud.ts !== lsGet(K_TS) && canon(cloud.items) !== canon(collections)) {
+        backupPending = false;
+        backupConflict(cloud, id, manual);
+        return false;
+      }
+    }
+    const g = await writeCloud(id);
     lsSet(K_ID, g.id); lsSet(K_LAST, new Date().toISOString());
     lsSet(K_TS, g.updated_at || '');
     if (!backupPending) lsSet(K_DIRTY, '');
@@ -952,6 +964,18 @@ async function runBackup(forceId) {
   }
   return ok;
 }
+function backupConflict(cloud, id, manual) {
+  const n = cloud.items.length, m = collections.length;
+  if (manual) {
+    openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆。\n要用本機覆蓋雲端嗎？\n（會蓋掉雲端那份）`, async () => { if (await runBackup(undefined, true)) showToast(`已備份 ${collections.length} 筆`); });
+    return;
+  }
+  if (declinedTs === cloud.ts) return; // 已選擇保留本機：不再自動打擾，要覆蓋雲端請按「立即備份」
+  declinedTs = cloud.ts;
+  closeConfirmIfOpen();
+  openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆（含剛才的變更）。\n為避免互相覆蓋，這次沒有備份。\n要用雲端覆蓋本機嗎？\n（取消會保留本機；到「立即備份」可改用本機覆蓋雲端）`, () => applyCloud(cloud.items, id, cloud.ts));
+}
+function closeConfirmIfOpen() { if (!$('confirmModal').classList.contains('hidden')) closeConfirm(); }
 function updateCloudUI() {
   const el = $('cloudStatus'); if (!el) return;
   const last = lsGet(K_LAST);
@@ -966,7 +990,7 @@ function applyCloud(cloud, id, ts) {
   catch (e) { collections = prev; showToast('儲存失敗：空間不足或被禁用'); return; }
   lsSet(K_ID, id); lsSet(K_LAST, new Date().toISOString());
   lsSet(K_TS, ts || ''); lsSet(K_DIRTY, '');
-  hideUndo();
+  hideUndo(); $('drawer').classList.remove('open');
   currentPage = 1; actorCurrentPage = 1; tagCurrentPage = 1;
   refreshAll(); updateCloudUI(); showToast(`已從雲端還原 ${cloud.length} 筆`);
 }
@@ -1011,7 +1035,7 @@ async function backupToCloudNow() {
       }
     }
     clearTimeout(backupTimer); backupTimer = null;
-    if (await runBackup()) showToast(`已備份 ${collections.length} 筆`);
+    if (await runBackup(undefined, false, true)) showToast(`已備份 ${collections.length} 筆`);
   } catch (e) { showToast('備份失敗：' + ghErrMsg(e)); }
 }
 function removeToken() {
@@ -1027,6 +1051,7 @@ const canon = arr => JSON.stringify(arr.map(i => [i.id, i.name, i.actor || '', i
 async function checkCloud(force) {
   const id = lsGet(K_ID);
   if (!lsGet(K_TOKEN) || !id || cloudChecking || backupBusy || backupTimer || navigator.onLine === false) return;
+  if ($('drawer').classList.contains('open')) return; // 正在編輯：等關閉後再檢查
   if (!force && Date.now() - lastCloudCheck < 60000) return;
   if (!$('confirmModal').classList.contains('hidden')) return;
   lastCloudCheck = Date.now(); cloudChecking = true;
@@ -1093,10 +1118,8 @@ function precacheCovers() {
   showToast(`開始下載 ${urls.length} 張封面…`);
   sw.postMessage({ type: 'precache', urls });
 }
-/* 禁止雙擊 / 雙指縮放（iOS） */
+/* 禁止雙指縮放（iOS）；雙擊放大由 CSS touch-action: manipulation 處理 */
 ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
-let lastTouchEnd = 0;
-document.addEventListener('touchend', e => { const n = Date.now(); if (n - lastTouchEnd < 300 && !e.target.closest('input,textarea')) e.preventDefault(); lastTouchEnd = n; }, { passive: false });
 window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
