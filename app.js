@@ -821,7 +821,7 @@ async function runBackup(forceId, overwrite, manual) {
     lastCloudSync = Date.now();
     if (!backupPending) lsSet(K_DIRTY, '');
     ok = true;
-    showToast(`已備份 ${collections.length} 筆・${clockTime()}`);
+    if (manual) showToast(`已備份 ${collections.length} 筆・${clockTime()}`); // 只有手動備份才通知；自動備份靜悄悄，結果看設定頁的上次同步時間
   } catch (e) {
     let msg = ghErrMsg(e);
     if (e && e.status === 404 && lsGet(K_ID)) { lsSet(K_ID, ''); msg = '找不到雲端備份，請重新連結'; }
@@ -836,7 +836,7 @@ async function runBackup(forceId, overwrite, manual) {
 function backupConflict(cloud, id, manual) {
   const n = cloud.items.length, m = collections.length;
   if (manual) {
-    openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆。\n要用本機覆蓋雲端嗎？\n（會蓋掉雲端那份）`, async () => { await runBackup(undefined, true); });
+    openConfirm(`雲端有另一台裝置的較新備份（${n} 筆），本機 ${m} 筆。\n要用本機覆蓋雲端嗎？\n（會蓋掉雲端那份）`, async () => { await runBackup(undefined, true, true); });
     return;
   }
   if (declinedTs === cloud.ts) return; // 已選擇保留本機：不再自動打擾，要覆蓋雲端請按「立即備份」
@@ -902,7 +902,7 @@ async function backupToCloudNow() {
       const g = await findCloudGist();
       if (g) {
         const cloud = await readCloud(g.id);
-        openConfirm(`雲端已有 ${cloud.items.length} 筆備份。\n要用本機的 ${collections.length} 筆覆蓋雲端嗎？`, async () => { await runBackup(g.id); });
+        openConfirm(`雲端已有 ${cloud.items.length} 筆備份。\n要用本機的 ${collections.length} 筆覆蓋雲端嗎？`, async () => { await runBackup(g.id, false, true); });
         return;
       }
     }
