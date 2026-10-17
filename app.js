@@ -782,16 +782,18 @@ async function readCloud(id) {
   return { items, avatars, ts: g.updated_at || '' };
 }
 function writeCloud(id) {
-  const files = { [GIST_FILE]: { content: JSON.stringify(collections, null, 2) }, [AVATAR_FILE]: { content: JSON.stringify(actorAvatars, null, 2) } };
+  const files = { [GIST_FILE]: { content: JSON.stringify(collections) }, [AVATAR_FILE]: { content: JSON.stringify(actorAvatars) } };
   return id
     ? gh('/gists/' + id, { method: 'PATCH', body: JSON.stringify({ description: GIST_DESC, files }) })
     : gh('/gists', { method: 'POST', body: JSON.stringify({ description: GIST_DESC, public: false, files }) });
 }
+const BACKUP_DELAY = 1200;      // 最後一次修改後多久開始備份（毫秒）
+let lastCloudSync = 0;          // 最近一次確認雲端內容的時間（讀取或寫入成功）
 function scheduleBackup() {
   if (!lsGet(K_TOKEN) || !lsGet(K_ID)) return;
   lsSet(K_DIRTY, '1');
   clearTimeout(backupTimer);
-  backupTimer = setTimeout(() => { backupTimer = null; runBackup(); }, 3000);
+  backupTimer = setTimeout(() => { backupTimer = null; runBackup(); }, BACKUP_DELAY);
 }
 /* 備份前先看雲端有沒有另一台裝置的新內容，有的話不直接覆蓋，改問使用者
    overwrite = true：使用者已確認要用本機覆蓋雲端；manual = 使用者手動按「立即備份」 */
@@ -802,7 +804,7 @@ async function runBackup(forceId, overwrite, manual) {
   let ok = false;
   try {
     const id = forceId || lsGet(K_ID);
-    if (id && !forceId && !overwrite && lsGet(K_TS)) {
+    if (id && !forceId && !overwrite && lsGet(K_TS) && Date.now() - lastCloudSync > 120000) {
       let cloud = null;
       try { cloud = await readCloud(id); } catch (e) { if (e && e.status) throw e; }
       if (cloud && cloud.ts && cloud.ts !== lsGet(K_TS) && !sameContent(cloud)) {
@@ -814,6 +816,7 @@ async function runBackup(forceId, overwrite, manual) {
     const g = await writeCloud(id);
     lsSet(K_ID, g.id); lsSet(K_LAST, new Date().toISOString());
     lsSet(K_TS, g.updated_at || '');
+    lastCloudSync = Date.now();
     if (!backupPending) lsSet(K_DIRTY, '');
     ok = true;
   } catch (e) {
@@ -924,6 +927,7 @@ async function checkCloud(force) {
   lastCloudCheck = Date.now(); cloudChecking = true;
   try {
     const cloud = await readCloud(id);
+    lastCloudSync = Date.now();
     const dirty = !!lsGet(K_DIRTY);
     if (cloud.ts && cloud.ts === lsGet(K_TS)) { if (dirty) runBackup(); return; }
     if (sameContent(cloud)) { lsSet(K_TS, cloud.ts); lsSet(K_DIRTY, ''); updateCloudUI(); return; }
@@ -938,7 +942,11 @@ async function checkCloud(force) {
   } catch (e) { /* 靜默：背景檢查失敗不打擾使用者 */ }
   finally { cloudChecking = false; }
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkCloud(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkCloud();
+  else if (backupTimer) { clearTimeout(backupTimer); backupTimer = null; runBackup(); } // 切走時馬上備份，不等倒數
+});
+window.addEventListener('pagehide', () => { if (backupTimer) { clearTimeout(backupTimer); backupTimer = null; runBackup(); } });
 window.addEventListener('online', () => checkCloud(true));
 
 /* 長按「帳戶設定」標題 1 秒，顯示 / 隱藏雲端備份區塊 */
