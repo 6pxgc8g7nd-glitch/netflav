@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Netflav 自動檢查</title>
+<style>
+body{font:14px/1.5 -apple-system,system-ui,sans-serif;margin:0;padding:16px;background:#141414;color:#eee}
+h1{font-size:18px;margin:0 0 4px}#sum{margin:8px 0 14px;font-weight:600}
+.r{padding:6px 10px;border-radius:8px;margin:4px 0;background:#1f1f1f}.ok{border-left:4px solid #3c3}.bad{border-left:4px solid #e50914}
+.e{color:#ff8a8a;font-size:12px;white-space:pre-wrap}button{background:#e50914;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px}
+iframe{position:fixed;left:0;top:0;width:375px;height:812px;border:0;opacity:0;pointer-events:none;z-index:-1}
+</style></head><body>
+<h1>Netflav 自動檢查</h1>
+<div>只在開發時使用（不會部署）。會暫時動用這個網址的本機資料，結束後自動還原。</div>
+<div id="sum">準備中…</div><button id="run">重新執行</button><div id="list"></div>
+<iframe id="f" src="index.html?_t=1"></iframe>
+<script>
+const KEYS_BACKUP = {ls: {...localStorage}, ss: {...sessionStorage}};
+function restore(){localStorage.clear();sessionStorage.clear();for(const k in KEYS_BACKUP.ls)localStorage.setItem(k,KEYS_BACKUP.ls[k]);for(const k in KEYS_BACKUP.ss)sessionStorage.setItem(k,KEYS_BACKUP.ss[k]);}
+async function go(){
+  const f=document.getElementById('f'),list=document.getElementById('list'),sum=document.getElementById('sum');list.innerHTML='';sum.textContent='執行中…';
+  const w=f.contentWindow; const s=w.document.createElement('script');
+  try{
+    await new Promise(r=>{ const ok=()=>w.location.href.includes('index.html')&&w.document.readyState==='complete'; if(ok())r(); else f.addEventListener('load',()=>{ if(ok())r(); }); });
+    window.__stage='loaded';await new Promise(r=>setTimeout(r,500));window.__stage='inject';
+    s.src='tests.js?'+Date.now();w.document.body.appendChild(s);for(let i=0;i<100&&!w.__runAll;i++)await new Promise(r=>setTimeout(r,50));if(!w.__runAll)throw new Error('tests.js 載入失敗');
+    window.__stage='running';const R=await w.__runAll((r,i,n)=>{sum.textContent=`執行中 ${i}/${n}`;const d=document.createElement('div');d.className='r '+(r.ok?'ok':'bad');d.textContent=(r.ok?'✓ ':'✗ ')+r.name+' ('+r.ms+'ms)';if(!r.ok){const e=document.createElement('div');e.className='e';e.textContent=r.err;d.appendChild(e);}list.appendChild(d);});
+    sum.textContent=R.failed?`✗ ${R.failed} 項失敗（共 ${R.total} 項）`:`✓ 全部通過（${R.total} 項）`;
+    window.__testResult=R;
+  }catch(e){sum.textContent='✗ 無法執行：'+e.message;window.__testResult={total:0,passed:0,failed:1,failures:[{name:'runner',err:e.message}]};}
+  finally{restore();}
+}
+document.getElementById('run').onclick=()=>location.reload();
+go();
+</script></body></html>

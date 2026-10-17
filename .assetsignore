@@ -3,3 +3,5 @@ wrangler.jsonc
 .git
 node_modules
 README.md
+tests.html
+tests.js
