@@ -283,6 +283,22 @@ html.fake-profile body{overflow:hidden}
 .fp-add .fp-av{background:#2a2a2a}
 .theme-btn{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--glass-bg);border:1px solid var(--glass-bd);color:var(--fg);box-shadow:inset 0 1px 0 var(--glass-hi);transition:transform .25s var(--pop)}
 .theme-btn:active{transform:scale(.88)}
+/* 新版本提示條 */
+#updateBar{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translate(-50%,-160%);z-index:9600;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;transition:transform .4s var(--spring)}
+#updateBar.show{transform:translate(-50%,0)}
+.ub-go{background:var(--nf-red);color:#fff;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700}
+.ub-x{width:30px;height:30px;border-radius:50%;color:var(--t300);font-size:13px}
+/* 診斷資訊 */
+.diag-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:7px 0;border-bottom:1px solid var(--glass-bd)}
+.diag-row span{color:var(--t300);flex:none}
+.diag-row b{font-weight:600;text-align:right;word-break:break-all}
+/* 失效封面清單 */
+.bk-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--glass-bd)}
+.bk-info{flex:1;min-width:0}
+.bk-name{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0}
+.bk-host{font-size:11px;color:#8c8c8c;margin:2px 0 0}
+.bk-btn{flex:none;padding:7px 12px;border-radius:999px;background:var(--glass-bg);border:1px solid var(--glass-bd);font-size:12px;font-weight:700;color:#fff}
+.bk-danger{background:var(--nf-red);border-color:transparent}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
 .fh-av svg{width:100%;height:100%;display:block}
 .fh-av{overflow:hidden}

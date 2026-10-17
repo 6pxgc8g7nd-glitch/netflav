@@ -1,6 +1,5 @@
 /* Netflav 主程式（需搭配 index.html、styles.css；離線快取見 sw.js） */
 const STORAGE_KEY = 'NF_MOBILE_VAULT_FINAL';
-const NO_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect fill="#111" width="100%" height="100%"/><text x="50%" y="50%" fill="#333" text-anchor="middle" font-size="28">NO IMAGE</text></svg>');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $ = id => document.getElementById(id);
 
@@ -106,9 +105,17 @@ function searchHay(i, am, avSig) {
 
 /* 卡片：用 id 對照，只新增 / 刪除 / 更新有變的，沒變的卡片（含已載入的封面）原封不動 */
 const cardSig = i => [i.img || '', i.code || '', i.name || ''].join('\u0001');
+/* 封面：有網址就載入；沒有網址、或載入失敗，改顯示依 id 固定畫出的原創場景插畫（不是黑塊） */
+const coverSeed = item => nameHash(String(item.id || item.code || item.name || '')) % 100000 + 1;
+function coverHtml(item, lazy) {
+  const seed = coverSeed(item);
+  if (!item.img) return fakeArt(seed % 10, seed);
+  return `<img src="${esc(item.img)}" data-seed="${seed}" ${lazy ? 'loading="lazy" decoding="async" ' : ''}referrerpolicy="no-referrer" onerror="coverFallback(this)">`;
+}
+function coverFallback(img) { const seed = +img.dataset.seed || 1; img.outerHTML = fakeArt(seed % 10, seed); }
 function cardHtml(item) {
   return `<div class="poster-card" data-card="${esc(item.id)}">
-      <img src="${esc(item.img) || NO_IMG}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=NO_IMG">
+      ${coverHtml(item, true)}
       <div class="card-overlay">
         <p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p>
         <p class="title text-[13px] font-bold truncate">${esc(item.name)}</p>
@@ -497,7 +504,7 @@ function openRandomRecommendation() {
   const item = pool[Math.floor(Math.random() * pool.length)];
   lastRandomId = item.id;
   $('randomCardPreview').innerHTML = `
-    <img src="${esc(item.img) || NO_IMG}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=NO_IMG" style="width:100%;height:100%;object-fit:cover;">
+    ${coverHtml(item, false)}
     <div class="card-overlay"><p class="code text-[8px] font-black text-red-600 mb-0.5 tracking-wider uppercase">${esc(item.code) || 'SERIES'}</p></div>`;
   $('randomCardTitle').innerText = item.name;
   const btn = $('randomPlayBtn');
@@ -630,7 +637,7 @@ function toggleAdvanced(open) {
 }
 function toggleFilterDrawer(open) {
   $('filterDrawer').classList.toggle('open', open);
-  if (open) updateCloudUI();
+  if (open) { updateCloudUI(); renderDiag(); }
   else { $('cloudBox').classList.add('hidden'); toggleAdvanced(false); } // 關閉設定時一律收起
 }
 
@@ -1136,6 +1143,119 @@ function enterApp() {
   try { sessionStorage.setItem('NF_ENTERED', '1'); sessionStorage.removeItem('NF_DECOY'); } catch (e) {}
   switchTab(0); window.scrollTo(0, 0);
 }
+
+/* 新版本提示：偵測網站檔案（index.html / styles.css / app.js）有沒有更新，有的話跳出「立即更新」 */
+let buildId = '', buildCheckedAt = 0, lastUpdateCheck = 0;
+const fnvHex = str => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16).padStart(8, '0'); };
+async function fetchBuildId() {
+  const texts = await Promise.all(['index.html', 'styles.css', 'app.js'].map(f => fetch(f, { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })));
+  return fnvHex(texts.join('\u0000'));
+}
+async function checkUpdate(manual) {
+  if (navigator.onLine === false) { if (manual) showToast('目前離線，無法檢查更新'); return; }
+  lastUpdateCheck = Date.now();
+  try {
+    const id = await fetchBuildId(); buildCheckedAt = Date.now();
+    if (!buildId) buildId = id;                      // 啟動後第一次：記下目前版本
+    else if (id !== buildId) { showUpdateBar(); return; }
+    if (manual) showToast('目前已是最新版');
+  } catch (e) { if (manual) showToast('檢查更新失敗'); }
+  renderDiag();
+}
+function showUpdateBar() { $('updateBar').classList.add('show'); renderDiag(); }
+function dismissUpdate() { $('updateBar').classList.remove('show'); }
+async function applyUpdate() {
+  try {
+    const reg = 'serviceWorker' in navigator && await navigator.serviceWorker.getRegistration(); if (reg) await reg.update();
+    const keys = await caches.keys(); await Promise.all(keys.filter(k => k.startsWith('netflav-v')).map(k => caches.delete(k))); // 只清頁面快取，封面快取留著
+  } catch (e) {}
+  location.reload();
+}
+setTimeout(() => checkUpdate(), 2500);
+setInterval(() => { if (document.visibilityState === 'visible') checkUpdate(); }, 10 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - lastUpdateCheck > 5 * 60 * 1000) checkUpdate(); });
+
+/* 診斷資訊 */
+async function renderDiag() {
+  const el = $('diagRows'); if (!el) return;
+  const rows = [];
+  rows.push(['版本', buildId || '檢查中…']);
+  rows.push(['最後檢查更新', buildCheckedAt ? new Date(buildCheckedAt).toLocaleTimeString('zh-TW', { hour12: false }) : '尚未']);
+  rows.push(['收藏筆數', collections.length]);
+  rows.push(['女優設定', Object.keys(actorAvatars).length + ' 位']);
+  let bytes = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); bytes += (k.length + (localStorage.getItem(k) || '').length) * 2; } } catch (e) {}
+  rows.push(['資料大小', (bytes / 1024).toFixed(0) + ' KB（上限約 5 MB）']);
+  try { if (navigator.storage && navigator.storage.estimate) { const e = await navigator.storage.estimate(); rows.push(['瀏覽器儲存用量', (e.usage / 1048576).toFixed(1) + ' MB']); } } catch (e) {}
+  let sw = '未啟用'; try { sw = 'serviceWorker' in navigator ? (navigator.serviceWorker.controller ? '已啟用' : '尚未接管（重開 app 後啟用）') : '不支援'; } catch (e) {}
+  rows.push(['離線功能', sw]);
+  try { const names = await caches.keys(); for (const n of names) rows.push(['快取 ' + n.replace('netflav-', ''), (await (await caches.open(n)).keys()).length + ' 項']); } catch (e) {}
+  rows.push(['雲端備份', lsGet(K_TOKEN) ? (lsGet(K_ID) ? '已連結' + (lsGet(K_LAST) ? '・上次 ' + new Date(lsGet(K_LAST)).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '') + (lsGet(K_DIRTY) ? '・有未同步變更' : '') : '有權杖、尚未連結') : '未設定']);
+  el.innerHTML = rows.map(([k, v]) => `<div class="diag-row"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
+}
+
+/* 檢查失效封面：逐張載入看看，失敗的列出來，可以清除封面或去編輯 */
+let scanningCovers = false, brokenIds = [];
+function probeImage(url) {
+  return new Promise(res => {
+    const [base, frag] = url.split('#');
+    const im = new Image(); im.referrerPolicy = 'no-referrer';
+    const t = setTimeout(() => { im.src = ''; res(false); }, 12000);
+    im.onload = () => { clearTimeout(t); res(im.naturalWidth > 0); };
+    im.onerror = () => { clearTimeout(t); res(false); };
+    im.src = base + (base.includes('?') ? '&' : '?') + '_chk=' + Date.now() + (frag ? '#' + frag : ''); // 加參數避開離線快取，才測得到來源是不是真的還在
+  });
+}
+async function scanCovers() {
+  if (scanningCovers) return;
+  if (navigator.onLine === false) { showToast('目前離線，無法檢查'); return; }
+  const items = collections.filter(i => /^https?:\/\//i.test(i.img || ''));
+  if (!items.length) { showToast('沒有可檢查的封面'); return; }
+  scanningCovers = true; toggleFilterDrawer(false);
+  const failed = []; let done = 0, idx = 0;
+  async function worker() {
+    while (idx < items.length) {
+      const it = items[idx++];
+      if (!(await probeImage(it.img))) failed.push(it);
+      done++; if (done % 4 === 0 || done === items.length) showToast(`檢查封面 ${done} / ${items.length}`);
+    }
+  }
+  await Promise.all(Array.from({ length: 6 }, worker));
+  scanningCovers = false;
+  if (!failed.length) { showToast(`${items.length} 張封面都能正常載入`); return; }
+  brokenIds = failed.map(i => String(i.id)); openBrokenModal();
+}
+function openBrokenModal() {
+  const list = brokenIds.map(id => collections.find(i => String(i.id) === id)).filter(i => i && i.img);
+  brokenIds = list.map(i => String(i.id));
+  if (!list.length) { closeBrokenModal(); return; }
+  $('brokenCount').textContent = `${list.length} 張封面載入失敗`;
+  $('brokenList').innerHTML = list.map(i => {
+    let host = ''; try { host = new URL(i.img).host; } catch (e) {}
+    return `<div class="bk-row"><div class="bk-info"><p class="bk-name">${esc(i.code ? i.code + ' ' : '')}${esc(i.name)}</p><p class="bk-host">${esc(host)}</p></div><button class="bk-btn" data-bk-edit="${esc(i.id)}">編輯</button><button class="bk-btn bk-danger" data-bk-clear="${esc(i.id)}">清除封面</button></div>`;
+  }).join('');
+  const m = $('brokenModal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeBrokenModal() { const m = $('brokenModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function clearBrokenCover(id) {
+  const it = collections.find(i => String(i.id) === String(id)); if (!it) return;
+  const prev = it.img; it.img = '';
+  if (!persist()) { it.img = prev; return; }
+  brokenIds = brokenIds.filter(x => x !== String(id));
+  renderGallery(); openBrokenModal(); showToast('已清除封面網址');
+}
+function clearAllBroken() {
+  openConfirm(`清除 ${brokenIds.length} 筆失效封面的網址？\n（影片本身不會刪除，之後可以再補封面）`, () => {
+    const prev = collections.map(i => i.img);
+    brokenIds.forEach(id => { const it = collections.find(i => String(i.id) === id); if (it) it.img = ''; });
+    if (!persist()) { collections.forEach((i, k) => { i.img = prev[k]; }); return; }
+    brokenIds = []; renderGallery(); closeBrokenModal(); showToast('已清除失效封面');
+  });
+}
+$('brokenList').addEventListener('click', e => {
+  const clr = e.target.closest('[data-bk-clear]'), ed = e.target.closest('[data-bk-edit]');
+  if (clr) clearBrokenCover(clr.dataset.bkClear);
+  else if (ed) { const id = ed.dataset.bkEdit; closeBrokenModal(); openDrawer(id); }
+});
 
 window.onload = () => {
   updateAppearanceUI();

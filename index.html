@@ -191,6 +191,15 @@ applyGlass();
           <button onclick="removeToken()" class="py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-400">移除權杖</button>
         </div>
       </div>
+      <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
+        <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">診斷資訊</label>
+        <div id="diagRows"></div>
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <button onclick="checkUpdate(true)" class="py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">檢查更新</button>
+          <button onclick="renderDiag()" class="py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">重新整理</button>
+        </div>
+      </div>
+      <button onclick="scanCovers()" class="w-full py-4 bg-zinc-900 rounded font-bold text-sm text-white">檢查失效封面</button>
       <div class="grid grid-cols-2 gap-3">
         <button onclick="precacheCovers()" class="py-4 bg-zinc-900 rounded font-bold text-sm text-white">預先下載封面和頭像</button>
         <button onclick="clearCoverCache()" class="py-4 bg-zinc-900 rounded font-bold text-sm text-white">清除封面和頭像快取</button>
@@ -271,6 +280,18 @@ applyGlass();
     <button type="button" class="fp-item" data-profile="1"><span class="fp-av"></span><span class="fp-name">小美</span></button>
     <button type="button" class="fp-item" data-profile="2"><span class="fp-av"></span><span class="fp-name">兒童</span></button>
     <div class="fp-item fp-add"><span class="fp-av"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span><span class="fp-name">新增個人檔案</span></div>
+  </div>
+</div>
+<div id="updateBar" class="keep-dark glassy" role="status"><span>有新版本</span><button onclick="applyUpdate()" class="ub-go">立即更新</button><button onclick="dismissUpdate()" class="ub-x" aria-label="先不要">✕</button></div>
+<div id="brokenModal" class="fixed inset-0 hidden items-end justify-center z-[7000]" style="background:rgba(0,0,0,.45);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)" onclick="if(event.target===this)closeBrokenModal()">
+  <div class="keep-dark glassy w-full" style="border-radius:28px 28px 0 0;padding:20px 16px calc(24px + var(--safe-bottom));max-height:85vh;overflow-y:auto">
+    <p class="text-center text-sm font-bold">失效封面</p>
+    <p id="brokenCount" class="text-[11px] text-zinc-400 text-center mt-2 mb-3"></p>
+    <div id="brokenList"></div>
+    <div class="grid grid-cols-2 gap-3 mt-4">
+      <button onclick="clearAllBroken()" class="py-3 bg-red-600 rounded-lg text-xs font-bold text-white">全部清除封面</button>
+      <button onclick="closeBrokenModal()" class="py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">關閉</button>
+    </div>
   </div>
 </div>
 <div id="toast"></div>

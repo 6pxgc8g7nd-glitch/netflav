@@ -1,7 +1,7 @@
 /* Netflav 離線快取
    1) 頁面：網路優先（更新會立刻生效），沒網路時改用快取
    2) 封面圖：存起來的封面直接讀手機，不用等網路（沒網路也能看）；也可從設定「預先下載封面」 */
-const CACHE = 'netflav-v2';
+const CACHE = 'netflav-v3';
 const IMG_CACHE = 'netflav-img-v1';
 const MAX_IMG = 500; // 封面快取最多張數，超過會刪掉最舊的
 
@@ -28,7 +28,7 @@ self.addEventListener('fetch', e => {
 
   if (url.origin !== location.origin) {
     // 外部圖片（封面）：存起來的直接用（不用等網路），沒有才去抓並存起來
-    if (req.destination === 'image') {
+    if (req.destination === 'image' && !url.searchParams.has('_chk')) { // _chk = 「檢查失效封面」的探測請求，不走快取也不存進快取
       e.respondWith(
         caches.match(req, { cacheName: IMG_CACHE }).then(hit => hit || fetch(req).then(res => {
           if (res.ok || res.type === 'opaque') {
