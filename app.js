@@ -1343,9 +1343,23 @@ const profSvg = i => `<svg viewBox="0 0 100 100" aria-hidden="true">${PROFILE_AR
 document.querySelectorAll('#fakeProfile [data-profile]').forEach(b => { b.querySelector('.fp-av').innerHTML = profSvg(+b.dataset.profile); });
 const KIDS = 2; // 「兒童」是進入收藏的那個頭像，其他頭像只會看到模擬的 Netflix 首頁
 function applyProfile(i) { const a = document.querySelector('.fh-nav .fh-av'); if (a) a.innerHTML = profSvg(i); }
+/* 安全模式：在「誰在看？」連點「新增個人檔案」三下開啟 / 關閉。開啟後連「兒童」也只會看到模擬的 Netflix 首頁，
+   再連點三下恢復正常。故意不顯示任何文字，只有輕微震動（iOS 不支援）和按鈕閃一下；狀態存在手機上，重開 app 仍然有效 */
+let safeMode = (() => { try { return localStorage.getItem('NF_SAFE') === '1'; } catch (e) { return false; } })();
+let addTaps = [];
+function toggleSafeMode() {
+  safeMode = !safeMode;
+  try { safeMode ? localStorage.setItem('NF_SAFE', '1') : localStorage.removeItem('NF_SAFE'); } catch (e) {}
+  if (navigator.vibrate) navigator.vibrate(safeMode ? [20, 40, 20] : 20);
+  const a = document.querySelector('.fp-add'); a.classList.remove('blink'); void a.offsetWidth; a.classList.add('blink');
+}
+document.querySelector('.fp-add').addEventListener('click', () => {
+  const now = Date.now(); addTaps = addTaps.filter(t => now - t < 900); addTaps.push(now);
+  if (addTaps.length >= 3) { addTaps = []; toggleSafeMode(); }
+});
 function pickProfile(i) {
-  const el = $('fakeProfile'), root = document.documentElement;
-  if (i !== KIDS) { // 先把 Netflix 首頁墊在淡出的選擇畫面後面，不然淡出時會露出底下的收藏
+  const el = $('fakeProfile'), root = document.documentElement, toApp = i === KIDS && !safeMode;
+  if (!toApp) { // 先把 Netflix 首頁墊在淡出的選擇畫面後面，不然淡出時會露出底下的收藏
     applyProfile(i);
     try { sessionStorage.setItem('NF_DECOY', '1'); sessionStorage.setItem('NF_PROFILE', String(i)); } catch (e) {}
     $('fakeHome').scrollTop = 0;
@@ -1353,7 +1367,7 @@ function pickProfile(i) {
   }
   el.classList.add('out');
   setTimeout(() => {
-    if (i === KIDS) { el.classList.remove('out'); enterApp(); return; }
+    if (toApp) { el.classList.remove('out'); enterApp(); return; }
     root.classList.remove('fake-profile');
     el.classList.remove('out');
   }, 230);
@@ -1367,7 +1381,7 @@ function showProfiles() { // 回到「誰在看？」（重新載入也維持在
 const backToProfiles = showProfiles; // 在假的首頁點「我的 Netflix」也是回到這裡
 document.querySelectorAll('#fakeProfile [data-profile]').forEach(b => b.addEventListener('click', () => pickProfile(+b.dataset.profile)));
 $('fhMe').addEventListener('click', backToProfiles);
-(() => { let i = 0; try { i = parseInt(sessionStorage.getItem('NF_PROFILE')); } catch (e) {} applyProfile(i >= 0 && i < PROFILE_ART.length && i !== KIDS ? i : 0); })();
+(() => { let i = 0; try { i = parseInt(sessionStorage.getItem('NF_PROFILE')); } catch (e) {} applyProfile(i >= 0 && i < PROFILE_ART.length ? i : 0); })();
 
 /* 啟動畫面：開 app 先顯示「誰在看？」，點頭像就進入（名字和頭像都是裝飾，不會用到你的資料） */
 function enterApp() {

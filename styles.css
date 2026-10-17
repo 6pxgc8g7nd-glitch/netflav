@@ -345,6 +345,8 @@ body.undo-open .fab-btn{bottom:calc(max(2px,var(--safe-bottom) - 18px) + 146px)}
 .imp-primary small{color:rgba(255,255,255,.85)}
 .imp-btn:disabled{opacity:.4}
 .imp-btn:active{transform:scale(.98)}
+@keyframes fpBlink{0%{opacity:1}30%{opacity:.35}100%{opacity:1}}
+.fp-add.blink .fp-av{animation:fpBlink .4s ease}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
 .fh-av svg{width:100%;height:100%;display:block}
 .fh-av{overflow:hidden}
