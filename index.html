@@ -17,7 +17,10 @@
     var t = localStorage.getItem('NF_THEME') === 'light' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', t);
     /* 啟動畫面：每次開啟 app 先顯示模擬的 Netflix 首頁，點「播放」才進入（本次開啟已進入過就不再顯示） */
-    if (localStorage.getItem('NF_FAKE') !== 'off' && sessionStorage.getItem('NF_ENTERED') !== '1') document.documentElement.classList.add('fake-home');
+    if (localStorage.getItem('NF_FAKE') !== 'off' && sessionStorage.getItem('NF_ENTERED') !== '1') {
+      document.documentElement.classList.add('fake-home');
+      if (localStorage.getItem('NF_FAKE_PROFILE') !== 'off' && sessionStorage.getItem('NF_PICKED') !== '1') document.documentElement.classList.add('fake-profile');
+    }
     /* 深色 = Netflix 紅，淺色 = YouTube 紅 */
     document.documentElement.style.setProperty('--nf-red', t === 'light' ? '#FF0000' : '#E50914');
     var m = document.querySelector('meta[name="theme-color"]');
@@ -169,6 +172,11 @@ applyGlass();
           <button id="fakeBtnOn" onclick="setFakeHome(true)" class="layout-option">開啟</button>
           <button id="fakeBtnOff" onclick="setFakeHome(false)" class="layout-option">關閉</button>
         </div>
+        <label class="block text-[10px] text-zinc-500 font-bold mt-4 mb-3 uppercase tracking-widest">先選個人檔案</label>
+        <div class="layout-grid" style="grid-template-columns:repeat(2,1fr)">
+          <button id="profBtnOn" onclick="setFakeProfile(true)" class="layout-option">開啟</button>
+          <button id="profBtnOff" onclick="setFakeProfile(false)" class="layout-option">關閉</button>
+        </div>
         <button onclick="previewFakeHome()" class="w-full mt-3 py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">預覽啟動畫面</button>
         <p class="text-[11px] text-zinc-400 mt-3 leading-relaxed">開啟時，每次開 app 會先看到模擬的 Netflix 首頁，點「播放」才進入你的收藏。畫面上的片名和封面都是假的，不會用到你的資料。</p>
       </div>
@@ -272,6 +280,16 @@ applyGlass();
   <p class="fh-h">為你推薦</p><div class="fh-scroll"><div class="fh-tile" data-art="16" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#2a5a8a,#0a1626)"><span>長夜</span></div><div class="fh-tile" data-art="17" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#8a3a3a,#220c0c)"><span>終點站</span></div><div class="fh-tile" data-art="18" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#3f5558,#101718)"><span>慢板</span><em class="fh-new">即將上線</em></div><div class="fh-tile" data-art="19" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#86452f,#240f08)"><span>邊境</span></div><div class="fh-tile" data-art="20" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#2e4f8f,#0b1228)"><span>海市</span></div><div class="fh-tile" data-art="21" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#8a3346,#2a0f18)"><span>燈塔</span></div></div>
   <p class="fh-h">懸疑驚悚</p><div class="fh-scroll"><div class="fh-tile" data-art="22" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#86452f,#240f08)"><span>暗潮</span></div><div class="fh-tile" data-art="23" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#2e4f8f,#0b1228)"><span>失語</span></div><div class="fh-tile" data-art="24" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#8a3346,#2a0f18)"><span>倒數</span></div><div class="fh-tile" data-art="25" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#27506b,#0b1822)"><span>迴廊</span></div><div class="fh-tile" data-art="26" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#2f6b45,#0c1d14)"><span>殘響</span></div><div class="fh-tile" data-art="27" style="width:106px;height:156px;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.16),transparent 50%),linear-gradient(165deg,#7a5a2a,#241808)"><span>蝕</span></div></div>
   <div class="fh-nav"><span class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>首頁</span><span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"></path></svg>新與熱門</span><span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>下載內容</span><span><i class="fh-av"></i>我的 Netflix</span></div>
+</div>
+<div id="fakeProfile" aria-label="選擇個人檔案">
+  <div class="fp-bar"><span class="fp-edit">編輯</span></div>
+  <p class="fp-title">誰在看？</p>
+  <div class="fp-grid">
+    <button type="button" class="fp-item" data-profile="0"><span class="fp-av"></span><span class="fp-name">阿明</span></button>
+    <button type="button" class="fp-item" data-profile="1"><span class="fp-av"></span><span class="fp-name">小美</span></button>
+    <button type="button" class="fp-item" data-profile="2"><span class="fp-av"></span><span class="fp-name">兒童</span></button>
+    <div class="fp-item fp-add"><span class="fp-av"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span><span class="fp-name">新增個人檔案</span></div>
+  </div>
 </div>
 <div id="toast"></div>
 <div id="undoBar"><span id="undoMsg"></span><button id="undoBtn" onclick="doUndo()">復原</button></div>

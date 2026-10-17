@@ -265,4 +265,22 @@ html.fake-home body{overflow:hidden}
 .fh-nav span{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
 .fh-nav .on{color:#fff}
 .fh-av{display:block;width:24px;height:24px;border-radius:5px;background:linear-gradient(160deg,#2a8ae0,#1a4f99)}
+/* 啟動畫面第一步：選擇個人檔案（原創的小插畫頭像） */
+#fakeProfile{position:fixed;inset:0;z-index:9100;display:none;flex-direction:column;align-items:center;background:#000;color:#fff;-webkit-user-select:none;user-select:none;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC','Heiti TC','Microsoft JhengHei',sans-serif;transition:opacity .22s}
+html.fake-profile #fakeProfile{display:flex}
+html.fake-profile body{overflow:hidden}
+#fakeProfile.out{opacity:0}
+#fakeProfile *{box-sizing:border-box}
+.fp-bar{width:100%;display:flex;justify-content:flex-end;padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 0}
+.fp-edit{font-size:16px;font-weight:600;color:#fff}
+.fp-title{font-size:24px;font-weight:700;margin:44px 0 0;text-align:center}
+.fp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 26px;margin:auto 0;padding:0 36px 90px;width:100%;max-width:360px}
+.fp-item{display:flex;flex-direction:column;align-items:center;gap:10px;background:none;border:0;color:#b3b3b3;padding:0}
+.fp-item:active .fp-av{transform:scale(.94)}
+.fp-av{display:flex;align-items:center;justify-content:center;width:100%;max-width:120px;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#333;transition:transform .15s}
+.fp-av svg{width:100%;height:100%;display:block}
+.fp-name{font-size:15px;font-weight:500;color:#b3b3b3}
+.fp-add .fp-av{background:#2a2a2a}
+.fh-av svg{width:100%;height:100%;display:block}
+.fh-av{overflow:hidden}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}

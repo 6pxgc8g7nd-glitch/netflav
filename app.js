@@ -1073,6 +1073,30 @@ document.querySelectorAll('#fakeHome [data-art]').forEach(el => {
   el.insertAdjacentHTML('afterbegin', fakeArt(n === 0 ? 0 : (n * 7) % 10, n));
 });
 
+/* 啟動畫面第一步：選個人檔案。頭像都是原創的簡單插畫（貓、熊、機器人） */
+const PROFILE_ART = [
+  '<rect width="100" height="100" fill="#f0a030"/><polygon points="22,42 26,12 44,28" fill="#2b1d12"/><polygon points="78,42 74,12 56,28" fill="#2b1d12"/><polygon points="26,36 28,20 38,29" fill="#f08aa0"/><polygon points="74,36 72,20 62,29" fill="#f08aa0"/><ellipse cx="50" cy="58" rx="31" ry="28" fill="#2b1d12"/><circle cx="39" cy="53" r="4.8" fill="#ffd36a"/><circle cx="61" cy="53" r="4.8" fill="#ffd36a"/><polygon points="46,63 54,63 50,68" fill="#f08aa0"/><path d="M50 68 q-5 6 -10 3 M50 68 q5 6 10 3" stroke="#ffd36a" fill="none" stroke-width="1.8" stroke-linecap="round"/><path d="M30 62 L13 59 M30 67 L13 69 M70 62 L87 59 M70 67 L87 69" stroke="#ffd36a" stroke-width="1.4" stroke-linecap="round"/>',
+  '<rect width="100" height="100" fill="#3b8fd9"/><circle cx="25" cy="30" r="12" fill="#6b4a2f"/><circle cx="75" cy="30" r="12" fill="#6b4a2f"/><circle cx="25" cy="30" r="5.5" fill="#d9a66b"/><circle cx="75" cy="30" r="5.5" fill="#d9a66b"/><circle cx="50" cy="57" r="31" fill="#8a5e3b"/><ellipse cx="50" cy="68" rx="14" ry="11" fill="#e8c9a0"/><ellipse cx="50" cy="63" rx="4.6" ry="3.4" fill="#2b1d12"/><circle cx="38" cy="50" r="3.8" fill="#1b120c"/><circle cx="62" cy="50" r="3.8" fill="#1b120c"/><path d="M50 66 v4 M50 70 q-5 5 -9 2 M50 70 q5 5 9 2" stroke="#2b1d12" fill="none" stroke-width="1.6" stroke-linecap="round"/>',
+  '<rect width="100" height="100" fill="#20b2a0"/><line x1="50" y1="14" x2="50" y2="27" stroke="#dfe7ee" stroke-width="3"/><circle cx="50" cy="12" r="5" fill="#ffd23f"/><rect x="21" y="27" width="58" height="52" rx="11" fill="#dfe7ee"/><rect x="13" y="45" width="8" height="18" rx="3" fill="#9fb0bf"/><rect x="79" y="45" width="8" height="18" rx="3" fill="#9fb0bf"/><rect x="33" y="43" width="12" height="13" rx="3" fill="#1b2a38"/><rect x="55" y="43" width="12" height="13" rx="3" fill="#1b2a38"/><rect x="38" y="65" width="24" height="6" rx="3" fill="#1b2a38"/><circle cx="29" cy="62" r="3.2" fill="#f4a3b5"/><circle cx="71" cy="62" r="3.2" fill="#f4a3b5"/>'
+];
+const profSvg = i => `<svg viewBox="0 0 100 100" aria-hidden="true">${PROFILE_ART[i]}</svg>`;
+document.querySelectorAll('#fakeProfile [data-profile]').forEach(b => { b.querySelector('.fp-av').innerHTML = profSvg(+b.dataset.profile); });
+function applyProfile(i) { const a = document.querySelector('.fh-nav .fh-av'); if (a) a.innerHTML = profSvg(i); }
+function pickProfile(i) {
+  try { sessionStorage.setItem('NF_PICKED', '1'); sessionStorage.setItem('NF_PROFILE', String(i)); } catch (e) {}
+  applyProfile(i);
+  const el = $('fakeProfile'); el.classList.add('out');
+  setTimeout(() => { document.documentElement.classList.remove('fake-profile'); el.classList.remove('out'); $('fakeHome').scrollTop = 0; }, 230);
+}
+document.querySelectorAll('#fakeProfile [data-profile]').forEach(b => b.addEventListener('click', () => pickProfile(+b.dataset.profile)));
+(() => { let i = 0; try { i = parseInt(sessionStorage.getItem('NF_PROFILE')); } catch (e) {} applyProfile(i >= 0 && i < PROFILE_ART.length ? i : 0); })();
+let fakeProfileOn = (() => { try { return localStorage.getItem('NF_FAKE_PROFILE') !== 'off'; } catch (e) { return true; } })();
+function setFakeProfile(on) {
+  fakeProfileOn = !!on;
+  try { localStorage.setItem('NF_FAKE_PROFILE', fakeProfileOn ? 'on' : 'off'); } catch (e) {}
+  updateFakeUI();
+}
+
 /* 啟動畫面：模擬 Netflix 首頁；點「播放」才進入 app（內容都是假的，不會用到你的資料） */
 let fakeHomeOn = (() => { try { return localStorage.getItem('NF_FAKE') !== 'off'; } catch (e) { return true; } })();
 function enterApp() {
@@ -1088,10 +1112,17 @@ function setFakeHome(on) {
 function updateFakeUI() {
   $('fakeBtnOn').classList.toggle('active', fakeHomeOn);
   $('fakeBtnOff').classList.toggle('active', !fakeHomeOn);
+  $('profBtnOn').classList.toggle('active', fakeProfileOn);
+  $('profBtnOff').classList.toggle('active', !fakeProfileOn);
 }
 function previewFakeHome() {
   toggleFilterDrawer(false);
-  setTimeout(() => { $('fakeHome').scrollTop = 0; document.documentElement.classList.add('fake-home'); }, 250);
+  setTimeout(() => {
+    $('fakeHome').scrollTop = 0;
+    try { sessionStorage.removeItem('NF_PICKED'); } catch (e) {}
+    document.documentElement.classList.add('fake-home');
+    if (fakeProfileOn) document.documentElement.classList.add('fake-profile');
+  }, 250);
 }
 $('fakePlay').addEventListener('click', enterApp);
 
