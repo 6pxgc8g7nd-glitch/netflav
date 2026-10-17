@@ -30,11 +30,6 @@ let tagCurrentPage = 1, tagPageSize = 20;
 let currentLayout = parseInt(localStorage.getItem('NF_LAYOUT_SETTING')) || 2;
 let lastRandomId = null, activeTab = 0;
 let favOnly = false, selectedTags = [], actorFilter = '';
-/* 隱私模式：封面預設模糊；點篩選列的眼睛可暫時顯示，切到別的 app 時自動再模糊 */
-let privacyBlur = (() => { try { return localStorage.getItem('NF_BLUR') !== 'off'; } catch (e) { return true; } })();
-let revealed = false;
-const EYE = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle>';
-const eyeSvg = off => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${EYE}${off ? '<line x1="3" y1="3" x2="21" y2="21"></line>' : ''}</svg>`;
 const HEART = '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>';
 const heartSvg = (filled, size = 14) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${HEART}</svg>`;
 const hasTag = (i, t) => (i.tags || []).some(x => String(x).toLowerCase() === t.toLowerCase());
@@ -175,7 +170,6 @@ function renderFilterRow() {
   setHtml(row,
     `<button class="chip${none ? ' active' : ''}" data-chip="all">全部</button>` +
     `<button class="chip${favOnly ? ' active' : ''}" data-chip="fav" aria-label="只看最愛">${heartSvg(favOnly || favN > 0, 14)}<span>${favN}</span></button>` +
-    (privacyBlur ? `<button class="chip${revealed ? ' active' : ''}" data-chip="eye" aria-label="${revealed ? '重新模糊封面' : '暫時顯示封面'}">${eyeSvg(!revealed)}</button>` : '') +
     (actorFilter ? `<button class="chip active" data-chip-actor><span>${esc(actorFilter)}</span><span aria-label="移除">✕</span></button>` : '') +
     selectedTags.map(t => `<button class="chip active" data-chip-tag="${esc(t)}"><span>${esc(t)}</span><span aria-label="移除">✕</span></button>`).join(''));
 }
@@ -476,7 +470,6 @@ document.addEventListener('click', e => {
   if (chipTag) { toggleTag(chipTag.dataset.chipTag); currentPage = 1; renderGallery(); return; }
   const chip = e.target.closest('[data-chip]');
   if (chip) {
-    if (chip.dataset.chip === 'eye') { setRevealed(!revealed); return; }
     if (chip.dataset.chip === 'all') resetFilters(); else favOnly = !favOnly;
     currentPage = 1; renderGallery(); return;
   }
@@ -994,26 +987,7 @@ function precacheCovers() {
 window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
-/* 封面模糊（隱私模式）：切到別的 app / 鎖螢幕時，一律先把「暫時顯示」的封面重新模糊 */
-function applyBlur() { document.body.classList.toggle('blur-covers', privacyBlur && !revealed); }
-function setRevealed(v) { revealed = !!v; applyBlur(); renderFilterRow(); }
-function setPrivacyBlur(on) {
-  privacyBlur = !!on; revealed = false;
-  try { localStorage.setItem('NF_BLUR', privacyBlur ? 'on' : 'off'); } catch (e) {}
-  applyBlur(); renderFilterRow(); updateBlurUI();
-}
-function updateBlurUI() {
-  $('blurBtnOn').classList.toggle('active', privacyBlur);
-  $('blurBtnOff').classList.toggle('active', !privacyBlur);
-}
-function reBlurOnLeave() { if (revealed) { revealed = false; applyBlur(); renderFilterRow(); } }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') reBlurOnLeave(); });
-window.addEventListener('pagehide', reBlurOnLeave);
-window.addEventListener('blur', reBlurOnLeave);
-
 window.onload = () => {
-  updateBlurUI();
-  applyBlur();
   updateAppearanceUI();
   updateLayout(currentLayout);
   updatePageSize(pageSize);
