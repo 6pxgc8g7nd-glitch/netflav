@@ -309,7 +309,12 @@ html.fake-profile body{overflow:hidden}
 .set-details summary::-webkit-details-marker{display:none}
 .set-details[open]>summary i{transform:rotate(90deg)}
 .tag-pill{-webkit-touch-callout:none}
-#tagMergeSelect option{color:#000}
+#tagMergeSelect{color-scheme:dark}
+#tagMergeSelect option{color:#fff;background:#2a2a2a}
+/* 標籤選單右邊的動作按鈕：和輸入框等高、圓角一致、字夠大 */
+.tag-act{flex:none;align-self:stretch;min-width:78px;padding:0 18px;border-radius:16px;background:var(--glass-active);border:1px solid var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi);color:#fff;font-size:15px;font-weight:700;white-space:nowrap}
+.tag-act:active{transform:scale(.96)}
+.tag-act:disabled{opacity:.4}
 /* 復原提示條：位置在底部導覽列上方、不擋右下角的隨機按鈕；按鈕夠大、有倒數條 */
 #undoBar{position:fixed;left:50%;bottom:calc(max(2px,var(--safe-bottom) - 18px) + 80px);width:min(calc(100% - 28px),440px);transform:translate(-50%,20px);z-index:7000;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:18px;overflow:hidden;font-size:14px;font-weight:600;color:var(--fg);background:var(--glass-bg);border:1px solid var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 32px rgba(0,0,0,.32);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);opacity:0;visibility:hidden;transition:opacity .25s,transform .35s var(--spring),visibility .25s}
 html[data-theme=light] #undoBar{color:#0f0f0f}

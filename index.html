@@ -261,12 +261,12 @@ applyGlass();
     <label class="block text-[10px] text-zinc-500 font-bold mb-2 uppercase tracking-widest">改名</label>
     <div class="flex gap-2">
       <input type="text" id="tagRenameInput" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" class="flex-1 bg-zinc-900 p-3 rounded-lg text-white outline-none" style="font-size:16px;min-width:0">
-      <button onclick="applyTagRename()" class="px-4 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">改名</button>
+      <button onclick="applyTagRename()" class="tag-act">改名</button>
     </div>
     <label class="block text-[10px] text-zinc-500 font-bold mt-4 mb-2 uppercase tracking-widest">合併到其他標籤</label>
     <div class="flex gap-2">
       <select id="tagMergeSelect" class="flex-1 bg-zinc-900 p-3 rounded-lg text-white outline-none" style="font-size:16px;min-width:0"></select>
-      <button id="tagMergeBtn" onclick="applyTagMerge()" class="px-4 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200">合併</button>
+      <button id="tagMergeBtn" onclick="applyTagMerge()" class="tag-act">合併</button>
     </div>
     <button onclick="requestTagDelete()" class="w-full py-3 bg-red-600 rounded-lg text-xs font-bold text-white" style="margin-top:22px">刪除這個標籤</button>
     <button onclick="closeTagSheet()" class="w-full py-3 bg-zinc-800 rounded-lg text-xs font-bold text-zinc-200" style="margin-top:10px">關閉</button>
