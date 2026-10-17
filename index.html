@@ -162,6 +162,14 @@ applyGlass();
         <input type="range" id="glassRange" min="0" max="100" step="1" oninput="setGlass(this.value)">
       </div>
       <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
+        <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">封面模糊（隱私模式）</label>
+        <div class="layout-grid" style="grid-template-columns:repeat(2,1fr)">
+          <button id="blurBtnOn" onclick="setPrivacyBlur(true)" class="layout-option">開啟</button>
+          <button id="blurBtnOff" onclick="setPrivacyBlur(false)" class="layout-option">關閉</button>
+        </div>
+        <p class="text-[11px] text-zinc-400 mt-3 leading-relaxed">封面預設模糊。要看的時候點首頁篩選列的眼睛暫時顯示，切到別的 app 時會自動再模糊，所以多工畫面的縮圖不會露出封面。</p>
+      </div>
+      <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-900">
         <label class="block text-[10px] text-zinc-500 font-bold mb-3 uppercase tracking-widest">切換 app 時遮蓋畫面</label>
         <div class="layout-grid" style="grid-template-columns:repeat(2,1fr)">
           <button id="coverBtnOn" onclick="setCover(true)" class="layout-option">開啟</button>
