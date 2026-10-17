@@ -245,11 +245,14 @@ html.fake-home body{overflow:hidden}
 .fh-scroll::-webkit-scrollbar{display:none}
 .fh-scroll>*{scroll-snap-align:start}
 .fh-tile{flex:none;border-radius:4px;position:relative;overflow:hidden}
-.fh-tile span{position:absolute;left:8px;right:8px;bottom:9px;font-size:14px;font-weight:900;line-height:1.2;letter-spacing:.06em;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.fh-art{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.fh-tile::after{content:'';position:absolute;left:0;right:0;bottom:0;height:55%;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.62));pointer-events:none;z-index:1}
+.fh-hero-in{z-index:2}
+.fh-tile span{z-index:2;position:absolute;left:8px;right:8px;bottom:9px;font-size:14px;font-weight:900;line-height:1.2;letter-spacing:.06em;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 .fh-tile span.fh-pl{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(255,255,255,.9);background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;text-shadow:none}
 .fh-tile:has(.fh-new) span:not(.fh-pl){bottom:26px}
-.fh-new{position:absolute;left:50%;bottom:0;transform:translateX(-50%);background:#e50914;color:#fff;font-style:normal;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px 2px 0 0;white-space:nowrap}
-.fh-tile .fh-t10{position:absolute;top:0;right:5px;border-radius:0 0 2px 2px;width:20px;height:24px}
+.fh-new{z-index:3;position:absolute;left:50%;bottom:0;transform:translateX(-50%);background:#e50914;color:#fff;font-style:normal;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px 2px 0 0;white-space:nowrap}
+.fh-tile .fh-t10{z-index:3;position:absolute;top:0;right:5px;border-radius:0 0 2px 2px;width:20px;height:24px}
 .fh-cw{flex:none;width:156px}
 .fh-bar{height:3px;background:#404040;margin-top:0;overflow:hidden}
 .fh-bar i{display:block;height:3px;background:#e50914}

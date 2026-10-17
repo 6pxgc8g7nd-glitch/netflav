@@ -987,6 +987,92 @@ function precacheCovers() {
 window.addEventListener('resize', updateContainerHeight);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateContainerHeight);
 
+/* 啟動畫面的假封面：全部由程式即時畫出的原創插圖（城市夜景、山脈、燈塔、森林、沙漠、霓虹、星球、雨夜、幾何、雪松）。
+   同一個編號永遠畫出同一張，不使用任何現成圖片或角色 */
+const artRng = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+function fakeArt(kind, seed) {
+  const R = artRng(seed * 977 + kind * 131 + 7), id = 'fa' + seed, hue = (kind * 47 + seed * 29) % 360;
+  const c = (dh, s, l, a = 1) => `hsla(${(hue + dh + 720) % 360},${s}%,${l}%,${a})`;
+  const lin = (name, stops, x2 = 0, y2 = 1) => `<linearGradient id="${id}${name}" x1="0" y1="0" x2="${x2}" y2="${y2}">${stops.map(([o, col]) => `<stop offset="${o}" stop-color="${col}"/>`).join('')}</linearGradient>`;
+  const r1 = (a, b) => a + R() * (b - a);
+  let d = '', b = '';
+  switch (kind % 10) {
+    case 0: { // 城市夜景
+      d = lin('s', [[0, c(0, 55, 12)], [0.7, c(20, 60, 32)], [1, c(35, 80, 52)]]);
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/><circle cx="72" cy="34" r="22" fill="${c(40, 80, 80, .16)}"/><circle cx="72" cy="34" r="10.5" fill="${c(42, 70, 92)}"/>`;
+      for (let layer = 0; layer < 2; layer++) {
+        let x = -2;
+        while (x < 100) {
+          const w = r1(6, 12), h = layer ? r1(22, 48) : r1(34, 78), top = 150 - h;
+          b += `<rect x="${x}" y="${top}" width="${w}" height="${h}" fill="${c(0, 35, layer ? 6 : 13)}"/>`;
+          if (layer === 0) for (let wy = top + 4; wy < 146; wy += 5) for (let wx = x + 1.5; wx < x + w - 2; wx += 3.2) if (R() > .62) b += `<rect x="${wx}" y="${wy}" width="1.3" height="1.9" fill="${c(45, 90, 72, .9)}"/>`;
+          x += w + r1(.5, 2);
+        }
+      }
+      d += lin('f', [[0, 'rgba(255,255,255,0)'], [1, c(30, 40, 80, .28)]]);
+      b += `<rect y="95" width="100" height="55" fill="url(#${id}f)"/>`; break; }
+    case 1: { // 夕陽山脈
+      d = lin('s', [[0, c(300, 45, 22)], [0.55, c(350, 60, 45)], [1, c(25, 90, 62)]]);
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/><circle cx="50" cy="82" r="24" fill="${c(30, 95, 80, .2)}"/><circle cx="50" cy="82" r="13" fill="${c(38, 95, 82)}"/>`;
+      [[96, 30, 46, 0], [112, 22, 30, 1], [128, 16, 16, 2]].forEach(([base, amp, l, k]) => {
+        let p = `M0 150 L0 ${base}`; for (let x = 0; x <= 100; x += r1(9, 16)) p += ` L${x.toFixed(1)} ${(base - R() * amp).toFixed(1)}`;
+        b += `<path d="${p} L100 ${base} L100 150Z" fill="${c(280 - k * 6, 38 - k * 4, l)}"/>`;
+      });
+      d += lin('m', [[0, 'rgba(255,255,255,0)'], [1, c(20, 50, 80, .22)]]);
+      b += `<rect y="80" width="100" height="60" fill="url(#${id}m)"/>`; break; }
+    case 2: { // 海與燈塔
+      d = lin('s', [[0, c(190, 55, 10)], [1, c(175, 50, 40)]]);
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/><circle cx="26" cy="30" r="8" fill="${c(60, 40, 92)}"/><rect y="98" width="100" height="52" fill="${c(190, 55, 14)}"/>`;
+      for (let k = 0; k < 4; k++) { const y = 104 + k * 11; let p = `M0 ${y}`; for (let x = 0; x < 100; x += 20) p += ` q5 ${-3 - k} 10 0 t10 0`; b += `<path d="${p}" fill="none" stroke="${c(180, 50, 55 - k * 6, .55)}" stroke-width="1.1"/>`; }
+      b += `<polygon points="60,150 66,102 100,96 100,150" fill="${c(0, 20, 6)}"/><polygon points="76,98 79,66 85,66 88,98" fill="${c(0, 0, 92)}"/><rect x="77.2" y="76" width="9.6" height="4" fill="${c(5, 75, 45)}"/><rect x="77.2" y="86" width="9.6" height="4" fill="${c(5, 75, 45)}"/><rect x="78.5" y="60" width="7" height="6" fill="${c(45, 95, 70)}"/><polygon points="78,63 0,45 0,78" fill="${c(48, 95, 75, .2)}"/>`; break; }
+    case 3: { // 霧森
+      d = lin('s', [[0, c(130, 45, 10)], [1, c(150, 40, 36)]]) + lin('f', [[0, 'rgba(255,255,255,0)'], [0.5, c(150, 30, 85, .22)], [1, 'rgba(255,255,255,0)']]);
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/><circle cx="70" cy="28" r="7" fill="${c(70, 35, 90)}"/>`;
+      for (let row = 0; row < 4; row++) {
+        const base = 78 + row * 19;
+        for (let x = -4; x < 104; x += r1(6, 9)) { const h = r1(26, 38) + row * 6, w = h * .42; b += `<polygon points="${x},${base} ${x + w / 2},${base - h} ${x + w},${base}" fill="${c(120, 36, 30 - row * 7)}"/>`; }
+        b += `<rect y="${base - 24}" width="100" height="30" fill="url(#${id}f)"/>`;
+      }
+      b += `<rect y="140" width="100" height="10" fill="${c(120, 30, 6)}"/>`; break; }
+    case 4: { // 沙漠
+      d = lin('s', [[0, c(10, 65, 34)], [1, c(40, 90, 72)]]);
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/><circle cx="68" cy="52" r="16" fill="${c(45, 95, 85, .28)}"/><circle cx="68" cy="52" r="9" fill="${c(50, 95, 90)}"/>`;
+      [[92, 12, 52], [108, 14, 40], [126, 12, 26]].forEach(([y, amp, l], k) => { b += `<path d="M0 150 L0 ${y} C25 ${y - amp} 40 ${y + amp / 2} 62 ${y - amp / 2} S90 ${y - amp} 100 ${y} L100 150Z" fill="${c(10 - k * 4, 60 - k * 6, l)}"/>`; });
+      b += `<circle cx="33" cy="104" r="1.7" fill="${c(0, 30, 10)}"/><polygon points="31.3,106 34.7,106 36,116 29,116" fill="${c(0, 30, 10)}"/>`; break; }
+    case 5: { // 霓虹
+      d = lin('s', [[0, c(280, 70, 9)], [1, c(320, 75, 30)]]) + lin('u', [[0, c(50, 100, 70)], [1, c(330, 90, 55)]]);
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/><circle cx="50" cy="72" r="22" fill="url(#${id}u)"/>`;
+      for (let k = 0; k < 6; k++) b += `<rect x="26" y="${72 + k * 4.2}" width="48" height="${0.6 + k * .45}" fill="${c(280, 70, 9)}"/>`;
+      b += `<rect y="96" width="100" height="54" fill="${c(270, 65, 8)}"/>`;
+      for (let k = -9; k <= 9; k++) b += `<line x1="50" y1="96" x2="${50 + k * 14}" y2="150" stroke="${c(320, 95, 60, .7)}" stroke-width=".4"/>`;
+      [0, 2, 6, 13, 24].forEach(y => { b += `<line x1="0" y1="${100 + y}" x2="100" y2="${100 + y}" stroke="${c(320, 95, 60, .7)}" stroke-width=".4"/>`; }); break; }
+    case 6: { // 星球
+      d = lin('s', [[0, c(240, 60, 5)], [1, c(265, 55, 18)]]) + lin('p', [[0, c(20, 85, 62)], [1, c(340, 70, 26)]], 1, 1);
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/>`;
+      for (let k = 0; k < 46; k++) b += `<circle cx="${r1(0, 100).toFixed(1)}" cy="${r1(0, 150).toFixed(1)}" r="${r1(.25, .9).toFixed(2)}" fill="#fff" opacity="${r1(.3, .95).toFixed(2)}"/>`;
+      b += `<circle cx="62" cy="88" r="27" fill="url(#${id}p)"/><ellipse cx="62" cy="90" rx="44" ry="8" fill="none" stroke="${c(40, 70, 82, .75)}" stroke-width="1.4" transform="rotate(-18 62 90)"/><circle cx="22" cy="40" r="6" fill="${c(190, 40, 70)}"/><circle cx="20" cy="38" r="5.2" fill="${c(240, 60, 8, .55)}"/>`; break; }
+    case 7: { // 雨夜散景
+      d = lin('s', [[0, c(215, 55, 8)], [1, c(235, 50, 22)]]) + `<filter id="${id}b"><feGaussianBlur stdDeviation="1.3"/></filter>`;
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/><g filter="url(#${id}b)">`;
+      for (let k = 0; k < 26; k++) b += `<circle cx="${r1(0, 100).toFixed(1)}" cy="${r1(45, 150).toFixed(1)}" r="${r1(3, 9).toFixed(1)}" fill="${c(r1(-60, 90), 90, r1(50, 66), r1(.25, .55).toFixed(2))}"/>`;
+      b += '</g>';
+      for (let k = 0; k < 18; k++) { const x = r1(0, 100); b += `<line x1="${x.toFixed(1)}" y1="${r1(0, 60).toFixed(1)}" x2="${(x - 1.4).toFixed(1)}" y2="${r1(70, 150).toFixed(1)}" stroke="#fff" stroke-opacity=".09" stroke-width=".35"/>`; } break; }
+    case 8: { // 幾何
+      d = lin('s', [[0, c(0, 15, 8)], [1, c(0, 20, 20)]]);
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/><circle cx="36" cy="58" r="30" fill="${c(0, 85, 52, .92)}"/><circle cx="68" cy="86" r="24" fill="${c(200, 75, 48, .85)}"/><rect x="18" y="92" width="34" height="34" fill="${c(50, 90, 60, .82)}" transform="rotate(18 35 109)"/><path d="M8 140 A40 40 0 0 1 92 140" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".8"/><polygon points="66,22 84,52 48,52" fill="${c(300, 60, 60, .75)}"/>`; break; }
+    default: { // 雪松黃昏
+      d = lin('s', [[0, c(255, 45, 18)], [0.6, c(330, 55, 46)], [1, c(15, 75, 72)]]);
+      b = `<rect width="100" height="150" fill="url(#${id}s)"/><circle cx="76" cy="40" r="5" fill="${c(60, 40, 92)}"/><path d="M0 150 L0 112 C30 102 60 118 100 106 L100 150Z" fill="${c(210, 25, 84)}"/>`;
+      for (let k = 0; k < 7; k++) { const x = r1(4, 96), s = r1(.8, 1.5), y = 118 + r1(0, 22); for (let t = 0; t < 3; t++) b += `<polygon points="${x - 6 * s + t * 1.2},${y - t * 9 * s} ${x},${y - 14 * s - t * 9 * s} ${x + 6 * s - t * 1.2},${y - t * 9 * s}" fill="${c(210, 30, 10 + k)}"/>`; }
+      b += `<rect x="18" y="124" width="14" height="9" fill="${c(10, 30, 8)}"/><polygon points="16,124 25,117 34,124" fill="${c(10, 25, 6)}"/><rect x="23" y="127" width="3.2" height="3.6" fill="${c(48, 95, 70)}"/>`; }
+  }
+  return `<svg class="fh-art" viewBox="0 0 100 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>${d}</defs>${b}</svg>`;
+}
+document.querySelectorAll('#fakeHome [data-art]').forEach(el => {
+  const n = +el.dataset.art;
+  el.insertAdjacentHTML('afterbegin', fakeArt(n === 0 ? 0 : (n * 7) % 10, n));
+});
+
 /* 啟動畫面：模擬 Netflix 首頁；點「播放」才進入 app（內容都是假的，不會用到你的資料） */
 let fakeHomeOn = (() => { try { return localStorage.getItem('NF_FAKE') !== 'off'; } catch (e) { return true; } })();
 function enterApp() {
