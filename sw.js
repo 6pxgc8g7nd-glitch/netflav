@@ -1,12 +1,12 @@
 /* Netflav 離線快取
    1) 頁面：網路優先（更新會立刻生效），沒網路時改用快取
    2) 封面圖：存起來的封面直接讀手機，不用等網路（沒網路也能看）；也可從設定「預先下載封面」 */
-const CACHE = 'netflav-v3';
+const CACHE = 'netflav-v4';
 const IMG_CACHE = 'netflav-img-v1';
 const MAX_IMG = 500; // 封面快取最多張數，超過會刪掉最舊的
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './styles.css', './app.js'])).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './styles.css', './app.js', './fake.js'])).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(

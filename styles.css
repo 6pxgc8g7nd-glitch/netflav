@@ -347,6 +347,94 @@ body.undo-open .fab-btn{bottom:calc(max(2px,var(--safe-bottom) - 18px) + 146px)}
 .imp-btn:active{transform:scale(.98)}
 @keyframes fpBlink{0%{opacity:1}30%{opacity:.35}100%{opacity:1}}
 .fp-add.blink .fp-av{animation:fpBlink .4s ease}
+/* ===== 假 Netflix（掩護）的互動畫面：詳細頁、搜尋、播放器、新與熱門、下載內容 ===== */
+#fakeHome [data-fhp]{display:none}
+#fakeHome[data-fh-tab="home"] [data-fhp="home"],#fakeHome[data-fh-tab="hot"] [data-fhp="hot"],#fakeHome[data-fh-tab="dl"] [data-fhp="dl"]{display:block}
+.fh-chips span.fh-chip-on{background:#fff;color:#000;border-color:#fff}
+.fh-chips span,.fh-tile,.fh-cw,.fh-nav>span,.fh-icons>svg,.fh-ghost{cursor:pointer}
+#fhToast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);z-index:9060;max-width:calc(100% - 40px);background:#2b2b2b;color:#fff;padding:11px 18px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',sans-serif}
+#fhToast.show{opacity:1;transform:translate(-50%,0)}
+.fh-layer{position:fixed;inset:0;z-index:9050;display:none;background:#000;color:#fff;overflow-y:auto;-webkit-overflow-scrolling:touch;-webkit-user-select:none;user-select:none;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC','Heiti TC','Microsoft JhengHei',sans-serif}
+html.fake-home .fh-layer.open{display:block}
+.fh-layer *{box-sizing:border-box}
+.fh-layer p,.fh-layer h2{margin:0}
+.fh-layer button{color:inherit;font:inherit}
+/* 詳細頁 */
+.fhd-hero{position:relative;height:min(46vh,340px);background:#111;overflow:hidden}
+.fhd-fade{position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(rgba(0,0,0,0),#000);z-index:1}
+.fhd-ib{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:3;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+.fhd-l{left:14px}.fhd-r{right:14px}
+.fhd-bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;width:60px;height:60px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
+.fhd-body{padding:6px 16px calc(40px + env(safe-area-inset-bottom,0px))}
+.fhd-title{font-size:26px;font-weight:800;margin:4px 0 8px}
+.fhd-meta{display:flex;align-items:center;gap:10px;font-size:13px;color:#b3b3b3;margin-bottom:14px}
+.fhd-meta b{color:#46d369;font-weight:700}
+.fhd-meta i{font-style:normal;border:1px solid #777;border-radius:3px;padding:0 5px;font-size:11px;line-height:17px}
+.fhd-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0;border-radius:6px;font-size:16px;font-weight:700;margin-bottom:8px}
+.fhd-white{background:#fff;color:#000!important}.fhd-gray{background:#333}
+.fhd-desc{font-size:14px;line-height:1.55;margin:12px 0 8px;color:#e5e5e5}
+.fhd-line{font-size:13px;color:#a3a3a3;margin-top:3px}
+.fhd-actions{display:flex;gap:6px;margin:18px 0 6px}
+.fhd-actions button{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:#b3b3b3;padding:8px 0}
+.fhd-tabs{display:flex;gap:22px;margin-top:10px;border-top:1px solid #262626}
+.fhd-tabs span{padding:12px 0 10px;font-size:15px;font-weight:700;color:#8c8c8c;border-top:3px solid transparent;margin-top:-1px;cursor:pointer}
+.fhd-tabs span.on{color:#fff;border-top-color:#e50914}
+.fhd-tabbody{padding-top:12px}
+.fhd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fhd-grid .fh-tile{width:100%!important;height:auto!important;aspect-ratio:2/3}
+.fhd-ep{display:flex;gap:12px;align-items:center;margin-bottom:14px;cursor:pointer}
+.fhd-epart{position:relative;flex:none;width:128px;height:72px;border-radius:4px;overflow:hidden;background:#111}
+.fhd-epart b{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center}
+.fhd-eptx{flex:1;min-width:0}
+.fhd-eptx p{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.fhd-eptx i{font-style:normal;color:#8c8c8c;font-size:12px;flex:none}
+.fhd-eptx small{display:block;color:#8c8c8c;font-size:12px;line-height:1.4;margin-top:3px}
+/* 搜尋 / 類型 / 下載清單 */
+.fhs-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 10px;background:#000}
+.fhs-bar button{width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex:none}
+.fhs-bar b{font-size:17px}
+.fhs-bar input{flex:1;min-width:0;height:42px;border-radius:6px;background:#2a2a2a;color:#fff;border:0;outline:0;padding:0 14px;font-size:16px;-webkit-user-select:text;user-select:text}
+.fhs-bar input::placeholder{color:#8c8c8c}
+.fhs-h{font-size:18px;font-weight:700;padding:10px 16px 8px}
+.fhs-row{display:flex;align-items:center;gap:12px;padding:6px 16px;cursor:pointer}
+.fhs-row>b{flex:1;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fhs-thumb{position:relative;flex:none;width:130px;height:73px;border-radius:4px;overflow:hidden;background:#111}
+.fhs-empty{padding:60px 24px;text-align:center;color:#8c8c8c;font-size:15px}
+.fhg-row{padding:18px 20px;font-size:17px;border-bottom:1px solid #1d1d1d;cursor:pointer;text-align:center;color:#d2d2d2}
+.fhg-row:active{background:#1a1a1a}
+.fhdl-tx{flex:1;min-width:0}.fhdl-tx b{display:block;font-size:15px}.fhdl-tx small{display:block;color:#8c8c8c;font-size:12px;margin-top:3px}
+/* 播放器 */
+.fhv-screen{position:relative;min-height:100vh;height:100%;background:#000;overflow:hidden}
+.fhv-screen .fh-art{filter:brightness(.55);transform:scale(1.15)}
+.fhv-shade{position:absolute;inset:0;background:radial-gradient(circle,rgba(0,0,0,0) 40%,rgba(0,0,0,.65))}
+.fhv-ui{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 22px);transition:opacity .3s}
+.fhv-ui.hide{opacity:0}
+.fhv-top{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600}
+.fhv-top button{width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+.fhv-mid{display:flex;align-items:center;justify-content:center;gap:46px}
+.fhv-mid button{display:flex;align-items:center;justify-content:center;width:64px;height:64px}
+.fhv-bar{height:4px;background:rgba(255,255,255,.3);border-radius:2px}
+.fhv-bar i{display:block;height:4px;width:0;background:#e50914;border-radius:2px}
+.fhv-time{display:flex;justify-content:space-between;font-size:13px;color:#d2d2d2;margin-top:8px}
+/* 新與熱門 / 下載內容 */
+.fhp-head{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px;background:linear-gradient(#000 70%,rgba(0,0,0,0))}
+.fhp-head b{font-size:22px;font-weight:800}
+.fhp-item{padding:0 16px 22px}
+.fhp-date{font-size:13px;color:#a3a3a3;margin:6px 0 8px}
+.fhp-art{position:relative;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:#111;cursor:pointer}
+.fhp-art em{position:absolute;right:8px;bottom:8px;z-index:3;background:#000;border-radius:3px;padding:2px 8px;font-size:12px;font-style:normal}
+.fhp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.fhp-row>b{font-size:17px}
+.fhp-row span{display:flex;gap:16px}
+.fhp-row button{display:flex;flex-direction:column;align-items:center;gap:4px;color:#fff;cursor:pointer}
+.fhp-row small{font-size:11px;color:#b3b3b3}
+.fhp-desc{font-size:13px;line-height:1.5;color:#a3a3a3;margin-top:8px}
+.fhp-g{font-size:12px;color:#d2d2d2;margin-top:6px}
+.fhdl-empty{padding:70px 30px;text-align:center}
+.fhdl-ic{color:#555;display:flex;justify-content:center;margin-bottom:14px}
+.fhdl-t{font-size:18px;font-weight:700}
+.fhdl-s{font-size:14px;color:#8c8c8c;margin:8px 0 22px;line-height:1.5}
+.fhdl-empty button{background:#fff;color:#000;border-radius:6px;padding:12px 22px;font-size:15px;font-weight:700}
 #glassRange{width:100%;accent-color:var(--nf-red);height:28px}
 .fh-av svg{width:100%;height:100%;display:block}
 .fh-av{overflow:hidden}

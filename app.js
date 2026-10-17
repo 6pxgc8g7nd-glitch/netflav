@@ -1394,7 +1394,7 @@ function enterApp() {
 let buildId = '', buildCheckedAt = 0, lastUpdateCheck = 0;
 const fnvHex = str => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16).padStart(8, '0'); };
 async function fetchBuildId() {
-  const texts = await Promise.all(['index.html', 'styles.css', 'app.js'].map(f => fetch(f, { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })));
+  const texts = await Promise.all(['index.html', 'styles.css', 'app.js', 'fake.js'].map(f => fetch(f, { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })));
   return fnvHex(texts.join('\u0000'));
 }
 async function checkUpdate(manual) {
