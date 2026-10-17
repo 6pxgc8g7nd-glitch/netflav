@@ -1084,15 +1084,18 @@ document.querySelectorAll('#fakeProfile [data-profile]').forEach(b => { b.queryS
 const KIDS = 2; // 「兒童」是進入收藏的那個頭像，其他頭像只會看到模擬的 Netflix 首頁
 function applyProfile(i) { const a = document.querySelector('.fh-nav .fh-av'); if (a) a.innerHTML = profSvg(i); }
 function pickProfile(i) {
-  const el = $('fakeProfile'); el.classList.add('out');
-  setTimeout(() => {
-    el.classList.remove('out');
-    if (i === KIDS) { enterApp(); return; }
+  const el = $('fakeProfile'), root = document.documentElement;
+  if (i !== KIDS) { // 先把 Netflix 首頁墊在淡出的選擇畫面後面，不然淡出時會露出底下的收藏
     applyProfile(i);
     try { sessionStorage.setItem('NF_DECOY', '1'); sessionStorage.setItem('NF_PROFILE', String(i)); } catch (e) {}
     $('fakeHome').scrollTop = 0;
-    document.documentElement.classList.add('fake-home');
-    document.documentElement.classList.remove('fake-profile');
+    root.classList.add('fake-home');
+  }
+  el.classList.add('out');
+  setTimeout(() => {
+    if (i === KIDS) { el.classList.remove('out'); enterApp(); return; }
+    root.classList.remove('fake-profile');
+    el.classList.remove('out');
   }, 230);
 }
 function backToProfiles() { // 在假的首頁點「我的 Netflix」回到選擇個人檔案
