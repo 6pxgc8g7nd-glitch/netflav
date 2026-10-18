@@ -83,6 +83,13 @@
     collections = [it('1', 'A', 1, { tags: ['x'] })]; refreshAll(); selectedTags = ['x'];
     openTagSheet('x'); $('tagRenameInput').value = 'y'; applyTagRename(); eq(selectedTags, ['y']);
   });
+  test('連續刪除標籤：標籤頁的復原條在上方；開啟標籤視窗/確認框時暫時隱藏，關閉後回來', async () => {
+    collections = [it('1', 'A', 1, { tags: ['x', 'y'] })]; refreshAll(); switchTab(1);
+    assert(document.body.classList.contains('undo-top'), '標籤頁要用上方復原條'); switchTab(0); assert(!document.body.classList.contains('undo-top'), '其他頁籤維持下方');
+    switchTab(1); openTagSheet('x'); assert(document.body.classList.contains('sheet-open'), '開啟視窗要標記'); requestTagDelete(); assert(document.body.classList.contains('sheet-open'), '確認框也要');
+    $('confirmOkBtn').click(); assert(!document.body.classList.contains('sheet-open') && $('undoBar').classList.contains('show'), '刪除後顯示復原條');
+    openTagSheet('y'); assert(document.body.classList.contains('sheet-open')); closeTagSheet(); assert(!document.body.classList.contains('sheet-open') && $('undoBar').classList.contains('show'), '關閉視窗後復原條要還在');
+  });
   test('標籤複選：AND 篩選與底部列', async () => {
     collections = [it('1', 'A', 1, { tags: ['a', 'b'] }), it('2', 'B', 1, { tags: ['a'] }), it('3', 'C', 1, { tags: ['b'] })]; refreshAll(); switchTab(1);
     toggleTag('a'); toggleTag('b'); assert($('tagBar').classList.contains('show'), '要出現底部列'); assert($('tagBarText').textContent.includes('1 部符合'), '符合數');
@@ -271,7 +278,7 @@
     } finally { delete navigator.serviceWorker.controller; }
   });
   test('捲動記憶：各頁籤各自記住；點目前頁籤捲回頂端；程式切換從頂端', async () => {
-    collections = Array.from({ length: 60 }, (_, i) => it('s' + i, '影片' + i, 1, { tags: ['t' + (i % 30)] })); pageSize = 48; refreshAll(); switchTab(0, true); await wait(250);
+    collections = Array.from({ length: 60 }, (_, i) => it('s' + i, '影片' + i, 1, { tags: ['t' + (i % 30)] })); pageSize = 48; refreshAll(); switchTab(0, true); await wait(250); document.getAnimations().forEach(x => { try { x.finish(); } catch (e) {} }); await wait(50); // 高度過渡動畫在背景/隱藏頁面可能不會跑完，直接收尾
     assert(document.documentElement.scrollHeight > innerHeight + 700, '頁面要夠長才測得出來'); window.scrollTo(0, 700); await wait(80); const y0 = Math.round(scrollY);
     switchTab(1); await wait(250); eq(Math.round(scrollY), 0, '標籤頁從頂端'); switchTab(0); await wait(350); eq(Math.round(scrollY), y0, '回首頁要回到原位');
     const calls = []; const orig = window.scrollTo; window.scrollTo = function (...a) { calls.push(JSON.stringify(a)); return orig.apply(window, a); }; switchTab(0); window.scrollTo = orig; assert(calls.some(c => c.includes('smooth')), '點目前頁籤要平滑捲回頂端');

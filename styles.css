@@ -320,6 +320,11 @@ html.fake-profile body{overflow:hidden}
 #undoBar{position:fixed;left:50%;bottom:calc(max(2px,var(--safe-bottom) - 18px) + 80px);width:min(calc(100% - 28px),440px);transform:translate(-50%,20px);z-index:7000;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:18px;overflow:hidden;font-size:14px;font-weight:600;color:var(--fg);background:var(--glass-bg);border:1px solid var(--glass-bd);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 32px rgba(0,0,0,.32);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);opacity:0;visibility:hidden;transition:opacity .25s,transform .35s var(--spring),visibility .25s}
 html[data-theme=light] #undoBar{color:#0f0f0f}
 #undoBar.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+body.undo-top #undoBar{bottom:auto;top:calc(var(--nav-height) + 6px);transform:translate(-50%,-20px)}
+body.undo-top #undoBar.show{transform:translate(-50%,0)}
+#page2>h2{transition:margin-top .3s var(--spring)}
+body.undo-top.undo-open #page2>h2{margin-top:64px}
+body.sheet-open #undoBar{opacity:0;visibility:hidden;pointer-events:none}
 #tagBar.show~#undoBar{bottom:calc(max(2px,var(--safe-bottom) - 18px) + 142px)}
 #undoMsg{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #undoBtn{flex:none;display:flex;align-items:center;gap:6px;min-height:40px;padding:0 16px;border-radius:12px;background:var(--nf-red);color:#fff;font-size:14px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}

@@ -468,9 +468,9 @@ function openTagSheet(tag) {
   const others = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   $('tagMergeSelect').innerHTML = others.length ? others.map(([t, n]) => `<option value="${esc(t)}">${esc(t)}（${n}）</option>`).join('') : '<option value="">沒有其他標籤</option>';
   $('tagMergeBtn').disabled = !others.length;
-  const m = $('tagSheet'); m.classList.remove('hidden'); m.classList.add('flex');
+  const m = $('tagSheet'); m.classList.remove('hidden'); m.classList.add('flex'); document.body.classList.add('sheet-open');
 }
-function closeTagSheet() { const m = $('tagSheet'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function closeTagSheet() { const m = $('tagSheet'); m.classList.add('hidden'); m.classList.remove('flex'); document.body.classList.remove('sheet-open'); }
 /* 把 from 改成 to（to 為空字串 = 刪除）；同一部影片若已有 to，不會重複 */
 function rewriteTag(from, to, doneMsg) {
   const prev = collections;
@@ -672,6 +672,7 @@ function switchTab(index, top) {
   const same = index === activeTab;
   tabScroll[activeTab] = window.scrollY;      // 離開前記住這一頁看到哪
   activeTab = index;
+  document.body.classList.toggle('undo-top', index === 1); // 標籤頁的復原條放在上方，才不會擋到下面的標籤
   $('fabBtn').style.display = index === 0 ? 'flex' : 'none';
   $('pageContainer').style.transform = `translateX(-${index * (100 / 3)}%)`;
   document.querySelectorAll('.nav-item').forEach((el, i) => { if (i < 3) el.classList.toggle('active', i === index); });
@@ -744,9 +745,9 @@ function doUndo() { const f = undoFn; hideUndo(); if (f) f(); }
 function openConfirm(title, fn) {
   $('confirmTitle').innerText = title;
   $('confirmOkBtn').onclick = () => { closeConfirm(); fn(); };
-  const m = $('confirmModal'); m.classList.remove('hidden'); m.classList.add('flex');
+  const m = $('confirmModal'); m.classList.remove('hidden'); m.classList.add('flex'); document.body.classList.add('sheet-open');
 }
-function closeConfirm() { const m = $('confirmModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function closeConfirm() { const m = $('confirmModal'); m.classList.add('hidden'); m.classList.remove('flex'); if ($('tagSheet').classList.contains('hidden')) document.body.classList.remove('sheet-open'); }
 function requestDelete() { openConfirm("確定要刪除嗎？", executeDelete); }
 function executeDelete() {
   const idx = collections.findIndex(i => String(i.id) === String(currentId));
